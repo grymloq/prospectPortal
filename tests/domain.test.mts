@@ -406,3 +406,44 @@ test("team members share matrix lists and overrides with server-owned attributio
     execute(s, first, { type: "matrixList", patchId: "bad", army: own }),
   );
 });
+
+test("administrators manage access, protect themselves and retain removed players' history", () => {
+  const s = structuredClone(baseline),
+    admin = s.users[0],
+    member = s.users.find((u) => u.id === "p1")!;
+  assert.throws(() =>
+    execute(s, member, { type: "userRole", userId: member.id, role: "admin" }),
+  );
+  assert.throws(() =>
+    execute(s, admin, { type: "userRole", userId: admin.id, role: "member" }),
+  );
+  assert.throws(() =>
+    execute(s, admin, { type: "removeUser", userId: admin.id }),
+  );
+  execute(s, admin, { type: "userRole", userId: member.id, role: "admin" });
+  assert.equal(member.role, "admin");
+  execute(s, admin, { type: "userRole", userId: member.id, role: "member" });
+  assert.equal(member.role, "member");
+  s.applications.push({
+    id: "qa-remove",
+    userId: member.id,
+    eventId: "qa-event",
+    status: "Approved",
+    updatedAt: "",
+  });
+  const games = s.games.filter((g) => g.userId === member.id).length;
+  execute(s, admin, { type: "removeUser", userId: member.id });
+  assert.ok(member.removedAt);
+  assert.equal(member.phaseId, null);
+  assert.equal(
+    s.applications.find((a) => a.id === "qa-remove")!.status,
+    "Withdrawn",
+  );
+  assert.equal(s.games.filter((g) => g.userId === member.id).length, games);
+  assert.throws(() =>
+    execute(s, member, { type: "applyTeam", application: "forged" }),
+  );
+  member.inviteTokenHash = "secret";
+  member.inviteExpiresAt = 123;
+  assert.equal(JSON.stringify(viewState(s, admin)).includes("secret"), false);
+});

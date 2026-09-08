@@ -48,7 +48,12 @@ export async function POST(req: NextRequest) {
       });
     } else {
       user = readState().users.find((u) => u.email === input.email);
-      if (!user || !checkPassword(input.password, user.password!))
+      if (
+        !user ||
+        user.removedAt ||
+        !user.password ||
+        !checkPassword(input.password, user.password)
+      )
         throw new Error("Email or password is incorrect.");
     }
     const token = randomBytes(32).toString("hex");

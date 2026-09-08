@@ -4,6 +4,11 @@ export type Phase = {
   kind: "application" | "review" | "selected";
 };
 export type User = {
+  removedAt?: string;
+  invitedAt?: string;
+  acceptedAt?: string;
+  inviteTokenHash?: string;
+  inviteExpiresAt?: number;
   id: string;
   name: string;
   email: string;

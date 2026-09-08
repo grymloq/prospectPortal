@@ -6,17 +6,20 @@ import { databaseClient } from "./supabase";
 import { execute, viewState } from "./service";
 import { ensurePatches } from "@/lib/patches";
 
-function ensureProfile(
+export function ensureProfile(
   state: State,
   identity: AuthUser,
 ): { actor: User; changed: boolean } {
   let actor = state.users.find((u) => u.id === identity.id);
   if (actor) {
-    const role =
-      identity.app_metadata.portal_role === "admin" ? "admin" : "member";
-    const changed = actor.role !== role || actor.email !== identity.email;
-    actor.role = role;
+    if (actor.removedAt)
+      throw new Error("Your portal access has been removed.");
+    // Once provisioned, portal roles are authoritative and changed atomically by admins.
+    const accepted =
+      !!identity.last_sign_in_at && !!actor.invitedAt && !actor.acceptedAt;
+    const changed = actor.email !== identity.email || accepted;
     actor.email = identity.email || "";
+    if (accepted) actor.acceptedAt = identity.last_sign_in_at;
     return { actor, changed };
   }
   // Roles come from trusted app metadata, never editable user metadata.
@@ -39,6 +42,7 @@ function ensureProfile(
 export async function cloudView(
   identity: AuthUser,
   command?: unknown,
+  trustedUpdate?: (state: State, actor: User) => void,
 ): Promise<View> {
   const db = databaseClient();
   for (let attempt = 0; attempt < 12; attempt++) {
@@ -55,8 +59,10 @@ export async function cloudView(
     const migrated = ensurePatches(state);
     const { actor, changed } = ensureProfile(state, identity);
     if (command !== undefined) execute(state, actor, command);
+    if (trustedUpdate) trustedUpdate(state, actor);
     const view = viewState(state, actor);
-    if (!changed && !migrated && command === undefined) return view;
+    if (!changed && !migrated && command === undefined && !trustedUpdate)
+      return view;
     const result = await db.rpc("portal_commit", {
       expected_revision: data.revision,
       next_value: state,

@@ -30,7 +30,13 @@ async function handle(req: NextRequest, mutate: boolean) {
         error:
           e instanceof z.ZodError ? e.issues[0].message : (e as Error).message,
       },
-      { status: 400, headers },
+      {
+        status:
+          (e as Error).message === "Your portal access has been removed."
+            ? 401
+            : 400,
+        headers,
+      },
     );
   }
 }

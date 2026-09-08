@@ -30,6 +30,12 @@ const army = z.object({
   listUrl: url,
 });
 const commands = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("userRole"),
+    userId: id,
+    role: z.enum(["admin", "member"]),
+  }),
+  z.object({ type: z.literal("removeUser"), userId: id }),
   z.object({ type: z.literal("matrixList"), patchId: id, army }),
 
   z.object({
@@ -183,6 +189,7 @@ export function viewState(s: State, actor: User): View {
   };
 }
 export function execute(s: State, actor: User, input: unknown) {
+  if (actor.removedAt) throw new Error("Your portal access has been removed.");
   ensurePatches(s);
   const c = commands.parse(input);
   const admin = actor.role === "admin";
@@ -204,6 +211,41 @@ export function execute(s: State, actor: User, input: unknown) {
       createdAt: now,
     });
   switch (c.type) {
+    case "userRole":
+    case "removeUser": {
+      requireAdmin();
+      const user = s.users.find((u) => u.id === c.userId && !u.removedAt);
+      if (!user) throw new Error("Active user not found.");
+      if (user.id === actor.id)
+        throw new Error("Ask another administrator to change your own access.");
+      if (
+        user.role === "admin" &&
+        (c.type === "removeUser" || c.role === "member") &&
+        s.users.filter((u) => u.role === "admin" && !u.removedAt).length <= 1
+      )
+        throw new Error("At least one administrator must remain.");
+      if (c.type === "userRole") {
+        user.role = c.role;
+        audit(`${actor.name} changed ${user.name} to ${c.role}.`);
+      } else {
+        user.removedAt = now;
+        user.phaseId = null;
+        user.inviteTokenHash = undefined;
+        user.inviteExpiresAt = undefined;
+        for (const a of s.applications)
+          if (
+            a.userId === user.id &&
+            (a.status === "Pending" || a.status === "Approved")
+          ) {
+            a.status = "Withdrawn";
+            a.updatedAt = now;
+          }
+        audit(
+          `${actor.name} removed portal access for ${user.name}. Journals and history retained.`,
+        );
+      }
+      break;
+    }
     case "matrixList": {
       if (!s.patches!.some((p) => p.id === c.patchId))
         throw new Error("Choose a rules patch.");

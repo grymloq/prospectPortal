@@ -22,6 +22,7 @@ import Journal from "./journal";
 import MatchupMatrix from "./matchup-matrix";
 import Events from "./events";
 import Selection from "./selection";
+import UserManagement from "./user-management";
 import { Avatar } from "./ui";
 export type Mutate = (command: object) => Promise<boolean>;
 export default function Workspace({
@@ -122,7 +123,7 @@ export default function Workspace({
     );
   const admin = view.me.role === "admin";
   const currentPage =
-    !admin && ["Prospects", "Selection", "Settings"].includes(page)
+    !admin && ["Prospects", "Selection", "Settings", "Users"].includes(page)
       ? "Profile"
       : page;
   const nav = [
@@ -138,6 +139,7 @@ export default function Workspace({
       ? [
           { name: "Selection", page: "Selection", icon: Trophy },
           { name: "Settings", page: "Settings", icon: Settings },
+          { name: "Users", page: "Users", icon: Users },
         ]
       : []),
   ];
@@ -280,6 +282,9 @@ export default function Workspace({
               mutate={mutate}
             />
           )}{" "}
+          {admin && currentPage === "Users" && (
+            <UserManagement view={view} mutate={mutate} onView={setView} />
+          )}
           {currentPage === "Matchup matrix" && (
             <MatchupMatrix view={view} mutate={mutate} />
           )}

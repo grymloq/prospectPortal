@@ -56,12 +56,15 @@ export default function Prospects({
     [query, setQuery] = useState(""),
     [faction, setFaction] = useState("");
   const [listPage, setListPage] = useState(1);
-  const prospects = view.users.filter((u) => u.phaseId && !u.rejected),
+  const prospects = view.users.filter(
+      (u) => !u.removedAt && u.phaseId && !u.rejected,
+    ),
     selected = prospects.filter(
       (u) => view.phases.find((p) => p.id === u.phaseId)?.kind === "selected",
     ).length;
   const filtered = view.users.filter(
     (u) =>
+      !u.removedAt &&
       (phase === "all"
         ? !!u.phaseId
         : phase === "rejected"

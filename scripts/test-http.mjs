@@ -80,6 +80,106 @@ try {
   });
   assert.equal(player.status, 200);
   const memberView = await request("/api/state", null, player.cookie);
+  const blockedDirectory = await request(
+    "/api/admin/users",
+    null,
+    player.cookie,
+  );
+  const anonDirectory = await request("/api/admin/users");
+  const blockedInvite = await request(
+    "/api/admin/users",
+    { name: "Unauthorized", email: "blocked@example.com" },
+    player.cookie,
+  );
+  check("user directory and invitations require an administrator", () => {
+    assert.equal(anonDirectory.status, 401);
+    assert.equal(blockedDirectory.status, 403);
+    assert.equal(blockedInvite.status, 403);
+  });
+  const inviteResult = await request(
+    "/api/admin/users",
+    { name: "Invited QA", email: "invited@example.com" },
+    admin.cookie,
+  );
+  assert.equal(inviteResult.status, 200);
+  const token = new URL(inviteResult.data.inviteUrl).searchParams.get("token");
+  assert(!JSON.stringify(inviteResult.data.view).includes(token));
+  const accept = await request("/api/admin/users/accept", {
+    token,
+    password: "InvitationQA123!",
+  });
+  const reuse = await request("/api/admin/users/accept", {
+    token,
+    password: "InvitationQA123!",
+  });
+  const invited = await request("/api/session", {
+    email: "invited@example.com",
+    password: "InvitationQA123!",
+  });
+  const invitedView = await request("/api/state", null, invited.cookie);
+  check(
+    "one-time invitations create accounts without exposing tokens in state",
+    () => {
+      assert.equal(accept.status, 200);
+      assert.equal(reuse.status, 400);
+      assert.equal(invited.status, 200);
+      assert.ok(invitedView.data.me.acceptedAt);
+    },
+  );
+  const target = invitedView.data.me.id;
+  assert.equal(
+    (
+      await request(
+        "/api/state",
+        { type: "userRole", userId: target, role: "admin" },
+        admin.cookie,
+      )
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await request("/api/admin/users", null, invited.cookie)).status,
+    200,
+  );
+  assert.equal(
+    (
+      await request(
+        "/api/state",
+        { type: "userRole", userId: target, role: "member" },
+        admin.cookie,
+      )
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await request("/api/admin/users", null, invited.cookie)).status,
+    403,
+  );
+  assert.equal(
+    (
+      await request(
+        "/api/state",
+        { type: "removeUser", userId: target },
+        admin.cookie,
+      )
+    ).status,
+    200,
+  );
+  check(
+    "role changes apply to current sessions and removal revokes access",
+    () => {},
+  );
+  const removedView = await request("/api/state", null, invited.cookie);
+  const removedWrite = await request(
+    "/api/state",
+    { type: "applyTeam", application: "removed" },
+    invited.cookie,
+  );
+  check("removed sessions cannot read or mutate the workspace", () => {
+    assert.equal(removedView.status, 401);
+    assert.equal(removedWrite.status, 401);
+  });
+
   const patchCommand = {
     type: "patch",
     name: "HTTP test patch",
