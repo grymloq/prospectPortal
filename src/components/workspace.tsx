@@ -1,4 +1,5 @@
 "use client";
+import TeamLogo from "@/components/team-logo";
 import { useEffect, useState } from "react";
 import {
   Users,
@@ -103,7 +104,7 @@ export default function Workspace({
   if (loading)
     return (
       <div className="loading">
-        <div className="flag" />
+        <TeamLogo />
         <p>Opening your workspace…</p>
       </div>
     );
@@ -141,7 +142,7 @@ export default function Workspace({
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="flag" />
+          <TeamLogo />
           <strong>TEAM SWEDEN</strong>
           <span>40K NATIONAL TEAM</span>
         </div>

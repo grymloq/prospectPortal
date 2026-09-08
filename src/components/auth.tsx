@@ -1,4 +1,5 @@
 "use client";
+import TeamLogo from "@/components/team-logo";
 import { useState } from "react";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { Field } from "./ui";
@@ -39,7 +40,7 @@ export default function Auth({
   return (
     <div className="auth">
       <section className="auth-story">
-        <div className="flag" />
+        <TeamLogo />
         <h2>
           TEAM SWEDEN<span>40K NATIONAL TEAM</span>
         </h2>

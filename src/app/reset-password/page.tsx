@@ -1,4 +1,5 @@
 "use client";
+import TeamLogo from "@/components/team-logo";
 import Link from "next/link";
 import { useState } from "react";
 import { Field } from "@/components/ui";
@@ -9,7 +10,7 @@ export default function ResetPassword() {
   return (
     <main className="auth-form" style={{ minHeight: "100vh" }}>
       <div className="auth-inner">
-        <div className="flag" />
+        <TeamLogo />
         <h1>Set a new password</h1>
         {done ? (
           <>

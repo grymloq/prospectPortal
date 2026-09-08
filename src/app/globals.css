@@ -196,27 +196,13 @@ hr {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.flag {
-  width: 52px;
-  height: 32px;
-  background:
-    linear-gradient(
-      90deg,
-      transparent 30%,
-      #f7d142 30%,
-      #f7d142 43%,
-      transparent 43%
-    ),
-    linear-gradient(
-      0deg,
-      transparent 39%,
-      #f7d142 39%,
-      #f7d142 59%,
-      transparent 59%
-    ),
-    #0878b6;
-  box-shadow: 0 2px 5px #0001;
-  border-radius: 2px;
+.team-logo {
+  display: block;
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 .app-shell {
   display: flex;
@@ -238,7 +224,7 @@ hr {
 .brand {
   padding: 0 12px;
 }
-.brand .flag {
+.brand .team-logo {
   margin-bottom: 15px;
 }
 .brand strong {
@@ -1373,7 +1359,7 @@ td small {
   font-weight: 400;
   margin-top: 6px;
 }
-.auth-story > div:not(.flag) {
+.auth-story > div:not(.team-logo) {
   margin: 100px 0;
 }
 .auth-story h1 {
@@ -1591,7 +1577,7 @@ td small {
     align-items: center;
     gap: 9px;
   }
-  .brand .flag {
+  .brand .team-logo {
     width: 29px;
     height: 19px;
     margin: 0;
@@ -1786,7 +1772,7 @@ td small {
   .auth-story h2 {
     margin: 10px 0 20px;
   }
-  .auth-story > div:not(.flag) {
+  .auth-story > div:not(.team-logo) {
     margin: 10px 0;
   }
   .auth-story h1 {

@@ -1,4 +1,5 @@
 "use client";
+import TeamLogo from "@/components/team-logo";
 import Link from "next/link";
 import { useState } from "react";
 import { Field } from "@/components/ui";
@@ -8,7 +9,7 @@ export default function ForgotPassword() {
   return (
     <main className="auth-form" style={{ minHeight: "100vh" }}>
       <div className="auth-inner">
-        <div className="flag" />
+        <TeamLogo />
         <h1>Reset your password</h1>
         <p>We’ll send a link to your account email.</p>
         <form
