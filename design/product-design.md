@@ -1,6 +1,6 @@
 # Swedish Warhammer 40,000 National Team — Product Design
 
-Status: Living draft v0.8, 8 September 2026. Requirements marked **Confirmed** come from the brief and subsequent answers. Items marked **Proposed** are working recommendations, not approved decisions. **Open** items need clarification before dependent implementation.
+Status: Living draft v0.9, 8 September 2026. Requirements marked **Confirmed** come from the brief and subsequent answers. Items marked **Proposed** are working recommendations, not approved decisions. **Open** items need clarification before dependent implementation.
 
 ## 1. Purpose and scope
 
@@ -376,3 +376,5 @@ This remains a conceptual entity model. The local implementation and future prod
 - v0.6: Confirmed the user-selected local Next.js/React/TypeScript stack and future Vercel/Supabase direction. Added implementation notes and the actual New Recruit selector import. The local app implements the core workflows; remaining optional features and production migration are tracked in its README.
 
 - v0.7: User authorized production deployment. Supabase Auth and an RLS-protected, server-only Postgres document adapter preserve the existing domain rules using revision-checked atomic writes. Normalized tables remain future work. Production starts empty. Initial admin is emil.barkin@gmail.com. Custom SMTP and sending-domain setup remain required for public signup/reset email delivery.
+
+- v0.9: Confirmed administrator-created, date-identified patches required for game logs; backfill all existing games to Ork release — 2026-09-02. Matrix compact overview retains full drill-down details and adds per-patch filtering (newest patch default, combined option explicit). Added 96 synthetic games to expand the separate demo profile to eight factions, 12 configurations, 264 games.

@@ -4,6 +4,7 @@ import type { State, User, View } from "@/lib/types";
 import { armySnapshot, catalogue } from "@/lib/catalogue";
 import { publicUser } from "./public-user";
 import { outcomeForScore } from "@/lib/matchups";
+import { ensurePatches } from "@/lib/patches";
 const text = z.string().trim().min(1).max(5000),
   id = z.string().min(1).max(100);
 const url = z
@@ -28,6 +29,7 @@ const army = z.object({
   listUrl: url,
 });
 const commands = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("patch"), name: text.max(100), date }),
   z.object({
     type: z.literal("profile"),
     name: text.max(100),
@@ -103,6 +105,7 @@ const commands = z.discriminatedUnion("type", [
     enemy: army,
     score: z.number().int().min(0).max(20),
     layout: z.enum(["A", "B", "C"]).optional(),
+    patchId: id.optional(),
     context: text.max(200),
     notes: z.string().max(5000),
     eventId: z.string(),
@@ -131,9 +134,11 @@ const commands = z.discriminatedUnion("type", [
   }),
 ]);
 export function viewState(s: State, actor: User): View {
+  ensurePatches(s);
   const admin = actor.role === "admin";
   return {
     me: publicUser(actor),
+    patches: [...s.patches!].sort((a, b) => b.date.localeCompare(a.date)),
     users: s.users.filter((u) => admin || u.id === actor.id).map(publicUser),
     phases: s.phases,
     games: s.games
@@ -163,6 +168,7 @@ export function viewState(s: State, actor: User): View {
   };
 }
 export function execute(s: State, actor: User, input: unknown) {
+  ensurePatches(s);
   const c = commands.parse(input);
   const admin = actor.role === "admin";
   const now = new Date().toISOString();
@@ -183,6 +189,14 @@ export function execute(s: State, actor: User, input: unknown) {
       createdAt: now,
     });
   switch (c.type) {
+    case "patch": {
+      requireAdmin();
+      if (s.patches!.some((p) => p.date === c.date))
+        throw new Error("A patch already exists for this date.");
+      s.patches!.push({ id: c.date, name: c.name, date: c.date });
+      audit("Added patch: " + c.name + " — " + c.date);
+      break;
+    }
     case "profile": {
       if (!catalogue.factions.some((f) => f.id === c.faction))
         throw new Error("Unknown faction.");
@@ -328,6 +342,8 @@ export function execute(s: State, actor: User, input: unknown) {
       break;
     }
     case "game": {
+      if (!c.patchId || !s.patches!.some((p) => p.id === c.patchId))
+        throw new Error("Choose a valid patch.");
       if (!c.layout) throw new Error("Choose layout A, B, or C.");
       const old = c.id ? s.games.find((g) => g.id === c.id) : undefined;
       if (c.id && (!old || old.userId !== actor.id))

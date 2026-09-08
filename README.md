@@ -108,3 +108,11 @@ Browser checks covered admin sign-in, roster/profile navigation, all 18 rating c
 - New Recruit refresh is a script, not an admin UI importer.
 
 The living design document is in design/product-design.md. `design/` contains the generated visual reference and implementation tokens.
+
+## Rules patches and compact matrix (8 September 2026)
+
+Admins add named release dates under Settings → Rules patches. Every game save requires a valid patch. Existing games are assigned to Ork release — 2026-09-02; the migration is idempotent and preserves subsequent patch selections. The matrix defaults to the newest patch, with an explicit All patches combined option.
+
+The compact overview shows A/B/C averages horizontally, short clickable list headers, sticky axes, and up to 24 rows/columns per page. Clicking a cell opens sample counts and layout differences. Configuration details remain available by clicking a list label.
+
+The isolated demo dataset has 264 games, 12 configurations, and eight factions. The expansion adds Necrons, Astra Militarum, Death Guard, and Chaos Knights without replacing the original demo records. All existing and added demo games use the Ork release patch.

@@ -6,9 +6,9 @@ import {
   cellKey,
   layouts,
   type MatrixArmy,
-  type Matchup,
 } from "@/lib/matchups";
-import { Empty } from "./ui";
+import { Empty, Modal } from "./ui";
+import { patchLabel } from "@/lib/patches";
 
 type Filter = { factions: string[]; lists: string[] };
 const emptyFilter = (): Filter => ({ factions: [], lists: [] });
@@ -102,127 +102,93 @@ function AxisFilter({
     </section>
   );
 }
-function ArmyLabel({ item }: { item: MatrixArmy }) {
-  return (
-    <div className="matrix-army">
-      <strong>{item.army.factionName}</strong>
-      <span>{item.army.detachmentNames.join(" + ") || "No detachments"}</span>
-      <small>{item.army.dispositionName}</small>
-    </div>
-  );
-}
-function Estimates({ cell }: { cell?: Matchup }) {
-  const observed = cell
-    ? layouts.map((l) => cell[l]).filter((e) => e.count)
-    : [];
-  const spread =
-    observed.length > 1
-      ? Math.max(...observed.map((e) => e.average)) -
-        Math.min(...observed.map((e) => e.average))
-      : null;
-  return (
-    <div className="matrix-estimates">
-      {layouts.map((layout) => {
-        const e = cell?.[layout],
-          has = !!e?.count;
-        return (
-          <div
-            key={layout}
-            className={
-              has
-                ? e.average > 10
-                  ? "matrix-win"
-                  : e.average < 10
-                    ? "matrix-loss"
-                    : "matrix-draw"
-                : "matrix-unknown"
-            }
-          >
-            <span>Layout {layout}</span>
-            <strong>{has ? e.average.toFixed(1) : "—"}</strong>
-            <small>
-              {has
-                ? e.count + " " + (e.count === 1 ? "game" : "games")
-                : "No games"}
-            </small>
-          </div>
-        );
-      })}
-      <small className="matrix-spread">
-        {spread === null
-          ? "Layout difference: —"
-          : "Layout difference: " + spread.toFixed(1) + " pts"}
-      </small>
-    </div>
-  );
+
+function tone(average: number, count: number) {
+  return !count
+    ? "matrix-unknown"
+    : average > 10
+      ? "matrix-win"
+      : average < 10
+        ? "matrix-loss"
+        : "matrix-draw";
 }
 export default function MatchupMatrix({ view }: { view: View }) {
-  const data = useMemo(() => buildMatchups(view.games), [view.games]);
+  const [patch, setPatch] = useState(view.patches[0]?.id || "");
+  const data = useMemo(
+    () => buildMatchups(view.games, patch),
+    [view.games, patch],
+  );
   const [y, setY] = useState<Filter>(emptyFilter),
     [x, setX] = useState<Filter>(emptyFilter);
   const [yPage, setYPage] = useState(0),
     [xPage, setXPage] = useState(0);
-  function filtered(filter: Filter) {
-    return data.armies.filter(
+  const [detail, setDetail] = useState<{
+    row: MatrixArmy;
+    column?: MatrixArmy;
+  } | null>(null);
+  const codes = new Map(
+    data.armies.map((a, i) => [a.key, String(i + 1).padStart(2, "0")]),
+  );
+  const filtered = (f: Filter) =>
+    data.armies.filter(
       (a) =>
-        (!filter.factions.length || filter.factions.includes(a.army.faction)) &&
-        (!filter.lists.length || filter.lists.includes(a.key)),
+        (!f.factions.length || f.factions.includes(a.army.faction)) &&
+        (!f.lists.length || f.lists.includes(a.key)),
     );
-  }
   const rows = filtered(y),
     columns = filtered(x),
-    rowSize = 12,
-    columnSize = 6;
-  const yp = Math.min(yPage, Math.max(0, Math.ceil(rows.length / rowSize) - 1)),
-    xp = Math.min(
-      xPage,
-      Math.max(0, Math.ceil(columns.length / columnSize) - 1),
-    );
-  const visibleRows = rows.slice(yp * rowSize, (yp + 1) * rowSize),
-    visibleColumns = columns.slice(xp * columnSize, (xp + 1) * columnSize);
+    size = 24;
+  const yp = Math.min(yPage, Math.max(0, Math.ceil(rows.length / size) - 1)),
+    xp = Math.min(xPage, Math.max(0, Math.ceil(columns.length / size) - 1));
+  const visibleRows = rows.slice(yp * size, (yp + 1) * size),
+    visibleColumns = columns.slice(xp * size, (xp + 1) * size);
+  function reset() {
+    setY(emptyFilter());
+    setX(emptyFilter());
+    setYPage(0);
+    setXPage(0);
+  }
+  const cell = detail?.column
+    ? data.cells.get(cellKey(detail.row.key, detail.column.key))
+    : undefined;
   return (
-    <>
-      <div className="page-heading">
+    <div className="matrix-compact">
+      <header className="page-heading">
         <div>
-          <div className="eyebrow">MATCHUP INTELLIGENCE</div>
           <h1>Matchup matrix</h1>
-          <p>Average team scores, split by table layout.</p>
-        </div>
-        <button
-          onClick={() => {
-            setY(emptyFilter());
-            setX(emptyFilter());
-            setYPage(0);
-            setXPage(0);
-          }}
-        >
-          Reset filters
-        </button>
-      </div>
-      <section className="panel padded matrix-intro">
-        <strong>
-          {data.included} games with a layout · {data.armies.length} army
-          configurations
-        </strong>
-        <p>
-          Scores are out of 20, from the{" "}
-          <strong>row (Y) army’s perspective</strong> against the column (X)
-          army. Reverse matchups use 20 minus the recorded score.
-        </p>
-        <p>
-          {view.me.role === "admin"
-            ? "Based on all players’ game logs."
-            : "Based on your own game logs."}{" "}
-          These are observed averages, not predictions for unplayed matchups.
-          Counts are journal entries.
-        </p>
-        {data.missingLayout > 0 && (
-          <p className="matrix-warning">
-            {data.missingLayout} older games have no layout recorded and are
-            excluded from the estimates. Edit those game logs to include them.
+          <p>
+            {data.included} games · {data.armies.length} lists · Scores from the
+            row army’s perspective
           </p>
-        )}
-      </section>
+        </div>
+        <button onClick={reset}>Reset filters</button>
+      </header>
+      <div className="matrix-toolbar">
+        <label className="matrix-patch">
+          Rules patch
+          <select
+            aria-label="Matrix rules patch"
+            value={patch}
+            onChange={(e) => {
+              setPatch(e.target.value);
+              reset();
+            }}
+          >
+            {view.patches.map((p) => (
+              <option value={p.id} key={p.id}>
+                {patchLabel(p)}
+              </option>
+            ))}
+            <option value="">All patches combined</option>
+          </select>
+        </label>
+        <div className="matrix-legend">
+          <span className="matrix-win">Above 10</span>
+          <span className="matrix-draw">10 draw</span>
+          <span className="matrix-loss">Below 10</span>
+          <span>— no games</span>
+        </div>
+      </div>
       <div className="matrix-filters">
         <AxisFilter
           axis="Rows (Y)"
@@ -243,73 +209,90 @@ export default function MatchupMatrix({ view }: { view: View }) {
           }}
         />
       </div>
+      <div className="matrix-caption">
+        <span>
+          Each cell: <b>A · B · C</b> layout averages. Click a cell for counts
+          and differences; click a list label for its configuration.
+        </span>
+        <span>
+          {view.me.role === "admin" ? "All players’ logs" : "Your logs only"}
+        </span>
+      </div>
+      {data.missingLayout > 0 && (
+        <p className="matrix-warning">
+          {data.missingLayout} games excluded: no layout recorded.
+        </p>
+      )}
       <section className="panel">
-        <div className="matrix-navigation">
-          <div>
-            <span>
-              Rows {rows.length ? yp * rowSize + 1 : 0}–
-              {Math.min((yp + 1) * rowSize, rows.length)} of {rows.length}
-            </span>
-            <button
-              aria-label="Previous matrix rows"
-              disabled={yp === 0}
-              onClick={() => setYPage(yp - 1)}
-            >
-              ←
-            </button>
-            <button
-              aria-label="Next matrix rows"
-              disabled={(yp + 1) * rowSize >= rows.length}
-              onClick={() => setYPage(yp + 1)}
-            >
-              →
-            </button>
+        {(rows.length > size || columns.length > size) && (
+          <div className="matrix-navigation">
+            {[
+              ["Rows", yp, rows.length, setYPage],
+              ["Columns", xp, columns.length, setXPage],
+            ].map(([label, page, count, setter]) => (
+              <div key={String(label)}>
+                <span>
+                  {String(label)} {Number(page) * size + 1}–
+                  {Math.min((Number(page) + 1) * size, Number(count))} /{" "}
+                  {Number(count)}
+                </span>
+                <button
+                  aria-label={"Previous " + label}
+                  disabled={page === 0}
+                  onClick={() => {
+                    (setter as (v: number) => void)(Number(page) - 1);
+                  }}
+                >
+                  ←
+                </button>
+                <button
+                  aria-label={"Next " + label}
+                  disabled={(Number(page) + 1) * size >= Number(count)}
+                  onClick={() => {
+                    (setter as (v: number) => void)(Number(page) + 1);
+                  }}
+                >
+                  →
+                </button>
+              </div>
+            ))}
           </div>
-          <div>
-            <span>
-              Columns {columns.length ? xp * columnSize + 1 : 0}–
-              {Math.min((xp + 1) * columnSize, columns.length)} of{" "}
-              {columns.length}
-            </span>
-            <button
-              aria-label="Previous matrix columns"
-              disabled={xp === 0}
-              onClick={() => setXPage(xp - 1)}
-            >
-              ←
-            </button>
-            <button
-              aria-label="Next matrix columns"
-              disabled={(xp + 1) * columnSize >= columns.length}
-              onClick={() => setXPage(xp + 1)}
-            >
-              →
-            </button>
-          </div>
-        </div>
+        )}
         {!rows.length || !columns.length ? (
           <Empty
             title="No matchups to display"
-            description="Log games with layouts A, B, or C, or adjust the axis filters."
+            description="Select another patch or change the army filters."
           />
         ) : (
           <div
             className="matrix-scroll"
-            tabIndex={0}
             role="region"
-            aria-label="Matchup scores by row and column army"
+            tabIndex={0}
+            aria-label="Compact matchup matrix"
           >
             <table className="matchup-table">
               <caption className="sr-only">
-                Average scores for each row army against each column army, by
-                layout A, B, and C.
+                Average scores for row army against column army on layouts A, B,
+                C
               </caption>
               <thead>
                 <tr>
-                  <th scope="col">Your score: Y → X</th>
+                  <th scope="col">Row ↓ / Opponent →</th>
                   {visibleColumns.map((a) => (
                     <th scope="col" key={a.key}>
-                      <ArmyLabel item={a} />
+                      <button
+                        className="matrix-list-label"
+                        title={description(a)}
+                        onClick={() => setDetail({ row: a })}
+                      >
+                        <b>#{codes.get(a.key)}</b>
+                        <span>{a.army.factionName}</span>
+                      </button>
+                      <div className="matrix-layout-labels">
+                        <span>A</span>
+                        <span>B</span>
+                        <span>C</span>
+                      </div>
                     </th>
                   ))}
                 </tr>
@@ -318,29 +301,140 @@ export default function MatchupMatrix({ view }: { view: View }) {
                 {visibleRows.map((row) => (
                   <tr key={row.key}>
                     <th scope="row">
-                      <ArmyLabel item={row} />
+                      <button
+                        className="matrix-list-label"
+                        title={description(row)}
+                        onClick={() => setDetail({ row })}
+                      >
+                        <b>#{codes.get(row.key)}</b>
+                        <span>{row.army.factionName}</span>
+                      </button>
                     </th>
-                    {visibleColumns.map((col) => (
-                      <td key={col.key}>
-                        <Estimates
-                          cell={data.cells.get(cellKey(row.key, col.key))}
-                        />
-                      </td>
-                    ))}
+                    {visibleColumns.map((col) => {
+                      const cell = data.cells.get(cellKey(row.key, col.key));
+                      const label =
+                        description(row) +
+                        " versus " +
+                        description(col) +
+                        ". " +
+                        layouts
+                          .map(
+                            (l) =>
+                              l +
+                              ": " +
+                              (cell?.[l].count
+                                ? cell[l].average.toFixed(1) +
+                                  " from " +
+                                  cell[l].count +
+                                  " games"
+                                : "no games"),
+                          )
+                          .join(", ");
+                      return (
+                        <td key={col.key}>
+                          <button
+                            className="matrix-cell"
+                            aria-label={label}
+                            title={label}
+                            onClick={() => setDetail({ row, column: col })}
+                          >
+                            {layouts.map((l) => (
+                              <span
+                                className={tone(
+                                  cell?.[l].average || 0,
+                                  cell?.[l].count || 0,
+                                )}
+                                key={l}
+                              >
+                                {cell?.[l].count
+                                  ? cell[l].average.toFixed(1)
+                                  : "—"}
+                              </span>
+                            ))}
+                          </button>
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-        <p className="matrix-footnote">
-          Army lists are grouped by faction + the same detachments +
-          disposition. Detachment order and list links do not split a group.
-          Layout difference is the highest minus lowest observed layout average.
-          Identical-list mirrors average both sides (10 points) and count each
-          game once.
-        </p>
       </section>
-    </>
+      <details className="matrix-method">
+        <summary>How to read this matrix</summary>
+        <p>
+          Army configurations group faction + unordered detachments +
+          disposition. List URLs do not split groups. Scores are observed
+          averages, not predictions for unplayed games. Opponent perspective
+          uses 20 minus the recorded score. Identical-list mirrors pool both
+          sides at 10 and count each game once. Counts represent journal
+          entries, including demo games. Patch filtering keeps rules versions
+          separate.
+        </p>
+      </details>
+      {detail && (
+        <Modal
+          title={detail.column ? "Matchup detail" : "Army configuration"}
+          onClose={() => setDetail(null)}
+        >
+          <h3>
+            #{codes.get(detail.row.key)} · {detail.row.army.factionName}
+          </h3>
+          <p>
+            {detail.row.army.detachmentNames.join(" + ") || "No detachments"} ·{" "}
+            {detail.row.army.dispositionName}
+          </p>
+          {detail.column && (
+            <>
+              <h3>
+                vs #{codes.get(detail.column.key)} ·{" "}
+                {detail.column.army.factionName}
+              </h3>
+              <p>
+                {detail.column.army.detachmentNames.join(" + ") ||
+                  "No detachments"}{" "}
+                · {detail.column.army.dispositionName}
+              </p>
+              <table className="matrix-detail">
+                <thead>
+                  <tr>
+                    <th>Layout</th>
+                    <th>Average /20</th>
+                    <th>Games</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {layouts.map((l) => (
+                    <tr key={l}>
+                      <th>{l}</th>
+                      <td>
+                        {cell?.[l].count ? cell[l].average.toFixed(1) : "—"}
+                      </td>
+                      <td>{cell?.[l].count || 0}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p>
+                Layout difference:{" "}
+                {(() => {
+                  const es = layouts
+                    .map((l) => cell?.[l])
+                    .filter((e) => e && e.count);
+                  return es.length > 1
+                    ? (
+                        Math.max(...es.map((e) => e!.average)) -
+                        Math.min(...es.map((e) => e!.average))
+                      ).toFixed(1) + " points"
+                    : "Not enough layouts recorded";
+                })()}
+              </p>
+            </>
+          )}
+        </Modal>
+      )}
+    </div>
   );
 }

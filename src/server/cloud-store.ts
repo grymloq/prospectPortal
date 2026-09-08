@@ -4,6 +4,7 @@ import type { State, User, View } from "@/lib/types";
 import { catalogue } from "@/lib/catalogue";
 import { databaseClient } from "./supabase";
 import { execute, viewState } from "./service";
+import { ensurePatches } from "@/lib/patches";
 
 function ensureProfile(
   state: State,
@@ -51,10 +52,11 @@ export async function cloudView(
       throw new Error("The workspace is temporarily unavailable.");
     }
     const state = data.value as State;
+    const migrated = ensurePatches(state);
     const { actor, changed } = ensureProfile(state, identity);
     if (command !== undefined) execute(state, actor, command);
     const view = viewState(state, actor);
-    if (!changed && command === undefined) return view;
+    if (!changed && !migrated && command === undefined) return view;
     const result = await db.rpc("portal_commit", {
       expected_revision: data.revision,
       next_value: state,

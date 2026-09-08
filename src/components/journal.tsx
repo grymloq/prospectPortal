@@ -1,4 +1,5 @@
 "use client";
+import { patchLabel } from "@/lib/patches";
 import { useState } from "react";
 import {
   Plus,
@@ -283,6 +284,10 @@ export default function Journal({
                   <td>
                     {g.context}
                     <small>Layout {g.layout || "not recorded"}</small>
+                    <small>
+                      {view.patches.find((p) => p.id === g.patchId)?.name ||
+                        "Unknown patch"}
+                    </small>
                   </td>
                   <td>
                     <button
@@ -326,6 +331,7 @@ export default function Journal({
                 opponent: f.get("opponent"),
                 score: Number(f.get("score")),
                 layout: f.get("layout"),
+                patchId: f.get("patchId"),
                 context: f.get("context"),
                 notes: f.get("notes"),
                 eventId: f.get("eventId"),
@@ -406,6 +412,26 @@ export default function Journal({
                   ))}
                 </select>
               </Field>
+              <Field label="Rules patch">
+                <select
+                  name="patchId"
+                  required
+                  defaultValue={
+                    edit === "new"
+                      ? view.patches[0]?.id || ""
+                      : edit.patchId || ""
+                  }
+                >
+                  <option value="" disabled>
+                    Choose a patch
+                  </option>
+                  {view.patches.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {patchLabel(p)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
               <Field label="Context">
                 <input
                   name="context"
@@ -457,6 +483,10 @@ export default function Journal({
             <p>
               {dateLabel(detail.date)} · {detail.context} · Layout{" "}
               {detail.layout || "not recorded"}
+              {" · "}
+              {view.patches.find((p) => p.id === detail.patchId)
+                ? patchLabel(view.patches.find((p) => p.id === detail.patchId)!)
+                : "Unknown patch"}
             </p>
             <Badge tone="blue">
               {detail.score} /20 · {detail.outcome}

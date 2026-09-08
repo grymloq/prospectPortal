@@ -286,3 +286,55 @@ test("failed transaction rolls back persisted state", () => {
   );
   assert.equal(readState().users[0].name, previous);
 });
+test("patch migration and administrator-controlled release dates", () => {
+  const s = structuredClone(baseline),
+    admin = s.users[0],
+    member = s.users.find((u) => u.id === "p1")!;
+  assert.equal(viewState(s, admin).patches[0].date, "2026-09-02");
+  assert.ok(viewState(s, admin).games.every((g) => g.patchId === "2026-09-02"));
+  assert.throws(
+    () =>
+      execute(s, member, { type: "patch", name: "Forged", date: "2026-10-01" }),
+    /Admin/,
+  );
+  execute(s, admin, {
+    type: "patch",
+    name: "Balance update",
+    date: "2026-10-01",
+  });
+  assert.equal(viewState(s, member).patches[0].name, "Balance update");
+  assert.throws(
+    () =>
+      execute(s, admin, {
+        type: "patch",
+        name: "Duplicate",
+        date: "2026-10-01",
+      }),
+    /already exists/,
+  );
+  assert.throws(() =>
+    execute(s, admin, { type: "patch", name: "Bad date", date: "2026-02-30" }),
+  );
+  const g = s.games.find((g) => g.userId === member.id)!;
+  assert.throws(
+    () =>
+      execute(s, member, {
+        ...g,
+        type: "game",
+        layout: "A",
+        patchId: "missing",
+      }),
+    /valid patch/,
+  );
+  execute(s, member, {
+    ...g,
+    type: "game",
+    layout: "A",
+    patchId: "2026-10-01",
+  });
+  assert.equal(s.games.find((x) => x.id === g.id)!.patchId, "2026-10-01");
+  assert.equal(
+    viewState(s, admin).games.find((x) => x.id === g.id)!.patchId,
+    "2026-10-01",
+  );
+});

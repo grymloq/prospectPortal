@@ -27,6 +27,7 @@ export type Army = {
   dispositionName: string;
 };
 export type Layout = "A" | "B" | "C";
+export type Patch = { id: string; name: string; date: string };
 export type Game = {
   id: string;
   userId: string;
@@ -36,6 +37,7 @@ export type Game = {
   enemy: Army;
   score: number;
   layout?: Layout | null;
+  patchId?: string;
   outcome: "Win" | "Draw" | "Loss";
   context: string;
   notes: string;
@@ -94,6 +96,7 @@ export type Audit = {
   createdAt: string;
 };
 export type State = {
+  patches?: Patch[];
   users: User[];
   phases: Phase[];
   games: Game[];
@@ -105,7 +108,11 @@ export type State = {
   applications: EventApplication[];
   audit: Audit[];
 };
-export type View = State & { me: User; occupancy: Record<string, number> };
+export type View = State & {
+  me: User;
+  occupancy: Record<string, number>;
+  patches: Patch[];
+};
 export const criteria = [
   "Core rules, WTC FAQ & GW FAQ",
   "Own army rules",

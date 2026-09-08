@@ -4,6 +4,7 @@ import path from "node:path";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import type { State, User } from "@/lib/types";
 import { catalogue, armySnapshot } from "@/lib/catalogue";
+import { ensurePatches } from "@/lib/patches";
 
 export function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
@@ -242,13 +243,15 @@ if (!db.prepare("SELECT id FROM app_state WHERE id=1").get())
     JSON.stringify(seed()),
   );
 export function readState(): State {
-  return JSON.parse(
+  const state: State = JSON.parse(
     (
       db.prepare("SELECT value FROM app_state WHERE id=1").get() as {
         value: string;
       }
     ).value,
   );
+  ensurePatches(state);
+  return state;
 }
 export function transaction<T>(work: (s: State) => T): T {
   db.exec("BEGIN IMMEDIATE");

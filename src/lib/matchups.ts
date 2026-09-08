@@ -22,7 +22,7 @@ const blank = (): Matchup =>
 export function cellKey(row: string, column: string) {
   return JSON.stringify([row, column]);
 }
-export function buildMatchups(games: Game[]) {
+export function buildMatchups(games: Game[], patchId?: string) {
   const armies = new Map<string, MatrixArmy>(),
     cells = new Map<string, Matchup>();
   let included = 0,
@@ -37,6 +37,7 @@ export function buildMatchups(games: Game[]) {
     cells.set(key, cell);
   }
   for (const game of games) {
+    if (patchId && game.patchId !== patchId) continue;
     const row = armyKey(game.own),
       column = armyKey(game.enemy);
     armies.set(row, { key: row, army: game.own });

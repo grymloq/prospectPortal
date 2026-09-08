@@ -100,3 +100,29 @@ test("matrix can only aggregate the games supplied by the authorized view", () =
     10,
   );
 });
+test("patch filters separate averages and list axes across rules versions", () => {
+  const data = [
+    { ...game(18, "A"), patchId: "2026-09-02" },
+    { ...game(2, "A"), patchId: "2026-10-01" },
+    { ...game(8, "B", army("Necrons"), b), patchId: "2026-10-01" },
+  ];
+  assert.equal(
+    buildMatchups(data, "2026-09-02").cells.get(
+      cellKey(armyKey(a), armyKey(b)),
+    )!.A.average,
+    18,
+  );
+  assert.equal(buildMatchups(data, "2026-09-02").armies.length, 2);
+  assert.equal(
+    buildMatchups(data, "2026-10-01").cells.get(
+      cellKey(armyKey(a), armyKey(b)),
+    )!.A.average,
+    2,
+  );
+  assert.equal(buildMatchups(data, "2026-10-01").armies.length, 3);
+  assert.equal(
+    buildMatchups(data).cells.get(cellKey(armyKey(a), armyKey(b)))!.A.average,
+    10,
+  );
+  assert.equal(buildMatchups(data, "missing").included, 0);
+});

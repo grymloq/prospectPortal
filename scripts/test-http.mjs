@@ -80,6 +80,20 @@ try {
   });
   assert.equal(player.status, 200);
   const memberView = await request("/api/state", null, player.cookie);
+  const patchCommand = {
+    type: "patch",
+    name: "HTTP test patch",
+    date: "2026-10-01",
+  };
+  const blockedPatch = await request("/api/state", patchCommand, player.cookie);
+  const createdPatch = await request("/api/state", patchCommand, admin.cookie);
+  const patchesForPlayer = await request("/api/state", null, player.cookie);
+  check("admin-only patch creation and historical backfill", () => {
+    assert.equal(blockedPatch.status, 400);
+    assert.equal(createdPatch.status, 200);
+    assert.equal(patchesForPlayer.data.patches[0].date, "2026-10-01");
+    assert.ok(memberView.data.games.every((g) => g.patchId === "2026-09-02"));
+  });
   check("private server response", () => {
     assert.equal(memberView.data.users.length, 1);
     assert.equal(memberView.data.evaluations.length, 0);
@@ -240,6 +254,7 @@ try {
     assert.equal(game.own.factionName, base.own.factionName);
     assert.equal(game.notes, "HTTP integration reflection");
     assert.equal(game.layout, "B");
+    assert.equal(game.patchId, "2026-09-02");
     assert.equal(
       game.outcome,
       game.score === 10 ? "Draw" : game.score > 10 ? "Win" : "Loss",

@@ -4,13 +4,14 @@ import { catalogue, armySnapshot, dispositionsFor } from "../src/lib/catalogue";
 import { buildMatchups, armyKey, cellKey } from "../src/lib/matchups";
 import { execute } from "../src/server/service";
 import type { State, User } from "../src/lib/types";
+import { ensurePatches, initialPatch } from "../src/lib/patches";
 
 // Explicitly invoked maintenance tool. Uses a dedicated, non-login demo profile.
 const file = process.argv[2],
   mode = process.argv[3];
-if (!file || !["seed", "remove"].includes(mode))
+if (!file || !["seed", "remove", "expand"].includes(mode))
   throw new Error(
-    "Usage: tsx scripts/demo-matrix.mts <private-env-json> seed|remove",
+    "Usage: tsx scripts/demo-matrix.mts <private-env-json> seed|expand|remove",
   );
 const env = JSON.parse(readFileSync(file, "utf8"));
 const db = createClient(
@@ -19,19 +20,30 @@ const db = createClient(
   { auth: { persistSession: false } },
 );
 const userId = "demo-matrix-practice-v1";
-const names = ["Orks", "Space Marines", "Aeldari", "Tyranids"];
+const names = [
+  "Orks",
+  "Space Marines",
+  "Aeldari",
+  "Tyranids",
+  "Necrons",
+  "Astra Militarum",
+  "Death Guard",
+  "Chaos Knights",
+];
 const armies = names.flatMap((name) => {
   const faction = catalogue.factions.find((f) => f.name === name)!;
-  return [1, name === "Tyranids" ? 3 : 2].map((count) => {
-    const detachments = faction.detachments.slice(0, count).map((d) => d.id);
-    const dispositions = dispositionsFor(faction.id, detachments);
-    return armySnapshot({
-      faction: faction.id,
-      detachments,
-      disposition: dispositions[count === 1 ? 0 : dispositions.length - 1].id,
-      listUrl: "",
-    });
-  });
+  return (names.indexOf(name) < 4 ? [1, name === "Tyranids" ? 3 : 2] : [2]).map(
+    (count) => {
+      const detachments = faction.detachments.slice(0, count).map((d) => d.id);
+      const dispositions = dispositionsFor(faction.id, detachments);
+      return armySnapshot({
+        faction: faction.id,
+        detachments,
+        disposition: dispositions[count === 1 ? 0 : dispositions.length - 1].id,
+        listUrl: "",
+      });
+    },
+  );
 });
 for (let attempt = 0; attempt < 12; attempt++) {
   const { data, error } = await db
@@ -41,8 +53,9 @@ for (let attempt = 0; attempt < 12; attempt++) {
     .single();
   if (error) throw new Error(error.message);
   const s = data.value as State;
+  ensurePatches(s);
   // Idempotent replacement/removal is limited to this explicitly named demo profile.
-  s.games = s.games.filter((g) => g.userId !== userId);
+  if (mode !== "expand") s.games = s.games.filter((g) => g.userId !== userId);
   if (mode === "remove") {
     s.users = s.users.filter((u) => u.id !== userId);
   } else {
@@ -67,6 +80,12 @@ for (let attempt = 0; attempt < 12; attempt++) {
       for (let j = i + 1; j < armies.length; j++)
         for (const [l, layout] of (["A", "B", "C"] as const).entries())
           for (let repeat = 0; repeat < 2; repeat++) {
+            if (mode === "expand" && j < 8) continue;
+            if (j >= 8 && (i >= 8 || i % 2 !== j % 2)) continue;
+            const expandedId =
+              "demo-matrix-expanded-" + i + "-" + j + "-" + l + "-" + repeat;
+            if (mode === "expand" && s.games.some((g) => g.id === expandedId))
+              continue;
             const base = 5 + ((i * 7 + j * 3) % 11),
               bias = [-3, 0, 3][l];
             const score = Math.max(
@@ -83,12 +102,15 @@ for (let attempt = 0; attempt < 12; attempt++) {
               enemy: armies[j],
               score,
               layout,
+              patchId: initialPatch.id,
               context: "DEMO · Matrix test",
               notes:
                 "SYNTHETIC DATA — invented scores for testing filters and layout averages, not real games or predictions.",
               eventId: "",
             });
-            s.games[s.games.length - 1].id = "demo-matrix-v1-" + index++;
+            s.games[s.games.length - 1].id =
+              mode === "expand" ? expandedId : "demo-matrix-v1-" + index;
+            index++;
           }
   }
   const result = await db.rpc("portal_commit", {

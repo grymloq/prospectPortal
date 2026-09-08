@@ -15,6 +15,7 @@ import { catalogue } from "@/lib/catalogue";
 import { Avatar, Badge, dateLabel } from "./ui";
 import type { Mutate } from "./workspace";
 import { factionName } from "./prospects";
+import PatchSettings from "./patch-settings";
 export default function Selection({
   view,
   mutate,
@@ -56,6 +57,8 @@ export default function Selection({
       {settings ? (
         <div className="profile-grid">
           <section className="panel padded">
+            <PatchSettings patches={view.patches} mutate={mutate} />
+            <hr />
             <h3>Selection phases</h3>
             <p>
               Rename and reorder review phases. Application stays first,
