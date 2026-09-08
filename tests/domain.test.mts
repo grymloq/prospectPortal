@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test, after } from "node:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import path from "node:path";
+mkdirSync(path.join(process.cwd(), ".local"), { recursive: true });
 const scratch = mkdtempSync(path.join(process.cwd(), ".local", "qa-"));
 process.env.TEAM_DB_PATH = path.join(scratch, "test.sqlite");
 const { readState, db, transaction } = await import("../src/server/store");
