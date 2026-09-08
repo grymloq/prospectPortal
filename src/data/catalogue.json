@@ -1,0 +1,2982 @@
+{
+  "source": "New Recruit / BSData",
+  "sourceUrl": "https://www.newrecruit.eu",
+  "retrievedAt": "2026-09-08T11:57:16.871Z",
+  "systemId": 827374861,
+  "systemRevision": 13,
+  "dispositions": [
+    {
+      "id": "31ed-50f0-6571-c4c1",
+      "name": "Disruption"
+    },
+    {
+      "id": "081d-bc07-5d4e-ab22",
+      "name": "Priority Assets"
+    },
+    {
+      "id": "7da4-f0a6-65ec-da48",
+      "name": "Purge the Foe"
+    },
+    {
+      "id": "a271-bfab-1b97-c55d",
+      "name": "Take and Hold"
+    },
+    {
+      "id": "3b81-de3e-f72c-b208",
+      "name": "Reconnaissance"
+    }
+  ],
+  "factions": [
+    {
+      "id": "2058815731",
+      "name": "Adepta Sororitas",
+      "sourceName": "Imperium - Adepta Sororitas",
+      "revision": 18,
+      "updatedAt": "2026-08-31T15:42:47.507Z",
+      "detachments": [
+        {
+          "id": "6f81-1a3e-c84e-0954",
+          "name": "Army of Faith",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "575d-76f6-2edb-22c1",
+          "name": "Bringers of Flame",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "5c81-a47b-d3a0-31e8",
+          "name": "Champions of Faith",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "3ee6-23e1-8bc0-90f7",
+          "name": "Chorus of Condemnation",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "8e26-78e2-10bd-6982",
+          "name": "Hallowed Martyrs",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "a2f5-a466-96b6-d389",
+          "name": "Penitent Host",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "0017-3a94-11f8-7fca",
+          "name": "Sacred Champions",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "f9b6-3e44-772b-8eb1",
+          "name": "Sanctified Orators",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "2461408627",
+      "name": "Adeptus Custodes",
+      "sourceName": "Imperium - Adeptus Custodes",
+      "revision": 14,
+      "updatedAt": "2026-09-01T22:42:43.709Z",
+      "detachments": [
+        {
+          "id": "a36b-bb22-1a15-2a48",
+          "name": "Auric Champions",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "3b75-a700-050c-06f5",
+          "name": "Lions of the Emperor",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "1bb5-5aba-6c8f-7afc",
+          "name": "Might of the Moritoi",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "d3ee-47e1-4540-dfe5",
+          "name": "Null Maiden Vigil",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "70eb-2978-3ad5-5901",
+          "name": "Shield Host",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "60e4-3c48-7e50-4d37",
+          "name": "Silent Hunters",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "a060-3a8d-670c-25f0",
+          "name": "Solar Spearhead",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "757a-b5ed-a43f-3cdd",
+          "name": "Talons of the Emperor",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "ebc1-90da-ce89-ee5b",
+          "name": "Tharanatoi Hammerblow",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "1915182632",
+      "name": "Adeptus Mechanicus",
+      "sourceName": "Imperium - Adeptus Mechanicus",
+      "revision": 14,
+      "updatedAt": "2026-09-07T18:55:55.951Z",
+      "detachments": [
+        {
+          "id": "02e5-7fe0-d054-0209",
+          "name": "Cohort Acquisitus",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "f67d-6f59-21b8-e1f9",
+          "name": "Cohort Cybernetica",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "e282-2b49-bd6a-679c",
+          "name": "Data-psalm Conclave",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "6d06-9e26-0d3c-5317",
+          "name": "Eradication Cohort",
+          "points": 3,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "e01f-8783-4769-2eb6",
+          "name": "Explorator Maniple",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "ce65-6b89-4a0e-4f3b",
+          "name": "Haloscreed Battleclade",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "24e2-b690-37b5-de9e",
+          "name": "Lords of the Forge",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "65e6-9ab1-6a2c-5410",
+          "name": "Luminen Auto-choir",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "7aa5-4c0c-40c3-e2a",
+          "name": "Rad-zone Corps",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "48bd-eeae-171d-a10a",
+          "name": "Skitarii Hunter Cohort",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "2512284494",
+      "name": "Adeptus Titanicus",
+      "sourceName": "Imperium - Adeptus Titanicus",
+      "revision": 2,
+      "updatedAt": "2026-08-31T15:42:47.538Z",
+      "detachments": [],
+      "titan": true
+    },
+    {
+      "id": "1194327035",
+      "name": "Aeldari",
+      "sourceName": "Xenos - Aeldari",
+      "revision": 2,
+      "updatedAt": "2026-08-31T15:42:46.660Z",
+      "detachments": [
+        {
+          "id": "a27b-ac32-f0fd-8111",
+          "name": "Armoured Warhost",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "8e89-2c14-6bf5-87bf",
+          "name": "Aspect Host",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "7224-4f3e-c557-115d",
+          "name": "Corsair Coterie",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "925e-85fb-b477-70be",
+          "name": "Devoted of Ynnead",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "d519-c125-30b5-9c55",
+          "name": "Eldritch Raiders",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "c40e-26bd-7e76-0815",
+          "name": "Fateful Performance",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "be59-ec7d-2f02-b6ec",
+          "name": "Ghosts of the Webway",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "9805-eaee-0a84-f86f",
+          "name": "Guardian Battlehost",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "8b57-c6f6-c651-65bf",
+          "name": "Path of the Outcast",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "b525-57b6-8a78-ed75",
+          "name": "Seer Council",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "5ad5-9b0d-a70e-b9ec",
+          "name": "Serpent's Brood",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "fc94-43bf-5247-8e7c",
+          "name": "Spirit Conclave",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "dcf3-cecd-ca37-4193",
+          "name": "Twilight Flickers",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "3c31-6fac-9914-827a",
+          "name": "Warhost",
+          "points": 3,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "c8a3-920b-166b-30d9",
+          "name": "Windrider Host",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "394010041",
+      "name": "Agents of the Imperium",
+      "sourceName": "Imperium - Agents of the Imperium",
+      "revision": 13,
+      "updatedAt": "2026-08-31T15:42:47.539Z",
+      "detachments": [
+        {
+          "id": "5347-93e5-b3f2-366d",
+          "name": "Imperialis Fleet",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "cfc6-5531-53cb-1964",
+          "name": "Ordo Hereticus, Purgation Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "bd6f-97c7-6ac4-8320",
+          "name": "Ordo Malleus, Daemon Hunters",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "aabf-4988-4054-bed2",
+          "name": "Ordo Xenos, Alien Hunters",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "e203-73dc-18d9-f390",
+          "name": "Veiled Blade Elimination Force",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "3188869395",
+      "name": "Astra Militarum",
+      "sourceName": "Imperium - Astra Militarum",
+      "revision": 2,
+      "updatedAt": "2026-08-31T15:42:48.050Z",
+      "detachments": [
+        {
+          "id": "57a9-88a1-84c1-e421",
+          "name": "Abhuman Auxiliaries",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "d071-6e6b-dde6-dcf4",
+          "name": "Armoured Infantry",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "7afb-a0f6-b95d-e791",
+          "name": "Bridgehead Strike",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "67ce-ebd5-b428-e4f7",
+          "name": "Combined Arms",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "1aca-af79-006f-bf56",
+          "name": "Designation Force",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "cc4e-a30b-f987-c984",
+          "name": "Grizzled Company",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "97fc-2d9c-9008-f363",
+          "name": "Hammer of the Emperor",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "05ed-772d-bd3a-a790",
+          "name": "Mechanised Assault",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "3d9f-5d9a-4a18-21aa",
+          "name": "Recon Element",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "87b5-6072-b2c5-0cdc",
+          "name": "Siege Regiment",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "419a-c366-aa63-ebb5",
+          "name": "Steel Hammer",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "142652252",
+      "name": "Black Templars",
+      "sourceName": "Imperium - Adeptus Astartes - Black Templars",
+      "revision": 3,
+      "updatedAt": "2026-09-04T10:55:58.791Z",
+      "detachments": [
+        {
+          "id": "b7d2-99c0-a2ed-3dce",
+          "name": "Anvil Siege Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "8884-ddf9-a44a-ec7a",
+          "name": "Bastion Task Force",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "3000-9a97-6f30-5a00",
+          "name": "Ceramite Sentinels",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "9d80-7508-5cd0-2f9e",
+          "name": "Companions of Vehemence",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "abb4-dc89-4e0-9150",
+          "name": "Firestorm Assault Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "0888-6943-a4db-4826",
+          "name": "Fulguris Task Force",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "d2dc-693e-b491-b16d",
+          "name": "Gladius Task Force",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "b6cd-9baf-8351-8dec",
+          "name": "Godhammer Assault Force",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "cf4f-5c50-4a22-6960",
+          "name": "Headhunter Task Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "aa86-1617-4029-fcd7",
+          "name": "Ironstorm Spearhead",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "e533-c51a-5949-a579",
+          "name": "Marshal's Household",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "72a9-ef68-b384-1421",
+          "name": "Orbital Assault Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "50ed-e07c-8f6b-b035",
+          "name": "Stormlance Task Force",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "a8c0-4163-5195-a680",
+          "name": "Subversion Assets",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "7bd3-602e-280c-ecad",
+          "name": "The Living Miracle",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "cdda-2bc8-a746-80f",
+          "name": "Vanguard Spearhead",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "6619-187e-e309-3313",
+          "name": "Vengeful Hosts",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "f148-3273-e98f-427a",
+          "name": "Vindication Task Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "1242-7b3f-a47e-503a",
+          "name": "Wrathful Procession",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "3811889199",
+      "name": "Blood Angels",
+      "sourceName": "Imperium - Adeptus Astartes - Blood Angels",
+      "revision": 4,
+      "updatedAt": "2026-09-04T16:55:58.252Z",
+      "detachments": [
+        {
+          "id": "5d64-4100-80e-c8f3",
+          "name": "1st Company Task Force",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "dcc7-f9de-d4f2-69d0",
+          "name": "Angelic Inheritors",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "b7d2-99c0-a2ed-3dce",
+          "name": "Anvil Siege Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "8884-ddf9-a44a-ec7a",
+          "name": "Bastion Task Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "3000-9a97-6f30-5a00",
+          "name": "Ceramite Sentinels",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "b611-6312-f2d4-5e13",
+          "name": "Encarmine Speartip",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "abb4-dc89-4e0-9150",
+          "name": "Firestorm Assault Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "0888-6943-a4db-4826",
+          "name": "Fulguris Task Force",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "d2dc-693e-b491-b16d",
+          "name": "Gladius Task Force",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "cf4f-5c50-4a22-6960",
+          "name": "Headhunter Task Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "aa86-1617-4029-fcd7",
+          "name": "Ironstorm Spearhead",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "ccdf-f7f2-2317-a51f",
+          "name": "Legacy of Grace",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "5ff-1ac3-bc73-8273",
+          "name": "Liberator Assault Group",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "ce39-a420-4206-827c",
+          "name": "Librarius Conclave",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "72a9-ef68-b384-1421",
+          "name": "Orbital Assault Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "d8e6-a4b2-c15f-49e2",
+          "name": "Rage-Cursed Onslaught",
+          "points": 3,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "50ed-e07c-8f6b-b035",
+          "name": "Stormlance Task Force",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "a8c0-4163-5195-a680",
+          "name": "Subversion Assets",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "657c-469d-679e-f3aa",
+          "name": "The Angelic Host",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "9d32-d514-00a8-6423",
+          "name": "The Lost Brethren",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "cdda-2bc8-a746-80f",
+          "name": "Vanguard Spearhead",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "6619-187e-e309-3313",
+          "name": "Vengeful Hosts",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "a37c-40dc-1ecb-12f7",
+          "name": "Wrath of the Doomed",
+          "points": 1,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "1418017000",
+      "name": "Chaos Daemons",
+      "sourceName": "Chaos - Chaos Daemons",
+      "revision": 2,
+      "updatedAt": "2026-08-31T15:42:46.682Z",
+      "detachments": [
+        {
+          "id": "21b4-7a36-fec6-b7ea",
+          "name": "Blood Legion",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "0dd1-86f6-d2a0-3aba",
+          "name": "Cavalcade of Chaos",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "a7cf-90fa-4093-6047",
+          "name": "Daemonic Incursion",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "24f0-3c89-41be-0675",
+          "name": "Legion of Excess",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "6d62-2c41-fb3f-7d00",
+          "name": "Lords of the Warp",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "9ad0-91ee-ae18-b5aa",
+          "name": "Plague Legion",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "dec0-c9cb-c265-cae0",
+          "name": "Scintillating Legion",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "5063-25bd-d22e-665b",
+          "name": "Shadow Legion",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "357d-d51b-f001-a33d",
+          "name": "Warptide",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "2126900523",
+      "name": "Chaos Knights",
+      "sourceName": "Chaos - Chaos Knights",
+      "revision": 2,
+      "updatedAt": "2026-08-31T15:42:46.694Z",
+      "detachments": [
+        {
+          "id": "8a80-e529-a86f-84b5",
+          "name": "Bastions of Tyranny",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "915c-3949-0da6-83c5",
+          "name": "Helhunt Lance",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "6cb5-45cf-c626-fa86",
+          "name": "Houndpack Lance",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "5d30-981f-43b8-81be",
+          "name": "Hunting Warpack",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "7fe8-de91-8976-e705",
+          "name": "Iconoclast Fiefdom",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "812b-f056-ec50-2c3c",
+          "name": "Infernal Lance",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "e5ab-9622-8b2a-84d0",
+          "name": "Lords of Dread",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "603e-6bcd-927f-cb70",
+          "name": "Traitoris Lance",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "4171985849",
+      "name": "Chaos Space Marines",
+      "sourceName": "Chaos - Chaos Space Marines",
+      "revision": 14,
+      "updatedAt": "2026-09-03T22:55:58.085Z",
+      "detachments": [
+        {
+          "id": "9e8b-efe2-7ff2-6b36",
+          "name": "Cabal of Chaos",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "6cec-4da4-a89d-fb98",
+          "name": "Chaos Cult",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "1c30-e099-1aca-8708",
+          "name": "Creations of Bile",
+          "points": 3,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "5f38-038e-a1e9-a457",
+          "name": "Cult of the Arkifane",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "4972-a08d-9d88-5f7a",
+          "name": "Deceptors",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "c6ca-bde2-8304-c97c",
+          "name": "Devotees of Destruction",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "d11c-e4a9-32c7-b761",
+          "name": "Dread Talons",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "89a5-170b-1bf3-7016",
+          "name": "Fellhammer Siege-host",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "44d2-04f0-309d-575e",
+          "name": "Huron's Marauders",
+          "points": 3,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "a914-9458-c5f8-0bbc",
+          "name": "Murdertalon Raiders",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "f96f-5896-93c2-fc05",
+          "name": "Nightmare Hunt",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "53dd-68f7-7c1f-3e5d",
+          "name": "Pactbound Zealots",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "b906-aa42-9cd9-c6f2",
+          "name": "Renegade Raiders",
+          "points": 3,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "2cf4-ac9c-5417-10ac",
+          "name": "Renegade Warband",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "a523-e0fe-4e1c-bc70",
+          "name": "Soulforged Warpack",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "a5ea-d708-db75-226c",
+          "name": "Veterans of the Long War",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "d545-85a4-65d6-2f59",
+          "name": "Warpstrike Champions",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "331927583",
+      "name": "Dark Angels",
+      "sourceName": "Imperium - Adeptus Astartes - Dark Angels",
+      "revision": 6,
+      "updatedAt": "2026-09-04T16:55:58.260Z",
+      "detachments": [
+        {
+          "id": "5d64-4100-80e-c8f3",
+          "name": "1st Company Task Force",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "b7d2-99c0-a2ed-3dce",
+          "name": "Anvil Siege Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "8884-ddf9-a44a-ec7a",
+          "name": "Bastion Task Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "3000-9a97-6f30-5a00",
+          "name": "Ceramite Sentinels",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "41e6-d47c-5e68-e066",
+          "name": "Company of Hunters",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "6357-b8d4-0b19-41a8",
+          "name": "Dark Age Arsenal",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "64a6-9332-de28-21a9",
+          "name": "Darkflight Pursuit",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "abb4-dc89-4e0-9150",
+          "name": "Firestorm Assault Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "0888-6943-a4db-4826",
+          "name": "Fulguris Task Force",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "d2dc-693e-b491-b16d",
+          "name": "Gladius Task Force",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "cf4f-5c50-4a22-6960",
+          "name": "Headhunter Task Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "a141-49c8-fd84-4c6d",
+          "name": "Inner Circle Task Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "03a7-d965-5d2c-e346",
+          "name": "Interrogation Conclave",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "aa86-1617-4029-fcd7",
+          "name": "Ironstorm Spearhead",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "ce39-a420-4206-827c",
+          "name": "Librarius Conclave",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "bef5-925f-b143-d219",
+          "name": "Lion's Blade Task Force",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "72a9-ef68-b384-1421",
+          "name": "Orbital Assault Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "50ed-e07c-8f6b-b035",
+          "name": "Stormlance Task Force",
+          "points": 3,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "a8c0-4163-5195-a680",
+          "name": "Subversion Assets",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "3caf-c168-c372-51b1",
+          "name": "Unforgiven Task Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "cdda-2bc8-a746-80f",
+          "name": "Vanguard Spearhead",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "6619-187e-e309-3313",
+          "name": "Vengeful Hosts",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "9d23-833a-17cb-2d7d",
+          "name": "Wrath of the Rock",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "253717870",
+      "name": "Death Guard",
+      "sourceName": "Chaos - Death Guard",
+      "revision": 12,
+      "updatedAt": "2026-08-31T20:42:46.481Z",
+      "detachments": [
+        {
+          "id": "fd92-8b6d-0ef2-e14d",
+          "name": "Champions of Contagion",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "e58e-f981-24ed-6cd4",
+          "name": "Contagion Engines",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "f038-29f5-5625-6cc1",
+          "name": "Death Lord's Chosen",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "df4a-2ead-43d5-ea61",
+          "name": "Flyblown Host",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "18b0-2d87-798f-ef1c",
+          "name": "Mortarion's Hammer",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "c437-a67d-c0cd-11ab",
+          "name": "Paragons of Putrescence",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "7a84-2212-be14-a713",
+          "name": "Shamblerot Vectorium",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "69e5-13c7-06bf-d454",
+          "name": "Tallyband Summoners",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "e2ff-ece0-6cbb-be05",
+          "name": "Virulent Vectorium",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "1708061280",
+      "name": "Deathwatch",
+      "sourceName": "Imperium - Adeptus Astartes - Deathwatch",
+      "revision": 6,
+      "updatedAt": "2026-09-04T11:55:56.388Z",
+      "detachments": [
+        {
+          "id": "5d64-4100-80e-c8f3",
+          "name": "1st Company Task Force",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "b7d2-99c0-a2ed-3dce",
+          "name": "Anvil Siege Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "8884-ddf9-a44a-ec7a",
+          "name": "Bastion Task Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "4459-12f0-bc-142b",
+          "name": "Black Spear Task Force",
+          "points": 3,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "3000-9a97-6f30-5a00",
+          "name": "Ceramite Sentinels",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "abb4-dc89-4e0-9150",
+          "name": "Firestorm Assault Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "0888-6943-a4db-4826",
+          "name": "Fulguris Task Force",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "d2dc-693e-b491-b16d",
+          "name": "Gladius Task Force",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "cf4f-5c50-4a22-6960",
+          "name": "Headhunter Task Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "aa86-1617-4029-fcd7",
+          "name": "Ironstorm Spearhead",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "ce39-a420-4206-827c",
+          "name": "Librarius Conclave",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "72a9-ef68-b384-1421",
+          "name": "Orbital Assault Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "50ed-e07c-8f6b-b035",
+          "name": "Stormlance Task Force",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "a8c0-4163-5195-a680",
+          "name": "Subversion Assets",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "cdda-2bc8-a746-80f",
+          "name": "Vanguard Spearhead",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "6619-187e-e309-3313",
+          "name": "Vengeful Hosts",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "1007559722",
+      "name": "Drukhari",
+      "sourceName": "Xenos - Drukhari",
+      "revision": 2,
+      "updatedAt": "2026-08-31T15:42:46.663Z",
+      "detachments": [
+        {
+          "id": "47c7-52f9-c23d-1e4e",
+          "name": "Covenite Coterie",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "7d47-b713-955c-1bf0",
+          "name": "Exhibition of Slaughter",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "c649-7147-7e69-5db6",
+          "name": "Kabalite Agonysts",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "b033-0c01-012e-fcca",
+          "name": "Kabalite Cartel",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "e299-e560-ccec-eeb3",
+          "name": "Realspace Raiders",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "e688-8140-bc36-3cee",
+          "name": "Reaper's Wager",
+          "points": 3,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "7596-e2c8-71fb-1b4f",
+          "name": "Skysplinter Assault",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "7008-2116-f479-a791",
+          "name": "Spectacle of Spite",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "1653-ad59-40e0-a08f",
+          "name": "Tools of Torment",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "708977740",
+      "name": "Emperor's Children",
+      "sourceName": "Chaos - Emperor's Children",
+      "revision": 9,
+      "updatedAt": "2026-08-31T15:42:46.745Z",
+      "detachments": [
+        {
+          "id": "3c9e-2156-254e-66e8",
+          "name": "Carnival of Excess",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "9db8-cf55-983f-9671",
+          "name": "Coterie of the Conceited",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "12b9-2601-5150-66f4",
+          "name": "Court of the Phoenician",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "8aff-09e5-5ff7-e9f2",
+          "name": "Elegant Brutes",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "9a0b-73fb-c56f-babc",
+          "name": "Frenzied Host",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "ae45-3e0d-eac7-7edb",
+          "name": "Mercurial Host",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "faf3-053d-d290-a3d9",
+          "name": "Peerless Bladesmen",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "26ff-306a-fca9-ebfd",
+          "name": "Rapid Evisceration",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "8635-b1cc-e7bb-e8a1",
+          "name": "Slaanesh's Chosen",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "68d6-d094-a5d3-9bb5",
+          "name": "Spectacle of Slaughter",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "3339098360",
+      "name": "Genestealer Cults",
+      "sourceName": "Xenos - Genestealer Cults",
+      "revision": 3,
+      "updatedAt": "2026-08-31T15:42:47.496Z",
+      "detachments": [
+        {
+          "id": "ff11-0fa4-2950-380e",
+          "name": "Biosanctic Broodsurge",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "0a59-1d64-257c-04fb",
+          "name": "Brood Brother Auxilia",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "cb2f-554e-1162-75d5",
+          "name": "Final Day",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "fc4a-2c42-6f33-0347",
+          "name": "Heroes of the Uprising",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "0a79-5968-68f0-56b5",
+          "name": "Host of Ascension",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "59e2-4fec-2b00-b1e8",
+          "name": "Outlander Claw",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "7acd-d099-e648-0838",
+          "name": "Purestrain Broodswarm",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "536a-b3ea-7597-81bb",
+          "name": "Xenocreed Congregation",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "deed-cbf8-1ac5-0294",
+          "name": "Xenocult Masses",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "3875817488",
+      "name": "Grey Knights",
+      "sourceName": "Imperium - Grey Knights",
+      "revision": 2,
+      "updatedAt": "2026-08-31T15:42:48.073Z",
+      "detachments": [
+        {
+          "id": "45aa-c450-8fb0-92c2",
+          "name": "Argent Assault",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "9ed8-0b64-4e6a-5733",
+          "name": "Augurium Task Force",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "1eb7-d49c-5fd4-9906",
+          "name": "Banishers",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "3f06-4e57-edb4-28e5",
+          "name": "Brotherhood Strike",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "cc43-5f22-04f2-5c31",
+          "name": "Fires of Purgation",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "bcb7-c2a7-e7fb-3aae",
+          "name": "Hallowed Conclave",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "b96b-6cb7-211b-e744",
+          "name": "Immaterial Interdiction",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "fb9d-20f7-3a78-22a3",
+          "name": "Sanctic Spearhead",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "ce9d-e896-d9bc-767c",
+          "name": "Warpbane Task Force",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "2373215974",
+      "name": "Imperial Fists",
+      "sourceName": "Imperium - Adeptus Astartes - Imperial Fists",
+      "revision": 3,
+      "updatedAt": "2026-09-04T16:55:58.265Z",
+      "detachments": [
+        {
+          "id": "5d64-4100-80e-c8f3",
+          "name": "1st Company Task Force",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "b7d2-99c0-a2ed-3dce",
+          "name": "Anvil Siege Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "8884-ddf9-a44a-ec7a",
+          "name": "Bastion Task Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "3000-9a97-6f30-5a00",
+          "name": "Ceramite Sentinels",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "1dea-4c70-8d4d-3415",
+          "name": "Emperor's Shield",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "abb4-dc89-4e0-9150",
+          "name": "Firestorm Assault Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "0888-6943-a4db-4826",
+          "name": "Fulguris Task Force",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "d2dc-693e-b491-b16d",
+          "name": "Gladius Task Force",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "cf4f-5c50-4a22-6960",
+          "name": "Headhunter Task Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "aa86-1617-4029-fcd7",
+          "name": "Ironstorm Spearhead",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "ce39-a420-4206-827c",
+          "name": "Librarius Conclave",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "72a9-ef68-b384-1421",
+          "name": "Orbital Assault Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "50ed-e07c-8f6b-b035",
+          "name": "Stormlance Task Force",
+          "points": 3,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "a8c0-4163-5195-a680",
+          "name": "Subversion Assets",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "cdda-2bc8-a746-80f",
+          "name": "Vanguard Spearhead",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "6619-187e-e309-3313",
+          "name": "Vengeful Hosts",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "1799226443",
+      "name": "Imperial Knights",
+      "sourceName": "Imperium - Imperial Knights",
+      "revision": 2,
+      "updatedAt": "2026-08-31T15:42:48.092Z",
+      "detachments": [
+        {
+          "id": "d3a1-4b10-4d2c-d44f",
+          "name": "Dominus Foebreakers",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "4e8e-50db-0d32-423c",
+          "name": "Freeblade Company",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "884c-fbb7-9f22-1297",
+          "name": "Gate Warden Lance",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "9a4a-a4c8-a16a-c969",
+          "name": "Questor Forgepact",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "a692-b024-09d9-b79f",
+          "name": "Questoris Companions",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "d469-239c-7e4c-4210",
+          "name": "Spearhead-at-Arms",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "9671-eaea-ccf2-c122",
+          "name": "Throne-bonded Outriders",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "e424-58f3-8e79-19a6",
+          "name": "Valourstrike Lance",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "2663644003",
+      "name": "Iron Hands",
+      "sourceName": "Imperium - Adeptus Astartes - Iron Hands",
+      "revision": 3,
+      "updatedAt": "2026-08-31T15:42:48.094Z",
+      "detachments": [
+        {
+          "id": "5d64-4100-80e-c8f3",
+          "name": "1st Company Task Force",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "b7d2-99c0-a2ed-3dce",
+          "name": "Anvil Siege Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "8884-ddf9-a44a-ec7a",
+          "name": "Bastion Task Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "3000-9a97-6f30-5a00",
+          "name": "Ceramite Sentinels",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "abb4-dc89-4e0-9150",
+          "name": "Firestorm Assault Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "0888-6943-a4db-4826",
+          "name": "Fulguris Task Force",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "d2dc-693e-b491-b16d",
+          "name": "Gladius Task Force",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "2496-d271-a92f-d1c0",
+          "name": "Hammer of Avernii",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "cf4f-5c50-4a22-6960",
+          "name": "Headhunter Task Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "aa86-1617-4029-fcd7",
+          "name": "Ironstorm Spearhead",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "ce39-a420-4206-827c",
+          "name": "Librarius Conclave",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "72a9-ef68-b384-1421",
+          "name": "Orbital Assault Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "50ed-e07c-8f6b-b035",
+          "name": "Stormlance Task Force",
+          "points": 3,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "a8c0-4163-5195-a680",
+          "name": "Subversion Assets",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "cdda-2bc8-a746-80f",
+          "name": "Vanguard Spearhead",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "6619-187e-e309-3313",
+          "name": "Vengeful Hosts",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "3439666802",
+      "name": "Leagues of Votann",
+      "sourceName": "Xenos - Leagues of Votann",
+      "revision": 6,
+      "updatedAt": "2026-08-31T15:42:48.975Z",
+      "detachments": [
+        {
+          "id": "39c2-616a-92c8-ad9d",
+          "name": "Armoured Trailblazers",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "437f-0cb8-194f-a716",
+          "name": "Brandfast Oathband",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "faf5-7477-8cdc-679f",
+          "name": "Dêlve Assault Shift",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "273e-953c-a337-ec5d",
+          "name": "Farseekers",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "1077-70a1-0570-5685",
+          "name": "Hearthband",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "768a-d0b6-e9a1-c221",
+          "name": "Hearthfyre Arsenal",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "ccdf-fb88-9ae3-aa6c",
+          "name": "Hearthguard Covenant",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "b36b-1a84-3f57-2063",
+          "name": "Mercenary Oathband",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "01b8-fa17-620e-8e79",
+          "name": "Needgaârd Oathband",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "e73f-ac86-44b1-c3f2",
+          "name": "Persecution Prospect",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "1694145926",
+      "name": "Necrons",
+      "sourceName": "Xenos - Necrons",
+      "revision": 20,
+      "updatedAt": "2026-09-07T18:55:55.966Z",
+      "detachments": [
+        {
+          "id": "6493-9079-727d-d95f",
+          "name": "Annihilation Legion",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "9ebf-2bbd-6059-1d40",
+          "name": "Awakened Dynasty",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "aed9-cb3b-1d0c-f87d",
+          "name": "Canoptek Court",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "1de5-2462-f59c-db94",
+          "name": "Cryptek Conclave",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "c4ee-83c7-812c-5ff0",
+          "name": "Cursed Legion",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "ec2e-3289-5a4a-d5a6",
+          "name": "Hand of the Dynasty",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "8861-5385-8fd1-dfee",
+          "name": "Hypercrypt Legion",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "163f-63bd-f2e1-5e7",
+          "name": "Obeisance Phalanx",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "1707-57c5-676e-90d9",
+          "name": "Pantheon of Woe",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "51c2-e233-ea51-14df",
+          "name": "Skyshroud Spearhead",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "e0fd-c955-4822-6dba",
+          "name": "Starshatter Arsenal",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "7e16-552d-f3a9-035f",
+          "name": "The Phaeron's Armoury",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "3898668199",
+      "name": "Orks",
+      "sourceName": "Xenos - Orks",
+      "revision": 3,
+      "updatedAt": "2026-09-07T14:55:57.618Z",
+      "detachments": [
+        {
+          "id": "63cc-721f-b263-9d4a",
+          "name": "Blitz Brigade",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "09b2-b286-7608-d613",
+          "name": "Brute Bosses",
+          "points": 1,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "4b17-a73a-7a0a-a265",
+          "name": "Bully Boyz",
+          "points": 1,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "80e6-2190-9767-a7ed",
+          "name": "Da Big Hunt",
+          "points": 1,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "807c-9732-5465-5ca5",
+          "name": "Dread Mob",
+          "points": 1,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "7c3c-fb9c-8689-8c7a",
+          "name": "Flyboyz",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "795f-b961-9504-bd08",
+          "name": "Green Tide",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "b404-44f-e9b4-7fe2",
+          "name": "Kult of Speed",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "9ae4-56d1-1fd8-adcf",
+          "name": "Madcap Meks",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "7b06-be3a-9754-1bd4",
+          "name": "Runt Swarm",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "fca1-ecdf-4e4a-df41",
+          "name": "Shoota Boyz",
+          "points": 1,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "fdd5-9868-a9ee-e9f1",
+          "name": "Taktikal Brigade",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "496c-ddb9-3e71-e0b3",
+          "name": "War Horde",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d", "7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "f782-e3f1-c132-fe52",
+          "name": "Wreckas",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "1b34-af6b-8900-61b5",
+          "name": "Wurrband",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "61125968",
+      "name": "Raven Guard",
+      "sourceName": "Imperium - Adeptus Astartes - Raven Guard",
+      "revision": 3,
+      "updatedAt": "2026-08-31T15:42:48.916Z",
+      "detachments": [
+        {
+          "id": "5d64-4100-80e-c8f3",
+          "name": "1st Company Task Force",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "b7d2-99c0-a2ed-3dce",
+          "name": "Anvil Siege Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "8884-ddf9-a44a-ec7a",
+          "name": "Bastion Task Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "3000-9a97-6f30-5a00",
+          "name": "Ceramite Sentinels",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "abb4-dc89-4e0-9150",
+          "name": "Firestorm Assault Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "0888-6943-a4db-4826",
+          "name": "Fulguris Task Force",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "d2dc-693e-b491-b16d",
+          "name": "Gladius Task Force",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "cf4f-5c50-4a22-6960",
+          "name": "Headhunter Task Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "aa86-1617-4029-fcd7",
+          "name": "Ironstorm Spearhead",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "ce39-a420-4206-827c",
+          "name": "Librarius Conclave",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "72a9-ef68-b384-1421",
+          "name": "Orbital Assault Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "dd81-2af4-e7d9-bd07",
+          "name": "Shadowmark Talon",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "50ed-e07c-8f6b-b035",
+          "name": "Stormlance Task Force",
+          "points": 3,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "a8c0-4163-5195-a680",
+          "name": "Subversion Assets",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "cdda-2bc8-a746-80f",
+          "name": "Vanguard Spearhead",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "6619-187e-e309-3313",
+          "name": "Vengeful Hosts",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "3812267311",
+      "name": "Salamanders",
+      "sourceName": "Imperium - Adeptus Astartes - Salamanders",
+      "revision": 4,
+      "updatedAt": "2026-09-04T16:55:58.267Z",
+      "detachments": [
+        {
+          "id": "5d64-4100-80e-c8f3",
+          "name": "1st Company Task Force",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "b7d2-99c0-a2ed-3dce",
+          "name": "Anvil Siege Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "8884-ddf9-a44a-ec7a",
+          "name": "Bastion Task Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "3000-9a97-6f30-5a00",
+          "name": "Ceramite Sentinels",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "abb4-dc89-4e0-9150",
+          "name": "Firestorm Assault Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "e073-8fe8-5b59-48f0",
+          "name": "Forgefather's Seekers",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "0888-6943-a4db-4826",
+          "name": "Fulguris Task Force",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "d2dc-693e-b491-b16d",
+          "name": "Gladius Task Force",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "cf4f-5c50-4a22-6960",
+          "name": "Headhunter Task Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "aa86-1617-4029-fcd7",
+          "name": "Ironstorm Spearhead",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "ce39-a420-4206-827c",
+          "name": "Librarius Conclave",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "72a9-ef68-b384-1421",
+          "name": "Orbital Assault Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "50ed-e07c-8f6b-b035",
+          "name": "Stormlance Task Force",
+          "points": 3,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "a8c0-4163-5195-a680",
+          "name": "Subversion Assets",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "cdda-2bc8-a746-80f",
+          "name": "Vanguard Spearhead",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "6619-187e-e309-3313",
+          "name": "Vengeful Hosts",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "455211524",
+      "name": "Space Marines",
+      "sourceName": "Imperium - Adeptus Astartes - Space Marines",
+      "revision": 12,
+      "updatedAt": "2026-09-04T16:55:58.269Z",
+      "detachments": [
+        {
+          "id": "5d64-4100-80e-c8f3",
+          "name": "1st Company Task Force",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "b7d2-99c0-a2ed-3dce",
+          "name": "Anvil Siege Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "8884-ddf9-a44a-ec7a",
+          "name": "Bastion Task Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "3000-9a97-6f30-5a00",
+          "name": "Ceramite Sentinels",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "abb4-dc89-4e0-9150",
+          "name": "Firestorm Assault Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "0888-6943-a4db-4826",
+          "name": "Fulguris Task Force",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "d2dc-693e-b491-b16d",
+          "name": "Gladius Task Force",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "cf4f-5c50-4a22-6960",
+          "name": "Headhunter Task Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "aa86-1617-4029-fcd7",
+          "name": "Ironstorm Spearhead",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "ce39-a420-4206-827c",
+          "name": "Librarius Conclave",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "72a9-ef68-b384-1421",
+          "name": "Orbital Assault Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "50ed-e07c-8f6b-b035",
+          "name": "Stormlance Task Force",
+          "points": 3,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "a8c0-4163-5195-a680",
+          "name": "Subversion Assets",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "cdda-2bc8-a746-80f",
+          "name": "Vanguard Spearhead",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "6619-187e-e309-3313",
+          "name": "Vengeful Hosts",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "2975519365",
+      "name": "Space Wolves",
+      "sourceName": "Imperium - Adeptus Astartes - Space Wolves",
+      "revision": 7,
+      "updatedAt": "2026-09-04T16:55:58.315Z",
+      "detachments": [
+        {
+          "id": "5d64-4100-80e-c8f3",
+          "name": "1st Company Task Force",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "b7d2-99c0-a2ed-3dce",
+          "name": "Anvil Siege Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "8884-ddf9-a44a-ec7a",
+          "name": "Bastion Task Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "3000-9a97-6f30-5a00",
+          "name": "Ceramite Sentinels",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "afb4-59c7-fa93-55f6",
+          "name": "Champions of Fenris",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "abb4-dc89-4e0-9150",
+          "name": "Firestorm Assault Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "0888-6943-a4db-4826",
+          "name": "Fulguris Task Force",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "d2dc-693e-b491-b16d",
+          "name": "Gladius Task Force",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "cf4f-5c50-4a22-6960",
+          "name": "Headhunter Task Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "aa86-1617-4029-fcd7",
+          "name": "Ironstorm Spearhead",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "86b1-dc36-0d18-477a",
+          "name": "Legends of Saga and Song",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "ce39-a420-4206-827c",
+          "name": "Librarius Conclave",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "72a9-ef68-b384-1421",
+          "name": "Orbital Assault Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "98ed-f58a-3e6e-63a6",
+          "name": "Saga of the Beastslayer",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "41dc-6769-c30c-b96c",
+          "name": "Saga of the Bold",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "bc26-5cb8-f5fb-2760",
+          "name": "Saga of the Great Wolf",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "31c2-3bbc-d0b2-ba92",
+          "name": "Saga of the Hunter",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "50ed-e07c-8f6b-b035",
+          "name": "Stormlance Task Force",
+          "points": 3,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "a8c0-4163-5195-a680",
+          "name": "Subversion Assets",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "cdda-2bc8-a746-80f",
+          "name": "Vanguard Spearhead",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "6619-187e-e309-3313",
+          "name": "Vengeful Hosts",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "a2b8-4100-0c51-29af",
+          "name": "Veterans of the Fang",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "3882515956",
+      "name": "T'au Empire",
+      "sourceName": "Xenos - T'au Empire",
+      "revision": 3,
+      "updatedAt": "2026-08-31T15:42:49.773Z",
+      "detachments": [
+        {
+          "id": "4417-6fdc-a5d9-cdf7",
+          "name": "Advanced Acquisition Cadre",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "97bc-1349-fb9d-c04f",
+          "name": "Auxiliary Cadre",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "1520-c344-f4fe-b414",
+          "name": "Experimental Prototype Cadre",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "e366-3583-f47a-986e",
+          "name": "Kauyon",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "452e-5b5b-cdbc-c94a",
+          "name": "Kroot Hunting Pack",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "6aea-8ba5-978e-8def",
+          "name": "Mont'ka",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "3bae-cf7-b9e3-4f00",
+          "name": "Retaliation Cadre",
+          "points": 3,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "164965956",
+      "name": "Thousand Sons",
+      "sourceName": "Chaos - Thousand Sons",
+      "revision": 12,
+      "updatedAt": "2026-08-31T20:42:46.495Z",
+      "detachments": [
+        {
+          "id": "6acc-9928-2b67-73c3",
+          "name": "Changehost of Deceit",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "9aba-cb08-cd38-9e01",
+          "name": "Grand Coven",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "7b92-cca6-0617-1b6d",
+          "name": "Hexwarp Thrallband",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "4b8b-16b7-091d-7b6f",
+          "name": "Ritual of Regeneration",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "7510-5cb8-60fe-61a0",
+          "name": "Rubricae Phalanx",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "b5a7-4856-7c39-0c86",
+          "name": "Sekhetar Cohort",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "cec5-f3d2-05cb-212b",
+          "name": "Servants of Change",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "8839-1789-36e7-b66a",
+          "name": "Warpforged Cabal",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "5be7-3aa8-5d64-cbaf",
+          "name": "Warpmeld Pact",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "3004710143",
+      "name": "Titanicus Traitoris",
+      "sourceName": "Chaos - Titanicus Traitoris",
+      "revision": 2,
+      "updatedAt": "2026-08-31T15:42:47.484Z",
+      "detachments": [],
+      "titan": true
+    },
+    {
+      "id": "1071245710",
+      "name": "Tyranids",
+      "sourceName": "Xenos - Tyranids",
+      "revision": 2,
+      "updatedAt": "2026-08-31T15:42:49.790Z",
+      "detachments": [
+        {
+          "id": "cf1b-eb18-c465-27a5",
+          "name": "Ambush Predators",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "bba-65f6-a4d1-66ae",
+          "name": "Assimilation Swarm",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "850e-bee1-4845-820d",
+          "name": "Crusher Stampede",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "c2fe-bf23-bf24-aa43",
+          "name": "Invasion Fleet",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "731f-1524-da02-945b",
+          "name": "Subterranean Assault",
+          "points": 3,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "16ff-a068-4c31-285a",
+          "name": "Synaptic Nexus",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "8d8b-a030-83d5-f4e6",
+          "name": "Talons of the Norn Queen",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "4cd9-313f-cd9b-c85a",
+          "name": "Unending Swarm",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "f773-f91c-2999-c7e1",
+          "name": "Vanguard Onslaught",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "7416-b7cc-fdbf-5bf0",
+          "name": "Warrior Bioform Onslaught",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "599543230",
+      "name": "Ultramarines",
+      "sourceName": "Imperium - Adeptus Astartes - Ultramarines",
+      "revision": 3,
+      "updatedAt": "2026-09-04T11:55:56.440Z",
+      "detachments": [
+        {
+          "id": "5d64-4100-80e-c8f3",
+          "name": "1st Company Task Force",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "b7d2-99c0-a2ed-3dce",
+          "name": "Anvil Siege Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "8884-ddf9-a44a-ec7a",
+          "name": "Bastion Task Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "6d9d-6462-1738-6bb3",
+          "name": "Blade of Ultramar",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "3000-9a97-6f30-5a00",
+          "name": "Ceramite Sentinels",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "abb4-dc89-4e0-9150",
+          "name": "Firestorm Assault Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "0888-6943-a4db-4826",
+          "name": "Fulguris Task Force",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "d2dc-693e-b491-b16d",
+          "name": "Gladius Task Force",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "cf4f-5c50-4a22-6960",
+          "name": "Headhunter Task Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "aa86-1617-4029-fcd7",
+          "name": "Ironstorm Spearhead",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "ce39-a420-4206-827c",
+          "name": "Librarius Conclave",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "72a9-ef68-b384-1421",
+          "name": "Orbital Assault Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "0b71-29ad-7485-83bd",
+          "name": "Reclamation Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "50ed-e07c-8f6b-b035",
+          "name": "Stormlance Task Force",
+          "points": 3,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "a8c0-4163-5195-a680",
+          "name": "Subversion Assets",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "cdda-2bc8-a746-80f",
+          "name": "Vanguard Spearhead",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "6619-187e-e309-3313",
+          "name": "Vengeful Hosts",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "1852695118",
+      "name": "White Scars",
+      "sourceName": "Imperium - Adeptus Astartes - White Scars",
+      "revision": 4,
+      "updatedAt": "2026-09-04T16:55:58.324Z",
+      "detachments": [
+        {
+          "id": "5d64-4100-80e-c8f3",
+          "name": "1st Company Task Force",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "b7d2-99c0-a2ed-3dce",
+          "name": "Anvil Siege Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "8884-ddf9-a44a-ec7a",
+          "name": "Bastion Task Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "3000-9a97-6f30-5a00",
+          "name": "Ceramite Sentinels",
+          "points": 3,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "abb4-dc89-4e0-9150",
+          "name": "Firestorm Assault Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "0888-6943-a4db-4826",
+          "name": "Fulguris Task Force",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "d2dc-693e-b491-b16d",
+          "name": "Gladius Task Force",
+          "points": 3,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "cf4f-5c50-4a22-6960",
+          "name": "Headhunter Task Force",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "aa86-1617-4029-fcd7",
+          "name": "Ironstorm Spearhead",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "ce39-a420-4206-827c",
+          "name": "Librarius Conclave",
+          "points": 1,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "72a9-ef68-b384-1421",
+          "name": "Orbital Assault Force",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "0256-e74f-0e54-3e45",
+          "name": "Spearpoint Task Force",
+          "points": 2,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "50ed-e07c-8f6b-b035",
+          "name": "Stormlance Task Force",
+          "points": 3,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "a8c0-4163-5195-a680",
+          "name": "Subversion Assets",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "cdda-2bc8-a746-80f",
+          "name": "Vanguard Spearhead",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "6619-187e-e309-3313",
+          "name": "Vengeful Hosts",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        }
+      ],
+      "titan": false
+    },
+    {
+      "id": "3934587149",
+      "name": "World Eaters",
+      "sourceName": "Chaos - World Eaters",
+      "revision": 10,
+      "updatedAt": "2026-08-31T15:42:47.486Z",
+      "detachments": [
+        {
+          "id": "3490-ec82-70b3-c5cf",
+          "name": "Berzerker Warband",
+          "points": 3,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "6e10-ae52-9955-07fb",
+          "name": "Brazen Engines",
+          "points": 1,
+          "dispositions": ["31ed-50f0-6571-c4c1"]
+        },
+        {
+          "id": "0985-28ae-cf24-2fba",
+          "name": "Butchers of Khorne",
+          "points": 1,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "9c45-483a-44b9-536c",
+          "name": "Cult of Blood",
+          "points": 2,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        },
+        {
+          "id": "8a29-5bbd-3ee6-b64a",
+          "name": "Goretrack Onslaught",
+          "points": 2,
+          "dispositions": ["a271-bfab-1b97-c55d"]
+        },
+        {
+          "id": "1558-660f-466b-a087",
+          "name": "Khorne Daemonkin",
+          "points": 2,
+          "dispositions": ["3b81-de3e-f72c-b208"]
+        },
+        {
+          "id": "dda8-a874-feac-1f81",
+          "name": "Possessed Slaughterband",
+          "points": 2,
+          "dispositions": ["7da4-f0a6-65ec-da48"]
+        },
+        {
+          "id": "70d9-0c7a-6b46-65fa",
+          "name": "Vessels of Wrath",
+          "points": 1,
+          "dispositions": ["081d-bc07-5d4e-ab22"]
+        }
+      ],
+      "titan": false
+    }
+  ],
+  "note": "Disposition choices are the union of categories contributed by selected detachments. This is a journal selector, not a full roster legality engine."
+}
