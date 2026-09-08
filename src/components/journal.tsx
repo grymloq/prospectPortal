@@ -13,11 +13,14 @@ import type { Army, Game, View } from "@/lib/types";
 import { catalogue, dispositionsFor } from "@/lib/catalogue";
 import type { Mutate } from "./workspace";
 import { Badge, Field, Modal, Empty, dateLabel } from "./ui";
-type Choice = Pick<Army, "faction" | "detachments" | "disposition" | "listUrl">;
-function blank(faction = catalogue.factions[0].id): Choice {
+export type Choice = Pick<
+  Army,
+  "faction" | "detachments" | "disposition" | "listUrl" | "listName"
+>;
+export function blank(faction = catalogue.factions[0].id): Choice {
   return { faction, detachments: [], disposition: "", listUrl: "" };
 }
-function ArmyFields({
+export function ArmyFields({
   title,
   value,
   onChange,
@@ -91,6 +94,13 @@ function ArmyFields({
             </option>
           ))}
         </select>
+      </Field>
+      <Field label="Army-list name (optional)">
+        <input
+          maxLength={100}
+          value={value.listName || ""}
+          onChange={(e) => onChange({ ...value, listName: e.target.value })}
+        />
       </Field>
       <Field label="Army-list link (optional)">
         <input

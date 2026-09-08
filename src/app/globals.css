@@ -2320,3 +2320,62 @@ tbody .matrix-list-label span {
 .matrix-compact tfoot th {
   font-size: 11px;
 }
+
+.matrix-compact .matchup-table .matrix-marked {
+  background: #faf5df;
+  box-shadow: inset 0 0 0 1px #d9cf9d;
+}
+.matrix-compact .matchup-table .matrix-hovered {
+  background: #eef4f8;
+  box-shadow: inset 0 0 0 1px #c7d7e2;
+}
+.matrix-compact .matchup-table .matrix-marked.matrix-hovered {
+  background: #f4efda;
+  box-shadow: inset 0 0 0 1px #bdbb9e;
+}
+.matrix-compact .matrix-cell:hover {
+  outline: 1px solid #b5c8d6;
+}
+.matrix-compact .matchup-table th,
+.matrix-compact .matchup-table td {
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
+}
+.matrix-compact .matchup-table th:first-child {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+}
+.matrix-compact .matrix-list-label {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1px;
+}
+.matrix-compact .matrix-list-label span,
+.matrix-compact .matrix-list-label small {
+  max-width: none;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  font-size: 10px;
+}
+.matrix-compact .matrix-list-label small {
+  font-weight: 400;
+  color: #536575;
+}
+.matrix-compact .matrix-average {
+  font-size: 11px;
+  padding: 2px;
+}
+.matrix-compact .matrix-average small {
+  display: inline;
+  margin-left: 5px;
+}
+
+.matrix-attribution {
+  display: block;
+  font-size: 10px;
+  color: #61788a;
+  margin-top: 4px;
+}

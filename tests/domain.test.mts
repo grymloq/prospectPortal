@@ -338,3 +338,71 @@ test("patch migration and administrator-controlled release dates", () => {
     "2026-10-01",
   );
 });
+
+test("team members share matrix lists and overrides with server-owned attribution and clear history", () => {
+  const s = structuredClone(baseline),
+    first = s.users.find((u) => u.id === "p1")!,
+    second = s.users.find((u) => u.id === "p2")!;
+  const own = s.games[0].own,
+    enemy = s.games[0].enemy,
+    patchId = "2026-09-02";
+  execute(s, first, {
+    type: "matrixList",
+    patchId,
+    army: { ...own, listName: "Team list" },
+  });
+  assert.equal(viewState(s, second).matrixLists![0].army.listName, "Team list");
+  execute(s, second, {
+    type: "matrixList",
+    patchId,
+    army: { ...own, listName: "Revised" },
+  });
+  assert.equal(s.matrixLists!.length, 1);
+  assert.equal(s.matrixLists![0].authorName, second.name);
+  assert.equal(s.matrixListHistory!.length, 2);
+  execute(s, first, {
+    type: "manualEstimate",
+    patchId,
+    own,
+    enemy,
+    layout: "A",
+    score: 14,
+    authorName: "Forged",
+  });
+  assert.equal(s.manualEstimates![0].authorName, first.name);
+  assert.equal(viewState(s, second).manualEstimates!.length, 1);
+  execute(s, second, {
+    type: "manualEstimate",
+    patchId,
+    own: enemy,
+    enemy: own,
+    layout: "A",
+    score: 5,
+  });
+  assert.equal(s.manualEstimates!.length, 1);
+  assert.equal(s.manualEstimates![0].authorName, second.name);
+  execute(s, second, {
+    type: "manualEstimate",
+    patchId,
+    own,
+    enemy,
+    layout: "A",
+    score: null,
+  });
+  assert.equal(s.manualEstimates!.length, 0);
+  assert.equal(s.matrixChanges!.length, 3);
+  assert.equal(s.matrixChanges!.at(-1)!.score, null);
+  assert.throws(() =>
+    execute(s, first, {
+      type: "manualEstimate",
+      patchId,
+      own,
+      enemy,
+      layout: "A",
+      score: 21,
+    }),
+  );
+  assert.throws(() =>
+    execute(s, first, { type: "matrixList", patchId: "bad", army: own }),
+  );
+});

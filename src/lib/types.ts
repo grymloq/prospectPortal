@@ -17,6 +17,7 @@ export type User = {
   password?: string;
 };
 export type Army = {
+  listName?: string;
   faction: string;
   detachments: string[];
   disposition: string;
@@ -95,7 +96,34 @@ export type Audit = {
   text: string;
   createdAt: string;
 };
+export type MatrixList = {
+  id: string;
+  userId: string;
+  patchId: string;
+  army: Army;
+  authorName: string;
+  updatedAt: string;
+};
+export type ManualEstimate = {
+  userId: string;
+  patchId: string;
+  row: string;
+  column: string;
+  layout: Layout;
+  score: number;
+  updatedAt: string;
+  authorName: string;
+};
 export type State = {
+  matrixListHistory?: {
+    authorName: string;
+    updatedAt: string;
+    patchId: string;
+    army: Army;
+  }[];
+  matrixChanges?: (Omit<ManualEstimate, "score"> & { score: number | null })[];
+  matrixLists?: MatrixList[];
+  manualEstimates?: ManualEstimate[];
   patches?: Patch[];
   users: User[];
   phases: Phase[];

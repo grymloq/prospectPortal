@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { State, User, View } from "@/lib/types";
 import { armySnapshot, catalogue } from "@/lib/catalogue";
 import { publicUser } from "./public-user";
-import { outcomeForScore } from "@/lib/matchups";
+import { armyKey, outcomeForScore } from "@/lib/matchups";
 import { ensurePatches } from "@/lib/patches";
 const text = z.string().trim().min(1).max(5000),
   id = z.string().min(1).max(100);
@@ -23,12 +23,23 @@ const date = z
     "Invalid date",
   );
 const army = z.object({
+  listName: z.string().trim().max(100).optional(),
   faction: id,
   detachments: z.array(id).max(3),
   disposition: id,
   listUrl: url,
 });
 const commands = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("matrixList"), patchId: id, army }),
+
+  z.object({
+    type: z.literal("manualEstimate"),
+    patchId: id,
+    own: army,
+    enemy: army,
+    layout: z.enum(["A", "B", "C"]),
+    score: z.number().min(0).max(20).nullable(),
+  }),
   z.object({ type: z.literal("patch"), name: text.max(100), date }),
   z.object({
     type: z.literal("profile"),
@@ -138,6 +149,10 @@ export function viewState(s: State, actor: User): View {
   const admin = actor.role === "admin";
   return {
     me: publicUser(actor),
+    matrixListHistory: s.matrixListHistory || [],
+    matrixChanges: s.matrixChanges || [],
+    matrixLists: s.matrixLists || [],
+    manualEstimates: s.manualEstimates || [],
     patches: [...s.patches!].sort((a, b) => b.date.localeCompare(a.date)),
     users: s.users.filter((u) => admin || u.id === actor.id).map(publicUser),
     phases: s.phases,
@@ -189,6 +204,105 @@ export function execute(s: State, actor: User, input: unknown) {
       createdAt: now,
     });
   switch (c.type) {
+    case "matrixList": {
+      if (!s.patches!.some((p) => p.id === c.patchId))
+        throw new Error("Choose a rules patch.");
+      const snapshot = armySnapshot(c.army);
+      (s.matrixListHistory ||= []).push({
+        authorName: actor.name,
+        updatedAt: now,
+        patchId: c.patchId,
+        army: snapshot,
+      });
+      s.matrixLists ||= [];
+      const existing = s.matrixLists.find(
+        (v) => v.patchId === c.patchId && armyKey(v.army) === armyKey(snapshot),
+      );
+      if (existing)
+        Object.assign(existing, {
+          army: snapshot,
+          userId: actor.id,
+          authorName: actor.name,
+          updatedAt: now,
+        });
+      else
+        s.matrixLists.push({
+          id: randomUUID(),
+          userId: actor.id,
+          patchId: c.patchId,
+          army: snapshot,
+          authorName: actor.name,
+          updatedAt: now,
+        });
+      break;
+    }
+    case "manualEstimate": {
+      if (!s.patches!.some((p) => p.id === c.patchId))
+        throw new Error("Choose a rules patch.");
+      let row = armyKey(armySnapshot(c.own)),
+        column = armyKey(armySnapshot(c.enemy));
+      let score = c.score;
+      if (row === column && score !== null && score !== 10)
+        throw new Error(
+          "Identical configurations have a symmetric score of 10.",
+        );
+      if (row > column) {
+        [row, column] = [column, row];
+        if (score !== null) score = 20 - score;
+      }
+      s.manualEstimates = (s.manualEstimates || []).filter(
+        (v) =>
+          !(
+            v.patchId === c.patchId &&
+            v.row === row &&
+            v.column === column &&
+            v.layout === c.layout
+          ),
+      );
+      (s.matrixChanges ||= []).push({
+        userId: actor.id,
+        patchId: c.patchId,
+        row,
+        column,
+        layout: c.layout,
+        score,
+        updatedAt: now,
+        authorName: actor.name,
+      });
+      if (score !== null) {
+        // Publishing a team estimate also makes its configurations available to teammates without those logs.
+        s.matrixLists ||= [];
+        for (const input of [c.own, c.enemy]) {
+          const snapshot = armySnapshot(input);
+          if (
+            !s.matrixLists.some(
+              (v) =>
+                v.patchId === c.patchId &&
+                armyKey(v.army) === armyKey(snapshot),
+            )
+          )
+            s.matrixLists.push({
+              id: randomUUID(),
+              userId: actor.id,
+              patchId: c.patchId,
+              army: snapshot,
+              authorName: actor.name,
+              updatedAt: now,
+            });
+        }
+        s.manualEstimates.push({
+          userId: actor.id,
+          patchId: c.patchId,
+          row,
+          column,
+          layout: c.layout,
+          score,
+          updatedAt: now,
+          authorName: actor.name,
+        });
+      }
+      break;
+    }
     case "patch": {
       requireAdmin();
       if (s.patches!.some((p) => p.date === c.date))

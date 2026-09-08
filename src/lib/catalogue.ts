@@ -13,6 +13,7 @@ export function dispositionsFor(factionId: string, selected: string[]) {
   return data.dispositions.filter((d) => ids.has(d.id));
 }
 export function armySnapshot(input: {
+  listName?: string;
   faction: string;
   detachments: string[];
   disposition: string;

@@ -280,10 +280,10 @@ export default function Workspace({
               mutate={mutate}
             />
           )}{" "}
-          {currentPage === "Matchup matrix" && <MatchupMatrix view={view} />}
-          {currentPage === "Calendar" && (
-            <Events view={view} mutate={mutate} />
-          )}{" "}
+          {currentPage === "Matchup matrix" && (
+            <MatchupMatrix view={view} mutate={mutate} />
+          )}
+          {currentPage === "Calendar" && <Events view={view} mutate={mutate} />}{" "}
           {(currentPage === "Selection" || currentPage === "Settings") && (
             <Selection
               key={currentPage}

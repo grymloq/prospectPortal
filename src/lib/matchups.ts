@@ -1,4 +1,4 @@
-import type { Army, Game, Layout } from "./types";
+import type { Army, Game, Layout, MatrixList, ManualEstimate } from "./types";
 
 export const layouts: Layout[] = ["A", "B", "C"];
 export function outcomeForScore(score: number): Game["outcome"] {
@@ -81,5 +81,48 @@ export function buildMatchups(games: Game[], patchId?: string) {
     cells,
     included,
     missingLayout,
+  };
+}
+
+export function matrixWithManual(
+  games: Game[],
+  patchId: string,
+  lists: MatrixList[],
+  estimates: ManualEstimate[],
+) {
+  const data = buildMatchups(games, patchId);
+  const armies = new Map(data.armies.map((a) => [a.key, a]));
+  for (const list of lists)
+    if (!patchId || list.patchId === patchId)
+      armies.set(armyKey(list.army), {
+        key: armyKey(list.army),
+        army: list.army,
+      });
+  const effective = new Map(
+    [...data.cells].map(([key, value]) => [key, structuredClone(value)]),
+  );
+  const manual = new Set<string>();
+  for (const e of estimates) {
+    if (!patchId || e.patchId !== patchId) continue;
+    for (const [row, column, score] of [
+      [e.row, e.column, e.score],
+      [e.column, e.row, 20 - e.score],
+    ] as const) {
+      const key = cellKey(row, column),
+        cell = effective.get(key) || blank();
+      cell[e.layout] = { total: score, count: 1, average: score };
+      effective.set(key, cell);
+      manual.add(key + e.layout);
+    }
+  }
+  return {
+    ...data,
+    armies: [...armies.values()].sort(
+      (a, b) =>
+        a.army.factionName.localeCompare(b.army.factionName) ||
+        a.key.localeCompare(b.key),
+    ),
+    effective,
+    manual,
   };
 }

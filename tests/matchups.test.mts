@@ -4,6 +4,7 @@ import type { Army, Game } from "../src/lib/types";
 import {
   armyKey,
   armyAverage,
+  matrixWithManual,
   buildMatchups,
   cellKey,
   outcomeForScore,
@@ -142,4 +143,53 @@ test("axis averages weight games, respect opponents and use each army perspectiv
   assert.equal(armyAverage(cells, armyKey(a), [armyKey(b)]).average, 14);
   assert.equal(armyAverage(cells, armyKey(b), [armyKey(a)]).average, 6);
   assert.equal(armyAverage(cells, armyKey(c), [armyKey(b)]).count, 0);
+});
+
+test("manual estimates replace layout scores, reverse perspective and preserve logs", () => {
+  const keyA = armyKey(a),
+    keyB = armyKey(b),
+    patchId = "2026-09-02";
+  const g = { ...game(11, "A"), patchId };
+  const estimate = {
+    userId: "u",
+    authorName: "Team",
+    updatedAt: "2026-09-08",
+    patchId,
+    row: keyA,
+    column: keyB,
+    layout: "A" as const,
+    score: 16,
+  };
+  const data = matrixWithManual([g], patchId, [], [estimate]);
+  assert.equal(data.cells.get(cellKey(keyA, keyB))!.A.average, 11);
+  assert.equal(data.effective.get(cellKey(keyA, keyB))!.A.average, 16);
+  assert.equal(data.effective.get(cellKey(keyB, keyA))!.A.average, 4);
+  assert.equal(
+    matrixWithManual([g], patchId, [], []).effective.get(cellKey(keyA, keyB))!.A
+      .average,
+    11,
+  );
+  assert.equal(
+    matrixWithManual([g], "", [], [estimate]).effective.get(
+      cellKey(keyA, keyB),
+    )!.A.average,
+    11,
+  );
+  const added = matrixWithManual(
+    [],
+    patchId,
+    [
+      {
+        id: "list",
+        userId: "u",
+        authorName: "Team",
+        updatedAt: "2026-09-08",
+        patchId,
+        army: a,
+      },
+    ],
+    [],
+  );
+  assert.equal(added.armies.length, 1);
+  assert.equal(added.included, 0);
 });
