@@ -1,6 +1,6 @@
 # Swedish Warhammer 40,000 National Team — Product Design
 
-Status: Living draft v0.7, 8 September 2026. Requirements marked **Confirmed** come from the brief and subsequent answers. Items marked **Proposed** are working recommendations, not approved decisions. **Open** items need clarification before dependent implementation.
+Status: Living draft v0.8, 8 September 2026. Requirements marked **Confirmed** come from the brief and subsequent answers. Items marked **Proposed** are working recommendations, not approved decisions. **Open** items need clarification before dependent implementation.
 
 ## 1. Purpose and scope
 
@@ -157,7 +157,8 @@ This allows an admin to keep a journal and preserves accounts and history after 
 | Opponent detachments | Up to three selections, filtered by opponent army | Confirmed |
 | Opponent disposition | Selectable disposition compatible with the opponent's detachment choices | Confirmed |
 | Opponent list link | Optional URL | Proposed |
-| Outcome | Win, draw, or loss | Confirmed field; proposed values |
+| Outcome | Automatically derived: below 10 loss, exactly 10 draw, above 10 win | Confirmed |
+| Layout | A, B, or C; required when saving a game | Confirmed |
 | Score | Team score from 0 to 20, from the journal owner's perspective | Confirmed |
 | Context | Event, practice, team practice, or other, with notes | Confirmed field; proposed structure |
 | Reflection | Plan, what happened, lessons, next action | Proposed |
@@ -166,7 +167,13 @@ This allows an admin to keep a journal and preserves accounts and history after 
 
 **Confirmed:** Record the 0–20 team score. Raw victory points are not part of the current journal requirement.
 
-**Proposed:** Validate the entered team score as a whole number from 0 through 20. Keep outcome explicit until the treatment of draws and adjusted results is agreed; do not silently assume an opponent score or an outcome from the numeric score.
+**Confirmed:** Validate the team score as a whole number from 0 through 20. Derive the outcome on the server: 0–9 loss, 10 draw, 11–20 win. Read existing logs with the same outcome rule. Preserve missing historical layouts as unknown; do not invent A/B/C data.
+
+### Matchup matrix
+
+**Confirmed:** A matrix of army configurations in rows (Y) and columns (X), grouping by faction + detachments + disposition. Each intersection shows three average score estimates, one per layout A/B/C, with independent faction and army-list filters on both axes.
+
+**Implementation conventions:** Detachment order, list URL, names, and catalogue revision do not split a source-ID configuration. Scores are from the row army's perspective; reverse matchups use 20 minus the logged score. Self-matches pool both sides at 10 points and count each log once. Show sample sizes, unknown estimates as a dash, and the highest-minus-lowest observed layout average. No extrapolation or automatic duplicate-log matching. Missing-layout logs are excluded. Preserve privacy: admins use all logs; players use only their own authorized logs. Axis pagination keeps large matrices usable.
 
 **Proposed:** Store each side's faction, detachments, disposition, source identifiers, and catalogue revision with each game so profile changes and catalogue updates do not rewrite history. Keep submitted list URLs with the game; a live URL alone does not guarantee an immutable army list.
 
@@ -351,7 +358,7 @@ This remains a conceptual entity model. The local implementation and future prod
 
 ### Next clarifications
 
-7. Which journal fields are optional, and should outcome be inferred from the team score or entered separately?
+7. **Resolved:** Outcome follows the score automatically; layout A/B/C is required on save. Other optional journal fields retain current behavior.
 8. How should rejection be displayed, and do admins approve transitions jointly?
 9. Should focus goals use the proposed evidence-and-review workflow?
 10. What profile details, notification channels, and account login method are needed?

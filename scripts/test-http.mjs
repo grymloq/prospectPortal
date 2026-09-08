@@ -227,6 +227,8 @@ try {
       ...base,
       id: undefined,
       type: "game",
+      layout: "B",
+      outcome: "Invalid client outcome is ignored",
       notes: "HTTP integration reflection",
     },
     registered.cookie,
@@ -237,6 +239,11 @@ try {
     assert.equal(game.score, base.score);
     assert.equal(game.own.factionName, base.own.factionName);
     assert.equal(game.notes, "HTTP integration reflection");
+    assert.equal(game.layout, "B");
+    assert.equal(
+      game.outcome,
+      game.score === 10 ? "Draw" : game.score > 10 ? "Win" : "Loss",
+    );
   });
   const goal = await request(
     "/api/state",

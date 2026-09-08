@@ -30,7 +30,8 @@ All seeded people, applications, evaluations, and games are fictional. Registrat
 - Separate player-visible and admin-only conversations, filtered by the server.
 - Focus goals, evidence notes, game links, and admin completion review.
 - Journal creation, editing, and deletion for the owner; admin review of every journal.
-- Both armies, up to three detachments each, compatible Force Disposition, list URLs, opponent, 0–20 score, explicit outcome, date, context, and reflection.
+- Both armies, up to three detachments each, compatible Force Disposition, list URLs, opponent, 0–20 score, automatic outcome (0–9 loss, 10 draw, 11–20 win), layout A/B/C, date, context, and reflection.
+- Matchup matrix grouped by faction + unordered detachments + disposition, with averages/sample counts for each layout, layout differences, and independent faction/list filters on both axes. Admins aggregate all logs; members aggregate only their authorized logs.
 - Ongoing applications, configurable review phases, rejection/reinstatement, and an eight-player selected-squad ceiling.
 - Calendar and agenda views, event creation/editing/cancellation, location, Stockholm date/time, capacity, attendance applications, approval/decline, and withdrawal.
 - Transactional event capacity checks and phase changes, including concurrent approval protection.
@@ -101,7 +102,7 @@ Browser checks covered admin sign-in, roster/profile navigation, all 18 rating c
 ## Remaining product decisions
 
 - Final criterion rubrics and English terminology, especially “Bordsalfa & Bordshök”. Original labels are retained as tooltips in the evaluation form.
-- Draw thresholds and penalties: score and Win/Draw/Loss remain separate inputs.
+- Historic logs without a layout remain unclassified and excluded from layout estimates until their owner edits them. Outcomes are recalculated from scores when read, so old inconsistent outcomes no longer affect stats.
 - Notification channels, waitlists, event application deadlines, message editing/attachments, and multi-admin agreement are not implemented.
 - Current working behavior displays a rejected player as “Not selected”; detailed admin reasons remain private.
 - New Recruit refresh is a script, not an admin UI importer.

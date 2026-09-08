@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { State, User, View } from "@/lib/types";
 import { armySnapshot, catalogue } from "@/lib/catalogue";
 import { publicUser } from "./public-user";
+import { outcomeForScore } from "@/lib/matchups";
 const text = z.string().trim().min(1).max(5000),
   id = z.string().min(1).max(100);
 const url = z
@@ -101,7 +102,7 @@ const commands = z.discriminatedUnion("type", [
     own: army,
     enemy: army,
     score: z.number().int().min(0).max(20),
-    outcome: z.enum(["Win", "Draw", "Loss"]),
+    layout: z.enum(["A", "B", "C"]).optional(),
     context: text.max(200),
     notes: z.string().max(5000),
     eventId: z.string(),
@@ -135,7 +136,13 @@ export function viewState(s: State, actor: User): View {
     me: publicUser(actor),
     users: s.users.filter((u) => admin || u.id === actor.id).map(publicUser),
     phases: s.phases,
-    games: s.games.filter((g) => admin || g.userId === actor.id),
+    games: s.games
+      .filter((g) => admin || g.userId === actor.id)
+      .map((g) => ({
+        ...g,
+        outcome: outcomeForScore(g.score),
+        layout: g.layout || null,
+      })),
     goals: s.goals.filter((g) => admin || g.userId === actor.id),
     evaluations: admin ? s.evaluations : [],
     evaluationHistory: admin ? s.evaluationHistory || [] : [],
@@ -321,6 +328,7 @@ export function execute(s: State, actor: User, input: unknown) {
       break;
     }
     case "game": {
+      if (!c.layout) throw new Error("Choose layout A, B, or C.");
       const old = c.id ? s.games.find((g) => g.id === c.id) : undefined;
       if (c.id && (!old || old.userId !== actor.id))
         throw new Error("You can edit only your own games.");
@@ -330,6 +338,7 @@ export function execute(s: State, actor: User, input: unknown) {
       void _;
       const game = {
         ...fields,
+        outcome: outcomeForScore(c.score),
         id: old?.id || randomUUID(),
         userId: actor.id,
         own: armySnapshot(c.own),

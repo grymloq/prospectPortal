@@ -26,6 +26,7 @@ export type Army = {
   detachmentNames: string[];
   dispositionName: string;
 };
+export type Layout = "A" | "B" | "C";
 export type Game = {
   id: string;
   userId: string;
@@ -34,6 +35,7 @@ export type Game = {
   own: Army;
   enemy: Army;
   score: number;
+  layout?: Layout | null;
   outcome: "Win" | "Draw" | "Loss";
   context: string;
   notes: string;

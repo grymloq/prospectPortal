@@ -129,7 +129,9 @@ export default function Journal({
     [enemy, setEnemy] = useState<Choice>(blank()),
     [saving, setSaving] = useState(false),
     [deleting, setDeleting] = useState(false);
+  const [score, setScore] = useState("10");
   function open(game: Game | "new") {
+    setScore(String(game === "new" ? 10 : game.score));
     setOwn(game === "new" ? blank(view.me.faction) : game.own);
     setEnemy(game === "new" ? blank() : game.enemy);
     setEdit(game);
@@ -278,7 +280,10 @@ export default function Journal({
                       {g.score}/20 · {g.outcome}
                     </Badge>
                   </td>
-                  <td>{g.context}</td>
+                  <td>
+                    {g.context}
+                    <small>Layout {g.layout || "not recorded"}</small>
+                  </td>
                   <td>
                     <button
                       className="icon-button"
@@ -320,7 +325,7 @@ export default function Journal({
                 date: f.get("date"),
                 opponent: f.get("opponent"),
                 score: Number(f.get("score")),
-                outcome: f.get("outcome"),
+                layout: f.get("layout"),
                 context: f.get("context"),
                 notes: f.get("notes"),
                 eventId: f.get("eventId"),
@@ -369,16 +374,35 @@ export default function Journal({
                   max={20}
                   step={1}
                   required
-                  defaultValue={edit === "new" ? 10 : edit.score}
+                  value={score}
+                  onChange={(e) => setScore(e.target.value)}
                 />
               </Field>
               <Field label="Outcome">
+                <output className="calculated-outcome" aria-live="polite">
+                  {score === ""
+                    ? "Enter a score"
+                    : Number(score) === 10
+                      ? "Draw"
+                      : Number(score) > 10
+                        ? "Win"
+                        : "Loss"}
+                </output>
+                <small>0–9 loss · 10 draw · 11–20 win</small>
+              </Field>
+              <Field label="Table layout">
                 <select
-                  name="outcome"
-                  defaultValue={edit === "new" ? "Draw" : edit.outcome}
+                  name="layout"
+                  required
+                  defaultValue={edit === "new" ? "" : edit.layout || ""}
                 >
-                  {["Win", "Draw", "Loss"].map((o) => (
-                    <option key={o}>{o}</option>
+                  <option value="" disabled>
+                    Choose a layout
+                  </option>
+                  {["A", "B", "C"].map((l) => (
+                    <option key={l} value={l}>
+                      Layout {l}
+                    </option>
                   ))}
                 </select>
               </Field>
@@ -431,7 +455,8 @@ export default function Journal({
         >
           <div className="section-heading">
             <p>
-              {dateLabel(detail.date)} · {detail.context}
+              {dateLabel(detail.date)} · {detail.context} · Layout{" "}
+              {detail.layout || "not recorded"}
             </p>
             <Badge tone="blue">
               {detail.score} /20 · {detail.outcome}

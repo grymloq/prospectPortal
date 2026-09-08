@@ -223,15 +223,41 @@ test("game boundaries validate score, URL, ownership and date", () => {
     u = s.users.find((u) => u.id === "p1")!,
     g = s.games.find((g) => g.userId === u.id)!;
   for (const patch of [
+    { layout: "D" },
+    { layout: undefined },
     { score: 21 },
     { score: -1 },
     { date: "2026-02-31" },
     { own: { ...g.own, listUrl: "javascript:alert(1)" } },
     { id: s.games.find((g) => g.userId === "p2")!.id },
   ])
-    assert.throws(() => execute(s, u, { ...g, type: "game", ...patch }));
-  execute(s, u, { ...g, type: "game", score: 20, notes: "Updated reflection" });
+    assert.throws(() =>
+      execute(s, u, { ...g, layout: "A", type: "game", ...patch }),
+    );
+  execute(s, u, {
+    ...g,
+    layout: "A",
+    type: "game",
+    score: 20,
+    outcome: "Loss",
+    notes: "Updated reflection",
+  });
   assert.equal(s.games.find((v) => v.id === g.id)!.score, 20);
+  assert.equal(s.games.find((v) => v.id === g.id)!.outcome, "Win");
+  assert.equal(s.games.find((v) => v.id === g.id)!.layout, "A");
+  for (const [score, outcome] of [
+    [9, "Loss"],
+    [10, "Draw"],
+    [11, "Win"],
+  ] as const) {
+    execute(s, u, { ...g, type: "game", layout: "B", score, outcome: "Win" });
+    assert.equal(s.games.find((v) => v.id === g.id)!.outcome, outcome);
+  }
+  const legacy = structuredClone(baseline);
+  legacy.games[0].score = 10;
+  legacy.games[0].outcome = "Loss";
+  assert.equal(viewState(legacy, legacy.users[0]).games[0].outcome, "Draw");
+  assert.equal(viewState(legacy, legacy.users[0]).games[0].layout, null);
 });
 test("phase configuration protects occupied stages and stable roles", () => {
   const s = structuredClone(baseline),

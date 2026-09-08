@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start --hostname 127.0.0.1",
     "lint": "eslint",
-    "test": "tsx --test tests/domain.test.mts",
+    "test": "tsx --test tests/domain.test.mts tests/matchups.test.mts",
     "test:http": "node scripts/test-http.mjs",
     "catalogue:refresh": "node scripts/import-catalogue.mjs",
     "format": "prettier --write src scripts tests"

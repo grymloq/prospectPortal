@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   Users,
   BookOpen,
+  Grid3X3,
   CalendarDays,
   Trophy,
   Settings,
@@ -18,6 +19,7 @@ import Auth from "./auth";
 import Prospects from "./prospects";
 import Profile from "./profile";
 import Journal from "./journal";
+import MatchupMatrix from "./matchup-matrix";
 import Events from "./events";
 import Selection from "./selection";
 import { Avatar } from "./ui";
@@ -130,6 +132,7 @@ export default function Workspace({
       icon: admin ? Users : UserRound,
     },
     { name: "Game journal", page: "Game journal", icon: BookOpen },
+    { name: "Matchup matrix", page: "Matchup matrix", icon: Grid3X3 },
     { name: "Calendar", page: "Calendar", icon: CalendarDays },
     ...(admin
       ? [
@@ -277,7 +280,10 @@ export default function Workspace({
               mutate={mutate}
             />
           )}{" "}
-          {currentPage === "Calendar" && <Events view={view} mutate={mutate} />}{" "}
+          {currentPage === "Matchup matrix" && <MatchupMatrix view={view} />}
+          {currentPage === "Calendar" && (
+            <Events view={view} mutate={mutate} />
+          )}{" "}
           {(currentPage === "Selection" || currentPage === "Settings") && (
             <Selection
               key={currentPage}
