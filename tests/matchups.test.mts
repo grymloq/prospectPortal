@@ -3,6 +3,7 @@ import { test } from "node:test";
 import type { Army, Game } from "../src/lib/types";
 import {
   armyKey,
+  armyAverage,
   buildMatchups,
   cellKey,
   outcomeForScore,
@@ -125,4 +126,20 @@ test("patch filters separate averages and list axes across rules versions", () =
     10,
   );
   assert.equal(buildMatchups(data, "missing").included, 0);
+});
+
+test("axis averages weight games, respect opponents and use each army perspective", () => {
+  const c = army("Necrons");
+  const { cells } = buildMatchups([
+    game(20, "A"),
+    game(10, "B"),
+    game(12, "B"),
+    game(0, "C", a, c),
+  ]);
+  const result = armyAverage(cells, armyKey(a), [armyKey(b), armyKey(c)]);
+  assert.equal(result.average, 10.5);
+  assert.equal(result.count, 4);
+  assert.equal(armyAverage(cells, armyKey(a), [armyKey(b)]).average, 14);
+  assert.equal(armyAverage(cells, armyKey(b), [armyKey(a)]).average, 6);
+  assert.equal(armyAverage(cells, armyKey(c), [armyKey(b)]).count, 0);
 });

@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import type { View } from "@/lib/types";
 import {
   buildMatchups,
+  armyAverage,
   cellKey,
   layouts,
   type MatrixArmy,
@@ -126,6 +127,21 @@ export default function MatchupMatrix({ view }: { view: View }) {
     row: MatrixArmy;
     column?: MatrixArmy;
   } | null>(null);
+  const [hover, setHover] = useState<{ row?: string; column?: string }>({});
+  const [markedRows, setMarkedRows] = useState<string[]>([]);
+  const [markedColumns, setMarkedColumns] = useState<string[]>([]);
+  const toggle = (items: string[], key: string) =>
+    items.includes(key) ? items.filter((i) => i !== key) : [...items, key];
+  const highlight = (row?: string, column?: string) =>
+    [
+      (row && markedRows.includes(row)) ||
+      (column && markedColumns.includes(column))
+        ? "matrix-marked"
+        : "",
+      (row && hover.row === row) || (column && hover.column === column)
+        ? "matrix-hovered"
+        : "",
+    ].join(" ");
   const codes = new Map(
     data.armies.map((a, i) => [a.key, String(i + 1).padStart(2, "0")]),
   );
@@ -143,10 +159,25 @@ export default function MatchupMatrix({ view }: { view: View }) {
   const visibleRows = rows.slice(yp * size, (yp + 1) * size),
     visibleColumns = columns.slice(xp * size, (xp + 1) * size);
   function reset() {
+    setMarkedRows([]);
+    setMarkedColumns([]);
+    setHover({});
     setY(emptyFilter());
     setX(emptyFilter());
     setYPage(0);
     setXPage(0);
+  }
+  function averageBadge(key: string, opponents: string[]) {
+    const e = armyAverage(data.cells, key, opponents);
+    return (
+      <span
+        className={"matrix-average " + tone(e.average, e.count)}
+        title={`${e.count} games; this army’s own score against filtered opponents, all layouts`}
+      >
+        {e.count ? e.average.toFixed(1) : "—"}
+        <small>n={e.count}</small>
+      </span>
+    );
   }
   const cell = detail?.column
     ? data.cells.get(cellKey(detail.row.key, detail.column.key))
@@ -212,12 +243,23 @@ export default function MatchupMatrix({ view }: { view: View }) {
       <div className="matrix-caption">
         <span>
           Each cell: <b>A · B · C</b> layout averages. Click a cell for counts
-          and differences; click a list label for its configuration.
+          and differences. Hover to trace axes; click list labels to pin
+          highlights.
         </span>
         <span>
           {view.me.role === "admin" ? "All players’ logs" : "Your logs only"}
         </span>
       </div>
+      <button
+        className="text-button"
+        disabled={!markedRows.length && !markedColumns.length}
+        onClick={() => {
+          setMarkedRows([]);
+          setMarkedColumns([]);
+        }}
+      >
+        Clear highlights ({markedRows.length + markedColumns.length})
+      </button>
       {data.missingLayout > 0 && (
         <p className="matrix-warning">
           {data.missingLayout} games excluded: no layout recorded.
@@ -270,7 +312,13 @@ export default function MatchupMatrix({ view }: { view: View }) {
             tabIndex={0}
             aria-label="Compact matchup matrix"
           >
-            <table className="matchup-table">
+            <table
+              className="matchup-table"
+              onMouseLeave={() => setHover({})}
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) setHover({});
+              }}
+            >
               <caption className="sr-only">
                 Average scores for row army against column army on layouts A, B,
                 C
@@ -279,11 +327,20 @@ export default function MatchupMatrix({ view }: { view: View }) {
                 <tr>
                   <th scope="col">Row ↓ / Opponent →</th>
                   {visibleColumns.map((a) => (
-                    <th scope="col" key={a.key}>
+                    <th
+                      scope="col"
+                      key={a.key}
+                      className={highlight(undefined, a.key)}
+                      onMouseEnter={() => setHover({ column: a.key })}
+                      onFocus={() => setHover({ column: a.key })}
+                    >
                       <button
                         className="matrix-list-label"
                         title={description(a)}
-                        onClick={() => setDetail({ row: a })}
+                        aria-pressed={markedColumns.includes(a.key)}
+                        onClick={() =>
+                          setMarkedColumns(toggle(markedColumns, a.key))
+                        }
                       >
                         <b>#{codes.get(a.key)}</b>
                         <span>{a.army.factionName}</span>
@@ -295,16 +352,25 @@ export default function MatchupMatrix({ view }: { view: View }) {
                       </div>
                     </th>
                   ))}
+                  <th scope="col">Average /20</th>
                 </tr>
               </thead>
               <tbody>
                 {visibleRows.map((row) => (
                   <tr key={row.key}>
-                    <th scope="row">
+                    <th
+                      scope="row"
+                      className={highlight(row.key)}
+                      onMouseEnter={() => setHover({ row: row.key })}
+                      onFocus={() => setHover({ row: row.key })}
+                    >
                       <button
                         className="matrix-list-label"
                         title={description(row)}
-                        onClick={() => setDetail({ row })}
+                        aria-pressed={markedRows.includes(row.key)}
+                        onClick={() =>
+                          setMarkedRows(toggle(markedRows, row.key))
+                        }
                       >
                         <b>#{codes.get(row.key)}</b>
                         <span>{row.army.factionName}</span>
@@ -331,7 +397,16 @@ export default function MatchupMatrix({ view }: { view: View }) {
                           )
                           .join(", ");
                       return (
-                        <td key={col.key}>
+                        <td
+                          key={col.key}
+                          className={highlight(row.key, col.key)}
+                          onMouseEnter={() =>
+                            setHover({ row: row.key, column: col.key })
+                          }
+                          onFocus={() =>
+                            setHover({ row: row.key, column: col.key })
+                          }
+                        >
                           <button
                             className="matrix-cell"
                             aria-label={label}
@@ -355,9 +430,36 @@ export default function MatchupMatrix({ view }: { view: View }) {
                         </td>
                       );
                     })}
+                    <td
+                      className={highlight(row.key)}
+                      onMouseEnter={() => setHover({ row: row.key })}
+                    >
+                      {averageBadge(
+                        row.key,
+                        columns.map((a) => a.key),
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+                <tr>
+                  <th scope="row">Average /20</th>
+                  {visibleColumns.map((a) => (
+                    <td
+                      key={a.key}
+                      className={highlight(undefined, a.key)}
+                      onMouseEnter={() => setHover({ column: a.key })}
+                    >
+                      {averageBadge(
+                        a.key,
+                        rows.map((r) => r.key),
+                      )}
+                    </td>
+                  ))}
+                  <td />
+                </tr>
+              </tfoot>
             </table>
           </div>
         )}
@@ -371,7 +473,10 @@ export default function MatchupMatrix({ view }: { view: View }) {
           uses 20 minus the recorded score. Identical-list mirrors pool both
           sides at 10 and count each game once. Counts represent journal
           entries, including demo games. Patch filtering keeps rules versions
-          separate.
+          separate. Row and column averages show that army’s own score, weighted
+          by game count across all layouts and opponents matching the opposite
+          axis filter (including other pages). Unplayed matchups are excluded.
+          Click a marked label again to unpin it; multiple axes can stay marked.
         </p>
       </details>
       {detail && (

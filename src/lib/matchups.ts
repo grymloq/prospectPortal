@@ -22,6 +22,24 @@ const blank = (): Matchup =>
 export function cellKey(row: string, column: string) {
   return JSON.stringify([row, column]);
 }
+// Weight by recorded games, including all layouts; absent matchups contribute nothing.
+export function armyAverage(
+  cells: Map<string, Matchup>,
+  army: string,
+  opponents: string[],
+): Estimate {
+  let total = 0,
+    count = 0;
+  for (const opponent of opponents) {
+    const cell = cells.get(cellKey(army, opponent));
+    if (!cell) continue;
+    for (const layout of layouts) {
+      total += cell[layout].total;
+      count += cell[layout].count;
+    }
+  }
+  return { total, count, average: count ? total / count : 0 };
+}
 export function buildMatchups(games: Game[], patchId?: string) {
   const armies = new Map<string, MatrixArmy>(),
     cells = new Map<string, Matchup>();

@@ -2286,3 +2286,37 @@ tbody .matrix-list-label span {
 .matrix-compact .matrix-cell span {
   padding: 5px 0;
 }
+
+/* Keep score colors intact while tracing or pinning matrix axes. */
+.matrix-compact .matchup-table .matrix-marked {
+  background: #fff0a6;
+  box-shadow: inset 0 0 0 2px #d7aa16;
+}
+.matrix-compact .matchup-table .matrix-hovered {
+  background: #d5eafa;
+  box-shadow: inset 0 0 0 2px #5487ad;
+}
+.matrix-compact .matchup-table .matrix-marked.matrix-hovered {
+  background: #ffdf65;
+  box-shadow: inset 0 0 0 2px #254969;
+}
+.matrix-list-label[aria-pressed="true"] b::before {
+  content: "✓ ";
+}
+.matrix-average {
+  display: block;
+  text-align: center;
+  padding: 3px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.matrix-average small {
+  display: block;
+  font-size: 9px;
+  font-weight: 400;
+}
+.matrix-compact tfoot th {
+  font-size: 11px;
+}
