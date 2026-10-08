@@ -10,6 +10,7 @@ import {
 } from "@/server/store";
 import { sameOrigin } from "./session";
 import { catalogue } from "@/lib/catalogue";
+import { pendingMembership, requireMember } from "../membership";
 export const runtime = "nodejs";
 const schema = z.object({
   email: z
@@ -36,6 +37,7 @@ export async function POST(req: NextRequest) {
           email: input.email,
           password: hashPassword(input.password),
           role: "member" as const,
+          confirmedMember: false,
           city: "",
           bio: "",
           faction: catalogue.factions[0].id,
@@ -46,6 +48,10 @@ export async function POST(req: NextRequest) {
         s.users.push(u);
         return u;
       });
+      return NextResponse.json(
+        { ok: true, message: pendingMembership },
+        { headers: { "Cache-Control": "no-store" } },
+      );
     } else {
       user = readState().users.find((u) => u.email === input.email);
       if (
@@ -56,6 +62,7 @@ export async function POST(req: NextRequest) {
       )
         throw new Error("Email or password is incorrect.");
     }
+    requireMember(user);
     const token = randomBytes(32).toString("hex");
     db.prepare("DELETE FROM sessions WHERE expires < ?").run(Date.now());
     db.prepare("INSERT INTO sessions VALUES(?,?,?)").run(

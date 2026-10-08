@@ -2,6 +2,8 @@
 
 Status: Living draft v0.9, 8 September 2026. Requirements marked **Confirmed** come from the brief and subsequent answers. Items marked **Proposed** are working recommendations, not approved decisions. **Open** items need clarification before dependent implementation.
 
+**Current additions: 8 October 2026.** The confirmed membership and scrim decisions in section 15 supersede older open-registration access and independent-game assumptions where explicitly stated.
+
 ## 1. Purpose and scope
 
 **Confirmed:** Help admins evaluate prospects, review their games, guide their development, and manage their progress toward selection for the Swedish national Warhammer 40,000 team.
@@ -394,3 +396,43 @@ Every signed-in user may add/update shared army configurations and per-patch, pe
 ### Administrator account management (8 September 2026)
 
 Admins have a Users directory including Supabase accounts which have not yet opened the portal. They can invite members through one-time links, promote/demote administrator roles and remove portal access. Invitations are copied and shared manually until SMTP is configured; the app does not claim to send emails. Removal retains journals and attribution, releases selection/event places, and blocks existing sessions at every portal request. Self-removal and self-demotion are prohibited. Provisioned portal roles are authoritative in the versioned database so role changes and last-admin checks are atomic; trusted Supabase app metadata only bootstraps newly provisioned accounts. Account roles remain separate from team selection phases. Admin audit history records each action.
+
+## 15. Confirmed membership and scrims — 8 October 2026
+
+### Membership approval
+
+**Confirmed:** Every account has a Confirmed member flag controlled by admins in Users. All existing users are grandfathered as confirmed, including existing authentication accounts which have not opened the portal. New self-registrations remain pending and cannot sign into the portal until an admin confirms them. Email verification and membership confirmation are separate. Revoking confirmation also blocks existing portal sessions; it does not delete history. Membership is separate from administrator permissions and national-team selection status.
+
+**Implementation convention:** An administrator-created invitation also confirms membership because the administrator has explicitly invited the person. Self-revocation and removal of the last confirmed administrator are prohibited. Authorization uses the server's current membership record, never user-editable authentication metadata.
+
+### Format, calendar and teams
+
+**Confirmed:** An internal scrim consists of two equally sized teams and one round, with one game per player. Eight players per team is the default and the size is configurable. Other events may gain multiple rounds later; multi-round event management is not part of this increment. External scrims have one portal team and a manually entered opposing roster; external players do not need accounts.
+
+**Confirmed:** Admins create scrims in the calendar with a list-submission deadline, a playing start/end date span, one fixed rules patch, and team captains. Captains can play (using a roster slot) or be non-playing coaches. Captains manage their own roster and submissions; admins can manage either roster. Any confirmed portal member may be assigned, regardless of selection status. Captains assign players directly for this increment. A person cannot play or captain on opposing sides of the same internal scrim.
+
+**Confirmed:** Rosters, revealed submitted lists, pairings, match comments and results are available to all confirmed members. They do not grant access to another member's profile, private journal reflection, evaluation, goals or messages. Dates use Europe/Stockholm.
+
+### Lists and disposition validation
+
+**Confirmed:** Each rostered player has one submitted army list. Players submit from My Armies or enter/import an army directly into the scrim. Direct submissions are also added to that player's private My Armies. Captains may submit on a player's behalf with the same effect. Submissions retain independent army snapshots; later library edits do not change scrim history. Captains do not gain access to a player's unshared army library.
+
+**Confirmed:** For standard teams, every disposition in the selected patch must appear at least once, with at most two lists per disposition. Incomplete drafts may have repeated dispositions and show warnings. The final team submission must satisfy the rule. Smaller teams (fewer players than dispositions) may omit dispositions but cannot repeat any. Team sizes above twice the disposition count cannot satisfy the cap and are rejected.
+
+**Confirmed:** Captains finalize team submissions before the deadline. They may reopen them before that deadline to fix drafts. Rosters and submitted lists lock at the deadline; opposing lists become visible then. No player replacements or list changes are allowed after the deadline.
+
+### Planning and pairing
+
+**Confirmed:** Each side has a separate player-by-player matrix against the opposing side, with A/B/C estimates and comments on each potential pairing. Everyone on that team, including its captain, can edit its plan. Estimates and planning comments remain hidden from the other side and unrelated members until all games have been reported. Administrator status alone does not reveal another team's private plan. Both plans become readable for review after completion.
+
+**Implementation convention:** Already-shared matrix estimates seed independent scrim estimates once both rosters are final. Unknown scores remain blank. Private journal data is not published into a team plan. Scrim edits do not change the global matrix. Server revision checks protect concurrent roster, matrix, pairing and result writes; comments record authors and timestamps.
+
+**Confirmed:** Captains or admins enter the completed pairings and choose A, B or C for each game, with no layout quotas. Every player must appear exactly once against the opposite team. Pairings are published after the list deadline and then lock. Pairing assistance/simulation is not included.
+
+### Reporting and result
+
+**Confirmed:** Selecting a scrim in Game Journal fills the player's opponent, both submitted army snapshots, layout and rules patch from the pairing. Either paired player reports the score without opponent confirmation. One atomic operation saves one shared match result and creates/updates complementary journal records for both internal players. External opponents do not receive portal journals. Captains and admins can report scores for exceptional cases. Players can write separate private journal reflections and add visible match comments.
+
+**Confirmed:** Scores are whole numbers from 0 to 20; the opponent receives 20 minus the reported score. The scrim completes when every pairing has a result. Compare the sums for both teams: a lead greater than five points wins; a difference of five or less is a draw (for eight games, 82–78 is a draw and 83–77 is a win). Result corrections update both journals and recompute the winner. Known mirrored scrim records count once in the aggregate matchup matrix; unrelated independent journals are not automatically deduplicated.
+
+**Implementation convention:** Reporting can occur after the calendar span ends, but the played date must fall within that span and cannot be in the future. Deleting only one side's linked journal record is prohibited. Admin cancellation retains existing history. Teams can continue reviewing and updating their own estimates and comments after completion; previous estimates retain author and timestamp history. Result corrections remain available.

@@ -5,6 +5,8 @@ import { armySnapshot, catalogue } from "@/lib/catalogue";
 import { publicUser } from "./public-user";
 import { armyKey, outcomeForScore } from "@/lib/matchups";
 import { ensurePatches, defaultPatchId } from "@/lib/patches";
+import { ensureMembership, requireMember } from "./membership";
+import { executeScrim, scrimCommands, scrimView } from "./scrims";
 const text = z.string().trim().min(1).max(5000),
   id = z.string().min(1).max(100);
 const url = z
@@ -30,6 +32,12 @@ const army = z.object({
   listUrl: url,
 });
 const commands = z.discriminatedUnion("type", [
+  ...scrimCommands,
+  z.object({
+    type: z.literal("userConfirmation"),
+    userId: id,
+    confirmed: z.boolean(),
+  }),
   z.object({ type: z.literal("defaultArmy"), id: z.string().max(100) }),
   z.object({
     type: z.literal("saveArmy"),
@@ -179,11 +187,14 @@ const commands = z.discriminatedUnion("type", [
 ]);
 export function viewState(s: State, actor: User): View {
   ensurePatches(s);
+  ensureMembership(s);
+  requireMember(actor);
   const admin = actor.role === "admin";
   return {
     me: publicUser(actor),
+    scrims: (s.scrims || []).map((scrim) => scrimView(s, scrim, actor)),
     playerOptions: s.users
-      .filter((u) => !u.removedAt && u.id !== actor.id)
+      .filter((u) => !u.removedAt && u.confirmedMember && u.id !== actor.id)
       .map((u) => ({ id: u.id, name: u.name }))
       .sort((a, b) => a.name.localeCompare(b.name)),
     savedArmies: (s.savedArmies || []).filter(
@@ -227,9 +238,14 @@ export function viewState(s: State, actor: User): View {
   };
 }
 export function execute(s: State, actor: User, input: unknown) {
-  if (actor.removedAt) throw new Error("Your portal access has been removed.");
+  ensureMembership(s);
+  requireMember(actor);
   ensurePatches(s);
   const c = commands.parse(input);
+  if (c.type.startsWith("scrim")) {
+    executeScrim(s, actor, c);
+    return;
+  }
   const admin = actor.role === "admin";
   const now = new Date().toISOString();
   const requireAdmin = () => {
@@ -249,6 +265,26 @@ export function execute(s: State, actor: User, input: unknown) {
       createdAt: now,
     });
   switch (c.type) {
+    case "userConfirmation": {
+      requireAdmin();
+      const user = s.users.find((u) => u.id === c.userId && !u.removedAt);
+      if (!user) throw new Error("Active user not found.");
+      if (user.id === actor.id && !c.confirmed)
+        throw new Error("Ask another administrator to change your own access.");
+      if (
+        !c.confirmed &&
+        user.role === "admin" &&
+        s.users.filter(
+          (u) => u.role === "admin" && u.confirmedMember && !u.removedAt,
+        ).length <= 1
+      )
+        throw new Error("At least one confirmed administrator must remain.");
+      user.confirmedMember = c.confirmed;
+      audit(
+        `${actor.name} ${c.confirmed ? "confirmed membership for" : "revoked membership confirmation for"} ${user.name}.`,
+      );
+      break;
+    }
     case "defaultArmy": {
       if (
         c.id &&
@@ -654,6 +690,10 @@ export function execute(s: State, actor: User, input: unknown) {
     }
     case "game": {
       const old = c.id ? s.games.find((g) => g.id === c.id) : undefined;
+      if (old?.scrimPairingId)
+        throw new Error(
+          "Update this shared result through the scrim. Journal reflections stay private.",
+        );
       if (
         c.opponentUserId &&
         c.opponentUserId !== old?.opponentUserId &&
@@ -676,6 +716,8 @@ export function execute(s: State, actor: User, input: unknown) {
         throw new Error("You can edit only your own games.");
       if (c.eventId && !s.events.some((e) => e.id === c.eventId))
         throw new Error("Event not found.");
+      if (s.events.some((e) => e.id === c.eventId && e.scrimId))
+        throw new Error("Select the scrim pairing to report this game.");
       const { type: _, ...fields } = c;
       void _;
       const gameRules =
@@ -708,6 +750,10 @@ export function execute(s: State, actor: User, input: unknown) {
     }
     case "deleteGame": {
       const game = s.games.find((g) => g.id === c.id);
+      if (game?.scrimPairingId)
+        throw new Error(
+          "A shared scrim result cannot be deleted from one journal.",
+        );
       if (!game || game.userId !== actor.id)
         throw new Error("You can delete only your own games.");
       s.games = s.games.filter((g) => g.id !== c.id);
@@ -721,6 +767,7 @@ export function execute(s: State, actor: User, input: unknown) {
       if (Date.parse(c.endsAt) <= Date.parse(c.startsAt))
         throw new Error("End time must follow start time.");
       const old = c.id ? s.events.find((e) => e.id === c.id) : undefined;
+      if (old?.scrimId) throw new Error("Manage this event from its scrim.");
       if (c.id && !old) throw new Error("Event not found.");
       if (
         s.applications.filter(
@@ -739,6 +786,8 @@ export function execute(s: State, actor: User, input: unknown) {
     case "eventApply": {
       const event = s.events.find((e) => e.id === c.eventId);
       if (!event) throw new Error("Event not found.");
+      if (event.scrimId)
+        throw new Error("Scrim captains assign players directly.");
       if (
         !c.withdraw &&
         (event.cancelled || Date.parse(event.endsAt) < Date.now())

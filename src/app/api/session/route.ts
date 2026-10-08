@@ -3,6 +3,8 @@ import { z } from "zod";
 import { localMode, requiredEnv } from "@/server/config";
 import { authClient } from "@/server/supabase";
 import { sameOrigin } from "@/server/session";
+import { cloudView } from "@/server/cloud-store";
+import { pendingMembership } from "@/server/membership";
 export const runtime = "nodejs";
 const schema = z.object({
   email: z
@@ -32,17 +34,17 @@ export async function POST(req: NextRequest) {
         },
       });
       if (error) throw error;
+      if (data.session) await supabase.auth.signOut();
       return NextResponse.json(
         {
           ok: true,
-          message: data.session
-            ? undefined
-            : "Check your email to confirm your account, then sign in.",
+          message:
+            "Registration received. Confirm your email if requested. An administrator must confirm your membership before you can sign in.",
         },
         { headers: { "Cache-Control": "no-store" } },
       );
     }
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: input.email,
       password: input.password,
     });
@@ -50,6 +52,13 @@ export async function POST(req: NextRequest) {
       throw new Error(
         "Could not sign in. Check your email, password, and email confirmation.",
       );
+    try {
+      if (!data.user) throw new Error(pendingMembership);
+      await cloudView(data.user);
+    } catch (error) {
+      await supabase.auth.signOut();
+      throw error;
+    }
     return NextResponse.json(
       { ok: true },
       { headers: { "Cache-Control": "no-store" } },

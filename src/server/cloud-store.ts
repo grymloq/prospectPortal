@@ -5,6 +5,7 @@ import { catalogue } from "@/lib/catalogue";
 import { databaseClient } from "./supabase";
 import { execute, viewState } from "./service";
 import { ensurePatches } from "@/lib/patches";
+import { accessError, ensureMembership } from "./membership";
 
 export function ensureProfile(
   state: State,
@@ -28,6 +29,9 @@ export function ensureProfile(
     email: identity.email || "",
     name: String(identity.user_metadata.name || "New player").slice(0, 100),
     role: identity.app_metadata.portal_role === "admin" ? "admin" : "member",
+    confirmedMember:
+      !!state.membershipCutoverAt &&
+      Date.parse(identity.created_at) <= Date.parse(state.membershipCutoverAt),
     faction: catalogue.factions[0].id,
     city: "",
     bio: "",
@@ -56,13 +60,24 @@ export async function cloudView(
       throw new Error("The workspace is temporarily unavailable.");
     }
     const state = data.value as State;
-    const migrated = ensurePatches(state);
+    const patchMigration = ensurePatches(state);
+    const memberMigration = ensureMembership(state);
+    const migrated = patchMigration || memberMigration;
     const { actor, changed } = ensureProfile(state, identity);
-    if (command !== undefined) execute(state, actor, command);
-    if (trustedUpdate) trustedUpdate(state, actor);
-    const view = viewState(state, actor);
-    if (!changed && !migrated && command === undefined && !trustedUpdate)
-      return view;
+    const denied = accessError(actor);
+    if (!denied) {
+      if (command !== undefined) execute(state, actor, command);
+      if (trustedUpdate) trustedUpdate(state, actor);
+    }
+    const view = denied ? null : viewState(state, actor);
+    if (
+      !changed &&
+      !migrated &&
+      (denied || (command === undefined && !trustedUpdate))
+    ) {
+      if (denied) throw new Error(denied);
+      return view!;
+    }
     const result = await db.rpc("portal_commit", {
       expected_revision: data.revision,
       next_value: state,
@@ -71,7 +86,10 @@ export async function cloudView(
       console.error("Portal commit failed:", result.error.code);
       throw new Error("Could not save your changes.");
     }
-    if (result.data === true) return view;
+    if (result.data === true) {
+      if (denied) throw new Error(denied);
+      return view!;
+    }
     // Re-run validation against the winning transaction, preserving caps and evaluation conflicts.
   }
   throw new Error("The workspace is busy. Please try again.");

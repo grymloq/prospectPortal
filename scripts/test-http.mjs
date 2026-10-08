@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { mkdtemp, mkdir, rm } from "node:fs/promises";
 import path from "node:path";
+import { testScrimHttp } from "./test-scrim-http.mjs";
 await mkdir(".local", { recursive: true });
 const scratch = await mkdtemp(path.resolve(".local/http-qa-"));
 const origin = "http://127.0.0.1:3107";
@@ -290,6 +291,68 @@ try {
     password: "Local-test-123",
   });
   assert.equal(registered.status, 200);
+  check(
+    "registration waits for membership confirmation without issuing a session",
+    () => {
+      assert.equal(registered.cookie, undefined);
+      assert.match(registered.data.message, /awaiting confirmation/i);
+    },
+  );
+  const waitingLogin = await request("/api/session", {
+    email: "qa@example.test",
+    password: "Local-test-123",
+  });
+  assert.equal(waitingLogin.status, 400);
+  const directory = await request("/api/admin/users", null, admin.cookie);
+  const waitingUser = directory.data.view.users.find(
+    (u) => u.email === "qa@example.test",
+  );
+  assert.equal(waitingUser.confirmedMember, false);
+  const selfConfirm = await request(
+    "/api/state",
+    { type: "userConfirmation", userId: waitingUser.id, confirmed: true },
+    player.cookie,
+  );
+  assert.equal(selfConfirm.status, 400);
+  const confirmed = await request(
+    "/api/state",
+    { type: "userConfirmation", userId: waitingUser.id, confirmed: true },
+    admin.cookie,
+  );
+  assert.equal(confirmed.status, 200);
+  const confirmedLogin = await request("/api/session", {
+    email: "qa@example.test",
+    password: "Local-test-123",
+  });
+  assert.equal(confirmedLogin.status, 200);
+  registered.cookie = confirmedLogin.cookie;
+  const revoked = await request(
+    "/api/state",
+    { type: "userConfirmation", userId: waitingUser.id, confirmed: false },
+    admin.cookie,
+  );
+  assert.equal(revoked.status, 200);
+  assert.equal(
+    (await request("/api/state", null, registered.cookie)).status,
+    401,
+  );
+  assert.equal(
+    (await request("/api/army-import", importBody, registered.cookie)).status,
+    401,
+  );
+  assert.equal(
+    (await request("/api/admin/users", null, registered.cookie)).status,
+    401,
+  );
+  await request(
+    "/api/state",
+    { type: "userConfirmation", userId: waitingUser.id, confirmed: true },
+    admin.cookie,
+  );
+  check(
+    "only admins confirm members and revocation blocks existing sessions",
+    () => {},
+  );
   let applied = await request(
     "/api/state",
     {
@@ -487,6 +550,7 @@ try {
   check("goal evidence and review workflow", () =>
     assert.equal(progress.data.goals[0].status, "Ready for review"),
   );
+  await testScrimHttp({ request, check, admin, player });
   const logout = await request(
     "/api/session",
     null,

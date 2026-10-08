@@ -1,0 +1,707 @@
+import assert from "node:assert/strict";
+import { test, after } from "node:test";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import path from "node:path";
+import type { State, User } from "../src/lib/types";
+mkdirSync(path.resolve(".local"), { recursive: true });
+const scratch = mkdtempSync(path.resolve(".local/scrim-tests-"));
+process.env.TEAM_DB_PATH = path.join(scratch, "test.sqlite");
+const { readState, db, transaction } = await import("../src/server/store");
+const { execute, viewState } = await import("../src/server/service");
+const { catalogue, armySnapshot } = await import("../src/lib/catalogue");
+const { armyKey, buildMatchups } = await import("../src/lib/matchups");
+const { scrimScore } = await import("../src/lib/scrims");
+const { ensureMembership } = await import("../src/server/membership");
+const { stockholmLocal } = await import("../src/lib/stockholm");
+const base = readState();
+after(() => {
+  db.close();
+  if (!scratch.startsWith(path.resolve(".local") + path.sep))
+    throw new Error("Unsafe cleanup path");
+  rmSync(scratch, { recursive: true, force: true });
+});
+
+function at<T>(when: number, work: () => T): T {
+  const previous = Date.now;
+  Date.now = () => when;
+  try {
+    return work();
+  } finally {
+    Date.now = previous;
+  }
+}
+function armyFor(index: number) {
+  const disposition =
+    catalogue.dispositions[index % catalogue.dispositions.length];
+  for (const faction of catalogue.factions) {
+    const detachment = faction.detachments.find(
+      (d) => d.points <= 3 && d.dispositions.includes(disposition.id),
+    );
+    if (detachment)
+      return {
+        listName: `List ${index + 1}`,
+        faction: faction.id,
+        detachments: [detachment.id],
+        disposition: disposition.id,
+        listUrl: `https://example.com/list-${index + 1}`,
+      };
+  }
+  throw new Error("No army for disposition");
+}
+function fixture(size = 2, kind: "internal" | "external" = "internal") {
+  const s: State = structuredClone(base);
+  for (let i = 13; i <= 20; i++)
+    s.users.push({
+      ...s.users[1],
+      id: `p${i}`,
+      name: `Player ${i}`,
+      email: `p${i}@test.invalid`,
+    });
+  const admin = s.users[0];
+  const member = (i: number) => s.users.find((u) => u.id === `p${i}`)!;
+  const deadline = Date.now() + 3600_000,
+    start = deadline + 3600_000;
+  const create = {
+    type: "scrimCreate",
+    title: "Test scrim",
+    kind,
+    teamSize: size,
+    patchId: s.patches![0].id,
+    submissionDeadline: new Date(deadline).toISOString(),
+    startsAt: new Date(start).toISOString(),
+    endsAt: new Date(start + 3 * 86400_000).toISOString(),
+    location: "Online",
+    online: true,
+    onlineUrl: "",
+    description: "",
+    teams: [
+      { name: "Blue", captainId: member(1).id },
+      {
+        name: "Yellow",
+        captainId: kind === "internal" ? member(size + 1).id : "",
+      },
+    ],
+  };
+  execute(s, admin, create);
+  const scrim = s.scrims![0];
+  const run = (actor: User, command: object) =>
+    execute(s, actor, {
+      scrimId: scrim.id,
+      revision: scrim.revision,
+      ...command,
+    });
+  const fill = () => {
+    for (const [t, team] of scrim.teams.entries()) {
+      run(admin, {
+        type: "scrimRoster",
+        teamId: team.id,
+        entries: Array.from({ length: size }, (_, i) =>
+          team.external
+            ? { name: `External ${i + 1}` }
+            : { userId: member(t * size + i + 1).id },
+        ),
+      });
+      for (const [i, entry] of team.entries.entries())
+        run(admin, {
+          type: "scrimSubmit",
+          teamId: team.id,
+          entryId: entry.id,
+          army: armyFor(i),
+        });
+      run(admin, { type: "scrimFinalize", teamId: team.id, finalized: true });
+    }
+  };
+  const pair = () =>
+    at(deadline + 1, () =>
+      run(admin, {
+        type: "scrimPairings",
+        pairings: scrim.teams[0].entries.map((e, i) => ({
+          aId: e.id,
+          bId: scrim.teams[1].entries[i].id,
+          layout: "A",
+        })),
+      }),
+    );
+  const report = (
+    i: number,
+    score: number,
+    actor = admin,
+    perspective = "a",
+    notes?: string,
+  ) =>
+    at(start + 60_000, () =>
+      run(actor, {
+        type: "scrimReport",
+        pairingId: scrim.pairings[i].id,
+        perspective,
+        score,
+        date: stockholmLocal(new Date(start).toISOString()).slice(0, 10),
+        ...(notes !== undefined ? { notes } : {}),
+      }),
+    );
+  return {
+    s,
+    admin,
+    member,
+    scrim,
+    create,
+    run,
+    fill,
+    pair,
+    report,
+    deadline,
+    start,
+  };
+}
+
+test("existing users migrate without losing content; new pending users cannot read or write", () => {
+  const s = structuredClone(base);
+  delete s.membershipCutoverAt;
+  for (const user of s.users) delete user.confirmedMember;
+  const before = JSON.stringify(s.games);
+  assert.equal(ensureMembership(s), true);
+  assert.ok(s.users.every((u) => u.confirmedMember));
+  assert.equal(JSON.stringify(s.games), before);
+  s.users[1].confirmedMember = false;
+  assert.equal(ensureMembership(s), false);
+  assert.throws(() => viewState(s, s.users[1]), /awaiting confirmation/);
+  assert.throws(
+    () => execute(s, s.users[1], { type: "defaultArmy", id: "" }),
+    /awaiting confirmation/,
+  );
+  s.users.push({
+    ...s.users[1],
+    id: "new-without-flag",
+    confirmedMember: undefined,
+  });
+  ensureMembership(s);
+  assert.equal(s.users.at(-1)!.confirmedMember, false);
+});
+test("confirmation is admin-only, prevents self-lockout and is independent of selection", () => {
+  const f = fixture();
+  const user = f.member(2),
+    phase = user.phaseId;
+  assert.throws(
+    () =>
+      f.run(user, {
+        type: "userConfirmation",
+        userId: user.id,
+        confirmed: true,
+      }),
+    /Admin/,
+  );
+  assert.throws(
+    () =>
+      f.run(f.admin, {
+        type: "userConfirmation",
+        userId: f.admin.id,
+        confirmed: false,
+      }),
+    /own access/,
+  );
+  f.run(f.admin, {
+    type: "userConfirmation",
+    userId: user.id,
+    confirmed: false,
+  });
+  assert.throws(() => viewState(f.s, user), /awaiting confirmation/);
+  f.run(f.admin, {
+    type: "userConfirmation",
+    userId: user.id,
+    confirmed: true,
+  });
+  assert.equal(user.phaseId, phase);
+});
+test("scrim creation requires an admin, valid captains, feasible size, rules and dates", () => {
+  const f = fixture();
+  assert.throws(() => execute(f.s, f.member(1), f.create), /Admin/);
+  assert.throws(
+    () => execute(f.s, f.admin, { ...f.create, teamSize: 11 }),
+    /maximum/,
+  );
+  assert.throws(
+    () =>
+      execute(f.s, f.admin, {
+        ...f.create,
+        teams: [f.create.teams[0], f.create.teams[0]],
+      }),
+    /different captain/,
+  );
+  assert.throws(
+    () =>
+      execute(f.s, f.admin, {
+        ...f.create,
+        submissionDeadline: new Date(Date.now() - 1).toISOString(),
+      }),
+    /deadline/,
+  );
+  assert.throws(
+    () => execute(f.s, f.admin, { ...f.create, patchId: "missing" }),
+    /patch/,
+  );
+  assert.equal(f.s.events.at(-1)?.scrimId, f.scrim.id);
+});
+test("captains may be non-playing and roster permissions cannot cross teams", () => {
+  const f = fixture();
+  const team = f.scrim.teams[0];
+  assert.throws(
+    () =>
+      f.run(f.member(3), {
+        type: "scrimRoster",
+        teamId: team.id,
+        entries: [{ userId: "p2" }],
+      }),
+    /captain/,
+  );
+  f.run(f.member(1), {
+    type: "scrimRoster",
+    teamId: team.id,
+    entries: [{ userId: "p2" }],
+  });
+  assert.equal(
+    team.entries.some((e) => e.userId === "p1"),
+    false,
+  );
+  assert.throws(
+    () =>
+      f.run(f.member(1), {
+        type: "scrimRoster",
+        teamId: team.id,
+        entries: [{ userId: "p3" }],
+      }),
+    /both teams/,
+  );
+  assert.throws(
+    () =>
+      f.run(f.member(1), {
+        type: "scrimRoster",
+        teamId: team.id,
+        entries: [{ userId: "p2" }, { userId: "p2" }],
+      }),
+    /once/,
+  );
+  assert.throws(
+    () =>
+      f.run(f.member(1), {
+        type: "scrimRoster",
+        teamId: team.id,
+        entries: [{ userId: "p2" }, { userId: "p4" }, { userId: "p5" }],
+      }),
+    /full/,
+  );
+  f.member(2).confirmedMember = false;
+  assert.throws(
+    () =>
+      f.run(f.admin, {
+        type: "scrimRoster",
+        teamId: team.id,
+        entries: [{ userId: "p2" }],
+      }),
+    /confirmed/,
+  );
+});
+test("drafts tolerate duplicates but smaller teams finalize with distinct dispositions", () => {
+  const f = fixture();
+  const t = f.scrim.teams[0];
+  f.run(f.admin, {
+    type: "scrimRoster",
+    teamId: t.id,
+    entries: [{ userId: "p1" }, { userId: "p2" }],
+  });
+  for (const e of t.entries)
+    f.run(f.admin, {
+      type: "scrimSubmit",
+      teamId: t.id,
+      entryId: e.id,
+      army: armyFor(0),
+    });
+  assert.throws(
+    () =>
+      f.run(f.admin, { type: "scrimFinalize", teamId: t.id, finalized: true }),
+    /maximum 1/,
+  );
+  f.run(f.member(2), {
+    type: "scrimSubmit",
+    teamId: t.id,
+    entryId: t.entries[1].id,
+    army: armyFor(1),
+  });
+  f.run(f.member(1), { type: "scrimFinalize", teamId: t.id, finalized: true });
+  assert.ok(t.finalizedAt);
+});
+test("eight-player final submissions require all dispositions and no more than two each", () => {
+  const f = fixture(8);
+  f.fill();
+  const t = f.scrim.teams[0];
+  assert.ok(t.finalizedAt);
+  f.run(f.admin, { type: "scrimFinalize", teamId: t.id, finalized: false });
+  f.run(f.admin, {
+    type: "scrimSubmit",
+    teamId: t.id,
+    entryId: t.entries[4].id,
+    army: armyFor(0),
+  });
+  assert.throws(
+    () =>
+      f.run(f.admin, { type: "scrimFinalize", teamId: t.id, finalized: true }),
+    /Missing.*|maximum 2/,
+  );
+});
+test("captain submissions save into the player's own library, without granting private library access", () => {
+  const f = fixture();
+  f.fill();
+  const team = f.scrim.teams[0],
+    entry = team.entries[1];
+  const saved = f.s.savedArmies!.find((a) => a.id === entry.savedArmyId)!;
+  assert.equal(saved.userId, "p2");
+  assert.equal(saved.shared, false);
+  assert.ok(
+    viewState(f.s, f.member(2)).savedArmies!.some((a) => a.id === saved.id),
+  );
+  assert.ok(
+    !viewState(f.s, f.member(1)).savedArmies!.some((a) => a.id === saved.id),
+  );
+  f.run(f.admin, { type: "scrimFinalize", teamId: team.id, finalized: false });
+  assert.throws(
+    () =>
+      f.run(f.member(1), {
+        type: "scrimSubmit",
+        teamId: team.id,
+        entryId: entry.id,
+        savedArmyId: saved.id,
+      }),
+    /available saved army/,
+  );
+  f.run(f.member(2), {
+    type: "scrimSubmit",
+    teamId: team.id,
+    entryId: entry.id,
+    savedArmyId: saved.id,
+  });
+  const oldName = entry.army!.listName;
+  f.run(f.member(2), {
+    type: "saveArmy",
+    id: saved.id,
+    patchId: f.scrim.patchId,
+    army: { ...saved.army, listName: "Changed later" },
+  });
+  assert.equal(entry.army!.listName, oldName);
+});
+test("server hides opponent lists before the deadline and all private plans until completion", () => {
+  const f = fixture();
+  f.fill();
+  let v = viewState(f.s, f.member(1));
+  assert.ok(v.scrims![0].teams[0].entries[0].army);
+  assert.equal(v.scrims![0].teams[1].entries[0].army, undefined);
+  assert.equal(v.scrims![0].teams[0].estimates.length, 0);
+  at(f.deadline + 1, () => {
+    v = viewState(f.s, f.member(1));
+    assert.ok(v.scrims![0].teams[1].entries[0].army);
+    assert.ok(v.scrims![0].teams[0].estimates.length);
+    assert.equal(v.scrims![0].teams[1].estimates.length, 0);
+    assert.ok(
+      viewState(f.s, f.admin).scrims![0].teams.every(
+        (t) => t.estimates.length === 0,
+      ),
+    );
+  });
+});
+test("team members edit only their own matrix, with comments and independent shared seeds", () => {
+  const f = fixture();
+  f.s.manualEstimates = [
+    {
+      userId: f.admin.id,
+      patchId: f.scrim.patchId,
+      row: armyKey(armySnapshot(armyFor(0))),
+      column: armyKey(armySnapshot(armyFor(1))),
+      layout: "A",
+      score: 13,
+      authorName: "Shared author",
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+  f.fill();
+  const t = f.scrim.teams[0],
+    cell = t.estimates.find(
+      (c) =>
+        c.ownId === t.entries[0].id &&
+        c.enemyId === f.scrim.teams[1].entries[1].id,
+    )!;
+  assert.equal(cell.scores.A, 13);
+  at(f.deadline + 1, () => {
+    const target = { teamId: t.id, ownId: cell.ownId, enemyId: cell.enemyId };
+    assert.throws(
+      () =>
+        f.run(f.member(3), {
+          type: "scrimEstimate",
+          ...target,
+          scores: { A: 1, B: 2, C: 3 },
+        }),
+      /Only team/,
+    );
+    f.run(f.member(2), {
+      type: "scrimEstimate",
+      ...target,
+      scores: { A: 15, B: null, C: 11 },
+    });
+    f.run(f.member(2), {
+      type: "scrimPlanComment",
+      ...target,
+      text: "Private plan",
+    });
+    assert.equal(cell.scores.A, 15);
+    assert.equal(f.s.manualEstimates![0].score, 13);
+    assert.equal(
+      JSON.stringify(viewState(f.s, f.member(3))).includes("Private plan"),
+      false,
+    );
+    assert.equal(
+      JSON.stringify(viewState(f.s, f.member(2))).includes("Private plan"),
+      true,
+    );
+  });
+});
+test("deadline and finalization lock rosters/lists, including admin writes", () => {
+  const f = fixture();
+  f.fill();
+  const team = f.scrim.teams[0];
+  assert.throws(
+    () =>
+      f.run(f.admin, {
+        type: "scrimSubmit",
+        teamId: team.id,
+        entryId: team.entries[0].id,
+        army: armyFor(1),
+      }),
+    /Reopen/,
+  );
+  at(f.deadline + 1, () => {
+    for (const command of [
+      { type: "scrimRoster", teamId: team.id, entries: [] },
+      {
+        type: "scrimSubmit",
+        teamId: team.id,
+        entryId: team.entries[0].id,
+        army: armyFor(1),
+      },
+      { type: "scrimFinalize", teamId: team.id, finalized: false },
+    ])
+      assert.throws(() => f.run(f.admin, command), /deadline/);
+  });
+});
+test("pairings need all players once, valid sides and layouts; publication locks them", () => {
+  const f = fixture();
+  f.fill();
+  const pairs = f.scrim.teams[0].entries.map((e, i) => ({
+    aId: e.id,
+    bId: f.scrim.teams[1].entries[i].id,
+    layout: "B",
+  }));
+  assert.throws(
+    () => f.run(f.admin, { type: "scrimPairings", pairings: pairs }),
+    /deadline/,
+  );
+  at(f.deadline + 1, () => {
+    assert.throws(
+      () => f.run(f.member(2), { type: "scrimPairings", pairings: pairs }),
+      /captains/,
+    );
+    assert.throws(
+      () =>
+        f.run(f.admin, {
+          type: "scrimPairings",
+          pairings: [pairs[0], pairs[0]],
+        }),
+      /exactly once/,
+    );
+    assert.throws(() =>
+      f.run(f.admin, {
+        type: "scrimPairings",
+        pairings: pairs.map((p) => ({ ...p, layout: "D" })),
+      }),
+    );
+    f.run(f.member(1), { type: "scrimPairings", pairings: pairs });
+    assert.equal(
+      f.scrim.pairings.every((p) => p.layout === "B"),
+      true,
+    );
+    assert.throws(
+      () => f.run(f.admin, { type: "scrimPairings", pairings: pairs }),
+      /locked/,
+    );
+  });
+});
+test("one report atomically mirrors journals, preserves private notes and deduplicates known matches", () => {
+  const f = fixture();
+  f.fill();
+  f.pair();
+  f.report(0, 13, f.member(1), "a", "My private reflection");
+  const games = f.s.games.filter((g) => g.scrimId === f.scrim.id);
+  assert.equal(games.length, 2);
+  assert.equal(games.find((g) => g.userId === "p1")!.score, 13);
+  assert.equal(games.find((g) => g.userId === "p3")!.score, 7);
+  assert.equal(games.find((g) => g.userId === "p3")!.notes, "");
+  assert.equal(
+    JSON.stringify(viewState(f.s, f.member(3))).includes(
+      "My private reflection",
+    ),
+    false,
+  );
+  f.report(0, 9, f.member(3), "b", "Opponent private reflection");
+  assert.equal(f.s.games.filter((g) => g.scrimId === f.scrim.id).length, 2);
+  assert.equal(games.find((g) => g.userId === "p1")!.score, 11);
+  assert.equal(
+    games.find((g) => g.userId === "p1")!.notes,
+    "My private reflection",
+  );
+  assert.equal(buildMatchups(games).included, 1);
+  assert.equal(
+    buildMatchups(games.filter((g) => g.userId === "p1")).included,
+    1,
+  );
+});
+test("result permissions, score validation and playing span are server enforced", () => {
+  const f = fixture();
+  f.fill();
+  f.pair();
+  assert.throws(() => f.report(0, 13, f.member(2)), /paired players/);
+  assert.throws(() => f.report(0, 21));
+  assert.throws(() => f.report(0, 10.5));
+  assert.throws(
+    () =>
+      f.run(f.admin, {
+        type: "scrimReport",
+        pairingId: f.scrim.pairings[0].id,
+        perspective: "a",
+        score: 10,
+        date: "2026-01-01",
+      }),
+    /not started/,
+  );
+  at(f.start + 60_000, () =>
+    assert.throws(
+      () =>
+        f.run(f.admin, {
+          type: "scrimReport",
+          pairingId: f.scrim.pairings[0].id,
+          perspective: "a",
+          score: 10,
+          date: "2026-01-01",
+        }),
+      /within/,
+    ),
+  );
+  f.report(0, 10, f.member(3), "a"); // opposing captain can act for a match
+});
+test("a scrim completes only after all results and uses the five-point difference draw band", () => {
+  const f = fixture(8);
+  f.fill();
+  f.pair();
+  for (let i = 0; i < 7; i++) f.report(i, 10);
+  assert.equal(scrimScore(f.scrim).winner, null);
+  f.report(7, 12);
+  assert.equal(scrimScore(f.scrim).a, 82);
+  assert.equal(scrimScore(f.scrim).b, 78);
+  assert.equal(scrimScore(f.scrim).winner, "Draw");
+  f.report(7, 13);
+  assert.equal(scrimScore(f.scrim).winner, "Blue");
+  assert.ok(
+    viewState(f.s, f.member(20)).scrims![0].teams.every(
+      (t) => t.estimates.length === 64,
+    ),
+  );
+  assert.equal(
+    viewState(f.s, f.member(20)).games.some((g) => g.scrimId === f.scrim.id),
+    false,
+  );
+});
+test("stale writes cannot overwrite results and linked journals cannot be detached or deleted", () => {
+  const f = fixture();
+  f.fill();
+  f.pair();
+  const stale = f.scrim.revision;
+  f.report(0, 10, f.member(1));
+  assert.throws(
+    () =>
+      at(f.start + 60_000, () =>
+        f.run(f.member(1), {
+          type: "scrimReport",
+          revision: stale,
+          pairingId: f.scrim.pairings[0].id,
+          perspective: "a",
+          score: 20,
+          date: stockholmLocal(new Date(f.start).toISOString()).slice(0, 10),
+        }),
+      ),
+    /changed/,
+  );
+  const g = f.s.games.find(
+    (g) => g.scrimId === f.scrim.id && g.userId === "p1",
+  )!;
+  assert.throws(
+    () => f.run(f.member(1), { type: "deleteGame", id: g.id }),
+    /cannot be deleted/,
+  );
+  assert.throws(
+    () => f.run(f.member(1), { ...g, type: "game" }),
+    /shared result/,
+  );
+  f.run(f.member(1), {
+    type: "scrimJournalNotes",
+    gameId: g.id,
+    notes: "Private note only",
+  });
+  assert.equal(g.score, 10);
+  assert.throws(
+    () =>
+      f.run(f.member(2), {
+        type: "scrimJournalNotes",
+        gameId: g.id,
+        notes: "intrusion",
+      }),
+    /own journal/,
+  );
+});
+test("external teams need no accounts and only portal players receive journals", () => {
+  const f = fixture(2, "external");
+  f.fill();
+  f.pair();
+  f.report(0, 14, f.member(1));
+  const games = f.s.games.filter((g) => g.scrimId === f.scrim.id);
+  assert.equal(games.length, 1);
+  assert.equal(games[0].opponent, "External 1");
+  assert.equal(games[0].opponentUserId, undefined);
+  assert.equal(f.s.savedArmies!.filter((a) => !a.userId).length, 0);
+});
+test("match comments are public scrim data, planning stays private and cancellation preserves history", () => {
+  const f = fixture();
+  f.fill();
+  f.pair();
+  f.report(0, 10);
+  const cmd = {
+    type: "scrimMatchComment",
+    pairingId: f.scrim.pairings[0].id,
+    text: "Finished on time",
+  };
+  assert.throws(() => f.run(f.member(2), cmd), /paired players/);
+  f.run(f.member(1), cmd);
+  assert.ok(
+    JSON.stringify(viewState(f.s, f.member(20)).scrims).includes(
+      "Finished on time",
+    ),
+  );
+  f.run(f.admin, { type: "scrimCancel" });
+  assert.ok(f.scrim.cancelled);
+  assert.equal(f.s.games.filter((g) => g.scrimId === f.scrim.id).length, 2);
+  assert.throws(() => f.report(1, 10), /cancelled/);
+});
+test("transaction rollback retains history when a scrim write fails", () => {
+  const before = JSON.stringify(readState());
+  assert.throws(() =>
+    transaction((s) => {
+      s.users[0].name = "Should roll back";
+      execute(s, s.users[0], { type: "scrimCreate" });
+    }),
+  );
+  assert.equal(JSON.stringify(readState()), before);
+});

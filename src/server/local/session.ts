@@ -13,7 +13,9 @@ export function sessionUserId(req: NextRequest) {
     .get(token, Date.now()) as { user_id: string } | undefined;
   if (
     !row ||
-    !readState().users.some((u) => u.id === row.user_id && !u.removedAt)
+    !readState().users.some(
+      (u) => u.id === row.user_id && u.confirmedMember && !u.removedAt,
+    )
   )
     return null;
   return row.user_id;

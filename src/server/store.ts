@@ -5,6 +5,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import type { State, User } from "@/lib/types";
 import { catalogue, armySnapshot } from "@/lib/catalogue";
 import { ensurePatches } from "@/lib/patches";
+import { ensureMembership } from "./membership";
 
 export function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
@@ -251,6 +252,7 @@ export function readState(): State {
     ).value,
   );
   ensurePatches(state);
+  ensureMembership(state);
   return state;
 }
 export function transaction<T>(work: (s: State) => T): T {
@@ -273,3 +275,5 @@ export function publicUser(user: User): User {
   delete safe.password;
   return safe;
 }
+// Persist additive membership migration without replacing any local records.
+transaction(() => undefined);

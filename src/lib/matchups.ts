@@ -41,6 +41,7 @@ export function armyAverage(
   return { total, count, average: count ? total / count : 0 };
 }
 export function buildMatchups(games: Game[], patchId?: string) {
+  const seenScrimPairings = new Set<string>();
   const armies = new Map<string, MatrixArmy>(),
     cells = new Map<string, Matchup>();
   let included = 0,
@@ -56,6 +57,10 @@ export function buildMatchups(games: Game[], patchId?: string) {
   }
   for (const game of games) {
     if (patchId && game.patchId !== patchId) continue;
+    if (game.scrimPairingId) {
+      if (seenScrimPairings.has(game.scrimPairingId)) continue;
+      seenScrimPairings.add(game.scrimPairingId);
+    }
     const row = armyKey(game.own),
       column = armyKey(game.enemy);
     armies.set(row, { key: row, army: game.own });

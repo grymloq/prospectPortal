@@ -1,5 +1,15 @@
 # Deployment record — 8 September 2026
 
+## Scrims and membership approval — 8 October 2026
+
+The scrim increment adds configurable equal-size internal/external teams, list deadlines, frozen submitted armies, team-private planning matrices, captains, fixed pairings, shared results with mirrored journals, and membership approval. Multi-round events remain future work.
+
+Validation before release: lint, production build, 53 domain tests and 29 HTTP checks passed. The HTTP suite includes membership approval/revocation and simultaneous scrim reporting. Browser checks on an isolated local database covered calendar creation, four-player roster assignment, direct army submission, My Armies persistence, matrix editing/comments, journal autofill, mirrored-result completion and visible validation errors. Responsive checks at 320px and 390px had no page overflow; the matrix scrolls within its own panel. No fixture scrims were added to production.
+
+Production data rollout: `scripts/confirm-existing-members.sql` was run against **obahctwhpbmtyeybxodq** at 2026-10-08 13:46 UTC. Portal revision advanced from 135 to 136; all four existing portal user records became confirmed. Every existing Auth user already had a portal record. The digest of all non-membership content was identical before and after. RLS remained enabled and anon/authenticated roles had no direct portal-table privileges. The migration is additive and idempotent; the stored cutoff also handles older Auth accounts if later provisioned.
+
+The screen preview uses fictional data from `.local/scrim-qa/browser.sqlite`; it is separate from both the normal local database and production.
+
 - Live site: https://prospect-portal-one.vercel.app
 - Repository: https://github.com/grymloq/prospectPortal
 - Vercel project: prospect-portal, team emil-soderholms-projects.

@@ -111,6 +111,13 @@ export default function UserManagement({
                   {u.removedAt && (
                     <small>{new Date(u.removedAt).toLocaleString()}</small>
                   )}
+                  {!u.removedAt && (
+                    <small>
+                      {u.confirmedMember
+                        ? "Confirmed member"
+                        : "Awaiting confirmation"}
+                    </small>
+                  )}
                 </td>
                 <td>
                   {u.rejected
@@ -121,6 +128,23 @@ export default function UserManagement({
                 <td>
                   {!u.removedAt && (
                     <div className="user-actions">
+                      <button
+                        disabled={u.id === view.me.id || busy}
+                        onClick={async () => {
+                          setBusy(true);
+                          const ok = await mutate({
+                            type: "userConfirmation",
+                            userId: u.id,
+                            confirmed: !u.confirmedMember,
+                          });
+                          setBusy(false);
+                          if (ok) setDirectory(null);
+                        }}
+                      >
+                        {u.confirmedMember
+                          ? "Revoke confirmation"
+                          : "Confirm member"}
+                      </button>
                       {u.invitedAt && !u.acceptedAt && (
                         <button onClick={() => openInvite(u)}>
                           New invite link
@@ -167,7 +191,7 @@ export default function UserManagement({
         <summary>User-management history</summary>
         {shown.audit
           .filter((a) =>
-            /changed .* to (admin|member)|removed portal access|invitation link/.test(
+            /changed .* to (admin|member)|removed portal access|invitation link|membership/.test(
               a.text,
             ),
           )

@@ -13,6 +13,7 @@ import { Disposition } from "./disposition";
 import { ArmyListLink } from "./army-list-drawer";
 import type { Mutate } from "./workspace";
 import { Badge, Field, Modal, Empty, dateLabel } from "./ui";
+import ScrimReport from "./scrim-report";
 export type Choice = Pick<
   Army,
   "faction" | "detachments" | "disposition" | "listUrl" | "listName"
@@ -271,6 +272,13 @@ export default function Journal({
       view.patches.some((p) => p.id === a.patchId && !p.removedAt),
   );
   const [opponentName, setOpponentName] = useState("");
+  const [scrimReport, setScrimReport] = useState<{
+    scrimId: string;
+    pairingId: string;
+  } | null>(null);
+  const reportingScrim = view.scrims?.find(
+    (s) => s.id === scrimReport?.scrimId,
+  );
   const [opponentUserId, setOpponentUserId] = useState("");
   const mentionQuery =
     !opponentUserId && opponentName.startsWith("@")
@@ -313,6 +321,12 @@ export default function Journal({
   const rules =
     view.patches.find((p) => p.id === rulesPatch)?.catalogue || catalogue;
   function open(game: Game | "new") {
+    if (game !== "new" && game.scrimId && game.scrimPairingId) {
+      setScrimReport({ scrimId: game.scrimId, pairingId: game.scrimPairingId });
+      setEdit(null);
+      setDetail(null);
+      return;
+    }
     setRulesPatch(
       game === "new"
         ? defaultArmy?.patchId ||
@@ -634,12 +648,64 @@ export default function Journal({
           />
         )}
       </section>
+      {reportingScrim && scrimReport && (
+        <ScrimReport
+          key={scrimReport.pairingId}
+          view={view}
+          scrim={reportingScrim}
+          pairingId={scrimReport.pairingId}
+          mutate={mutate}
+          onClose={() => setScrimReport(null)}
+        />
+      )}
       {edit && (
         <Modal
           title={edit === "new" ? "Log a game" : "Edit game"}
           wide
           onClose={() => setEdit(null)}
         >
+          {edit === "new" && (
+            <Field label="Scrim (optional)">
+              <select
+                defaultValue=""
+                onChange={(e) => {
+                  const scrim = view.scrims?.find(
+                    (s) => s.id === e.target.value,
+                  );
+                  const entry = scrim?.teams
+                    .flatMap((t) => t.entries)
+                    .find((p) => p.userId === view.me.id);
+                  const pair = scrim?.pairings.find(
+                    (p) => p.aId === entry?.id || p.bId === entry?.id,
+                  );
+                  if (scrim && pair) {
+                    setEdit(null);
+                    setScrimReport({ scrimId: scrim.id, pairingId: pair.id });
+                  }
+                }}
+              >
+                <option value="">Regular game — enter details</option>
+                {(view.scrims || [])
+                  .filter(
+                    (s) =>
+                      s.pairedAt &&
+                      !s.cancelled &&
+                      s.teams.some((t) =>
+                        t.entries.some((p) => p.userId === view.me.id),
+                      ),
+                  )
+                  .map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {view.events.find((e) => e.id === s.eventId)?.title}
+                    </option>
+                  ))}
+              </select>
+              <small>
+                Choose a scrim to fill both lists, opponent, rules and layout
+                automatically.
+              </small>
+            </Field>
+          )}
           <form
             onSubmit={async (e) => {
               e.preventDefault();
@@ -827,11 +893,13 @@ export default function Journal({
                   defaultValue={edit === "new" ? "" : edit.eventId}
                 >
                   <option value="">No linked event</option>
-                  {view.events.map((ev) => (
-                    <option key={ev.id} value={ev.id}>
-                      {ev.title}
-                    </option>
-                  ))}
+                  {view.events
+                    .filter((ev) => !ev.scrimId)
+                    .map((ev) => (
+                      <option key={ev.id} value={ev.id}>
+                        {ev.title}
+                      </option>
+                    ))}
                 </select>
               </Field>
             </div>
@@ -909,22 +977,23 @@ export default function Journal({
                 <Pencil size={16} />
                 Edit game
               </button>
-              {!deleting ? (
-                <button className="danger" onClick={() => setDeleting(true)}>
-                  <Trash2 size={16} />
-                  Delete
-                </button>
-              ) : (
-                <button
-                  className="danger"
-                  onClick={async () => {
-                    if (await mutate({ type: "deleteGame", id: detail.id }))
-                      setDetail(null);
-                  }}
-                >
-                  Confirm delete game
-                </button>
-              )}
+              {!detail.scrimPairingId &&
+                (!deleting ? (
+                  <button className="danger" onClick={() => setDeleting(true)}>
+                    <Trash2 size={16} />
+                    Delete
+                  </button>
+                ) : (
+                  <button
+                    className="danger"
+                    onClick={async () => {
+                      if (await mutate({ type: "deleteGame", id: detail.id }))
+                        setDetail(null);
+                    }}
+                  >
+                    Confirm delete game
+                  </button>
+                ))}
             </div>
           )}
         </Modal>

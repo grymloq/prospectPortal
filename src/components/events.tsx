@@ -55,9 +55,11 @@ function stockholmIso(value: string) {
 export default function Events({
   view,
   mutate,
+  onScrim,
 }: {
   view: View;
   mutate: Mutate;
+  onScrim: (id: string) => void;
 }) {
   const [now] = useState(() => Date.now());
   const [online, setOnline] = useState(false);
@@ -69,9 +71,17 @@ export default function Events({
     [busy, setBusy] = useState(false),
     [formError, setFormError] = useState("");
   const detail = view.events.find((e) => e.id === detailId),
-    events = [...view.events].sort((a, b) =>
-      a.startsAt.localeCompare(b.startsAt),
-    );
+    events = [
+      ...view.events,
+      ...(view.scrims || []).map((s) => ({
+        ...view.events.find((e) => e.id === s.eventId)!,
+        id: `${s.id}-deadline`,
+        title: `Lists due: ${view.events.find((e) => e.id === s.eventId)?.title}`,
+        startsAt: s.submissionDeadline,
+        endsAt: s.submissionDeadline,
+        scrimId: s.id,
+      })),
+    ].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   const [year, m] = month.split("-").map(Number),
     first = new Date(year, m - 1, 1),
     offset = (first.getDay() + 6) % 7,
@@ -85,6 +95,10 @@ export default function Events({
       (a) => a.eventId === eventId && a.userId === view.me.id,
     );
   }
+  function openEvent(event: TeamEvent) {
+    if (event.scrimId) onScrim(event.scrimId);
+    else setDetailId(event.id);
+  }
   return (
     <>
       <header className="page-heading">
@@ -92,6 +106,7 @@ export default function Events({
           <h1>Team calendar</h1>
           <p>Manage training sessions, tournaments, and attendance.</p>
         </div>
+        {admin && <button onClick={() => onScrim("new")}>Create scrim</button>}
         {admin && (
           <button
             className="primary"
@@ -179,7 +194,7 @@ export default function Events({
                               <button
                                 className={e.cancelled ? "cancelled" : ""}
                                 key={e.id}
-                                onClick={() => setDetailId(e.id)}
+                                onClick={() => openEvent(e)}
                               >
                                 <small>{timeLabel(e.startsAt)}</small>
                                 {e.title}
@@ -200,7 +215,7 @@ export default function Events({
                   <button
                     className="agenda-row"
                     key={e.id}
-                    onClick={() => setDetailId(e.id)}
+                    onClick={() => openEvent(e)}
                   >
                     <span className="event-date">
                       <strong>{new Date(e.startsAt).getUTCDate()}</strong>
@@ -216,7 +231,9 @@ export default function Events({
                     <Badge tone={e.cancelled ? "red" : "blue"}>
                       {e.cancelled
                         ? "Cancelled"
-                        : application(e.id)?.status || "Open to apply"}
+                        : e.scrimId
+                          ? "Scrim"
+                          : application(e.id)?.status || "Open to apply"}
                     </Badge>
                     <ArrowRight size={17} />
                   </button>
@@ -232,7 +249,8 @@ export default function Events({
             </div>
           )}
           <div className="table-footer">
-            All times in Europe/Stockholm<span>All members can apply</span>
+            All times in Europe/Stockholm
+            <span>Scrim players are assigned by captains</span>
           </div>
         </section>
         <aside>
@@ -265,11 +283,18 @@ export default function Events({
                 </p>
                 <p>
                   <Users size={15} />
-                  {view.occupancy[e.id] || 0} / {e.capacity} approved
+                  {e.scrimId
+                    ? "Scrim · captain-assigned teams"
+                    : `${view.occupancy[e.id] || 0} / ${e.capacity} approved`}
                 </p>
-                <Progress value={view.occupancy[e.id] || 0} max={e.capacity} />
-                <button className="full" onClick={() => setDetailId(e.id)}>
-                  View event
+                {!e.scrimId && (
+                  <Progress
+                    value={view.occupancy[e.id] || 0}
+                    max={e.capacity}
+                  />
+                )}
+                <button className="full" onClick={() => openEvent(e)}>
+                  {e.scrimId ? "View scrim" : "View event"}
                   <ArrowRight size={16} />
                 </button>
               </section>

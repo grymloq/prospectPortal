@@ -5,6 +5,7 @@ export type Phase = {
   kind: "application" | "review" | "selected";
 };
 export type User = {
+  confirmedMember?: boolean;
   removedAt?: string;
   invitedAt?: string;
   acceptedAt?: string;
@@ -55,6 +56,8 @@ export type Patch = {
   };
 };
 export type Game = {
+  scrimId?: string;
+  scrimPairingId?: string;
   id: string;
   userId: string;
   date: string;
@@ -100,6 +103,7 @@ export type Goal = {
   createdBy: string;
 };
 export type TeamEvent = {
+  scrimId?: string;
   id: string;
   title: string;
   location: string;
@@ -143,6 +147,8 @@ export type ManualEstimate = {
   authorName: string;
 };
 export type State = {
+  membershipCutoverAt?: string;
+  scrims?: Scrim[];
   savedArmies?: {
     id: string;
     userId: string;
@@ -174,6 +180,69 @@ export type State = {
   events: TeamEvent[];
   applications: EventApplication[];
   audit: Audit[];
+};
+export type ScrimComment = {
+  id: string;
+  authorId: string;
+  authorName: string;
+  text: string;
+  createdAt: string;
+};
+export type ScrimEntry = {
+  id: string;
+  userId?: string;
+  name: string;
+  army?: Army;
+  savedArmyId?: string;
+};
+export type ScrimEstimate = {
+  ownId: string;
+  enemyId: string;
+  scores: Record<Layout, number | null>;
+  comments: ScrimComment[];
+  history?: {
+    scores: Record<Layout, number | null>;
+    authorName: string;
+    createdAt: string;
+  }[];
+  updatedBy?: string;
+  updatedAt?: string;
+};
+export type ScrimTeam = {
+  id: string;
+  name: string;
+  external: boolean;
+  captainId: string;
+  captainName: string;
+  entries: ScrimEntry[];
+  finalizedAt?: string;
+  estimates: ScrimEstimate[];
+};
+export type ScrimPairing = {
+  id: string;
+  round: number;
+  aId: string;
+  bId: string;
+  layout: Layout;
+  scoreA?: number;
+  date?: string;
+  updatedBy?: string;
+  updatedAt?: string;
+  comments: ScrimComment[];
+};
+export type Scrim = {
+  id: string;
+  eventId: string;
+  revision: number;
+  kind: "internal" | "external";
+  teamSize: number;
+  patchId: string;
+  submissionDeadline: string;
+  teams: [ScrimTeam, ScrimTeam];
+  pairings: ScrimPairing[];
+  pairedAt?: string;
+  completedAt?: string;
+  cancelled?: boolean;
 };
 export type View = State & {
   playerOptions: { id: string; name: string }[];

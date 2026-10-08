@@ -4,6 +4,7 @@ import { localMode } from "@/server/config";
 import { authClient } from "@/server/supabase";
 import { cloudView } from "@/server/cloud-store";
 import { sameOrigin } from "@/server/session";
+import { pendingMembership } from "@/server/membership";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "private, no-store" };
@@ -31,10 +32,12 @@ async function handle(req: NextRequest, mutate: boolean) {
           e instanceof z.ZodError ? e.issues[0].message : (e as Error).message,
       },
       {
-        status:
-          (e as Error).message === "Your portal access has been removed."
-            ? 401
-            : 400,
+        status: [
+          "Your portal access has been removed.",
+          pendingMembership,
+        ].includes((e as Error).message)
+          ? 401
+          : 400,
         headers,
       },
     );

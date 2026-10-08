@@ -45,12 +45,8 @@ export default function Auth({
           SWEDISH 40K<span>NATIONAL TEAM</span>
         </h2>
         <div>
-          <h1>
-            Swedish 40k National Team
-          </h1>
-          <p>
-            Coaches and players
-          </p>
+          <h1>Swedish 40k National Team</h1>
+          <p>Coaches and players</p>
         </div>
       </section>
       <section className="auth-form">
@@ -59,7 +55,7 @@ export default function Auth({
           <h1>{register ? "Create account" : "Sign in"}</h1>
           <p>
             {register
-              ? "Create your account to access team training and selection."
+              ? "Register for the team portal. An administrator must confirm your membership before you can sign in."
               : "Access your game journal, training goals, and team calendar."}
           </p>
           <form

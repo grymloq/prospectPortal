@@ -22,10 +22,14 @@ import Journal from "./journal";
 import MyArmies from "./my-armies";
 import MatchupMatrix from "./matchup-matrix";
 import Events from "./events";
+import Scrims from "./scrims";
 import Selection from "./selection";
 import UserManagement from "./user-management";
 import { Avatar } from "./ui";
-export type Mutate = (command: object) => Promise<boolean>;
+export type Mutate = (
+  command: object,
+  onError?: (message: string) => void,
+) => Promise<boolean>;
 export default function Workspace({
   localDemo = false,
 }: {
@@ -39,6 +43,7 @@ export default function Workspace({
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
     [journalKey, setJournalKey] = useState(0);
+  const [scrimId, setScrimId] = useState("");
   async function reload() {
     try {
       const r = await fetch("/api/state", { cache: "no-store" });
@@ -76,7 +81,39 @@ export default function Workspace({
       });
     return () => controller.abort();
   }, []);
-  async function mutate(command: object) {
+  // Reload server-filtered lists when a deadline passes while the workspace is open.
+  useEffect(() => {
+    if (!view) return;
+    const deadlines = (view.scrims || [])
+      .map((s) => Date.parse(s.submissionDeadline))
+      .filter((time) => time > Date.now());
+    if (!deadlines.length) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(
+      () => {
+        fetch("/api/state", { cache: "no-store", signal: controller.signal })
+          .then(async (r) => {
+            if (r.status === 401) {
+              setView(null);
+              return;
+            }
+            if (r.ok) setView(await r.json());
+          })
+          .catch(() => {
+            /* Manual refresh remains available if disconnected. */
+          });
+      },
+      Math.min(
+        2_147_483_647,
+        Math.max(1, Math.min(...deadlines) - Date.now() + 50),
+      ),
+    );
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [view]);
+  async function mutate(command: object, onError?: (message: string) => void) {
     setBusy(true);
     setError("");
     try {
@@ -98,6 +135,7 @@ export default function Workspace({
       return true;
     } catch (e) {
       setError((e as Error).message);
+      onError?.((e as Error).message);
       return false;
     } finally {
       setBusy(false);
@@ -142,6 +180,7 @@ export default function Workspace({
     { name: "My armies", page: "My armies", icon: Trophy },
     { name: "Matchup matrix", page: "Matchup matrix", icon: Grid3X3 },
     { name: "Calendar", page: "Calendar", icon: CalendarDays },
+    { name: "Scrims", page: "Scrims", icon: Trophy },
     ...(admin
       ? [
           { name: "Prospects", page: "Prospects", icon: Users },
@@ -302,7 +341,24 @@ export default function Workspace({
           {currentPage === "My armies" && (
             <MyArmies view={view} mutate={mutate} />
           )}
-          {currentPage === "Calendar" && <Events view={view} mutate={mutate} />}{" "}
+          {currentPage === "Calendar" && (
+            <Events
+              view={view}
+              mutate={mutate}
+              onScrim={(id) => {
+                setScrimId(id);
+                setPage("Scrims");
+              }}
+            />
+          )}{" "}
+          {currentPage === "Scrims" && (
+            <Scrims
+              view={view}
+              mutate={mutate}
+              selectedId={scrimId}
+              onSelect={setScrimId}
+            />
+          )}
           {(currentPage === "Selection" || currentPage === "Settings") && (
             <Selection
               key={currentPage}

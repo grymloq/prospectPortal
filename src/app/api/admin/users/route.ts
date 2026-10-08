@@ -19,7 +19,7 @@ const schema = z.object({
     .transform((v) => v.toLowerCase()),
 });
 function admin(actor: User) {
-  if (actor.removedAt || actor.role !== "admin")
+  if (actor.removedAt || !actor.confirmedMember || actor.role !== "admin")
     throw new Error("Admin access required.");
 }
 function inviteAllowed(s: State, email: string) {
@@ -77,6 +77,7 @@ async function handle(req: NextRequest, invite: boolean) {
           name: input.name,
           email: input.email,
           role: "member",
+          confirmedMember: true,
           faction: catalogue.factions[0].id,
           city: "",
           bio: "",
@@ -157,6 +158,7 @@ async function handle(req: NextRequest, invite: boolean) {
         name: input.name,
         email: input.email,
         role: "member",
+        confirmedMember: true,
         faction: catalogue.factions[0].id,
         city: "",
         bio: "",

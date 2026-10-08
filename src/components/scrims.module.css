@@ -1,0 +1,217 @@
+.stack {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.teams {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.card {
+  padding: 22px;
+  background: #fff;
+  border: 1px solid #dce3ea;
+  border-radius: 12px;
+  min-width: 0;
+}
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.heading h2,
+.heading h3 {
+  margin: 0 0 8px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  color: #526277;
+  font-size: 13px;
+}
+.scoreboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  text-align: center;
+  padding: 24px;
+  background: #0a2444;
+  color: #fff;
+  border-radius: 12px;
+}
+.scoreboard strong {
+  font-size: 30px;
+  color: #ffe154;
+}
+.scoreboard small {
+  display: block;
+  color: #d4e0ec;
+  margin-top: 6px;
+}
+.warning {
+  padding: 12px 16px;
+  background: #fff8df;
+  border: 1px solid #ecdb98;
+  border-radius: 8px;
+  color: #655013;
+  font-size: 13px;
+}
+.warning ul {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+.player {
+  padding: 14px 0;
+  border-top: 1px solid #e8edf1;
+  display: grid;
+  gap: 8px;
+}
+.player p {
+  margin: 0;
+  font-size: 13px;
+}
+.player small {
+  display: block;
+  color: #526277;
+}
+.choices {
+  display: grid;
+  gap: 8px;
+  max-height: 380px;
+  overflow-y: auto;
+  margin: 12px 0;
+}
+.choices label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #dce3ea;
+  border-radius: 6px;
+}
+.choices input {
+  width: auto;
+}
+.tableScroll {
+  overflow-x: auto;
+  max-width: 100%;
+  border: 1px solid #dce3ea;
+  border-radius: 8px;
+}
+.matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.matrix th,
+.matrix td {
+  padding: 12px;
+  border-bottom: 1px solid #e4eaf0;
+  border-right: 1px solid #e4eaf0;
+  min-width: 150px;
+  vertical-align: top;
+}
+.matrix th {
+  background: #f4f7fa;
+  text-align: left;
+}
+.matrix th small {
+  display: block;
+  font-weight: normal;
+  margin-top: 6px;
+  color: #526277;
+}
+.matrix td button {
+  width: 100%;
+  text-align: left;
+  padding: 8px;
+  display: grid;
+  gap: 5px;
+}
+.matrix td button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.scoreInputs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.comment {
+  border-left: 3px solid #f0d43a;
+  padding: 8px 12px;
+  background: #f7f9fb;
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+}
+.comment p {
+  white-space: pre-wrap;
+  margin: 5px 0;
+}
+.comment small {
+  color: #526277;
+}
+.pairing {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 100px;
+  gap: 12px;
+  align-items: end;
+  padding: 12px 0;
+  border-bottom: 1px solid #e4eaf0;
+}
+.pairing strong {
+  align-self: center;
+}
+.lists {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.lists section {
+  padding: 16px;
+  border: 1px solid #dce3ea;
+  border-radius: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.lists p {
+  margin: 8px 0;
+}
+.muted {
+  color: #526277;
+  font-size: 13px;
+}
+@media (max-width: 760px) {
+  .teams,
+  .lists {
+    grid-template-columns: 1fr;
+  }
+  .card {
+    padding: 16px;
+  }
+  .scoreboard {
+    gap: 8px;
+    padding: 18px 12px;
+  }
+  .scoreboard strong {
+    font-size: 24px;
+  }
+  .pairing {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  .heading button {
+    max-width: 100%;
+  }
+}
