@@ -158,10 +158,28 @@ function rulesFor(state: State, scrim: Scrim) {
     state.patches?.find((p) => p.id === scrim.patchId)?.catalogue || catalogue
   );
 }
-function databaseMatrix(state: State, scrim: Scrim) {
+function databaseMatrix(state: State, scrim: Scrim, actor?: User) {
   // Archive configurations are public reference data; private libraries and
   // journals must never become visible through a team's preparation matrix.
   const archive = [
+    ...(actor
+      ? state.games
+          .filter(
+            (game) =>
+              game.patchId === scrim.patchId &&
+              (actor.role === "admin" || game.userId === actor.id),
+          )
+          .flatMap((game) =>
+            [game.own, game.enemy].map((army, index) => ({
+              id: `journal-${game.id}-${index}`,
+              userId: actor.id,
+              patchId: scrim.patchId,
+              army,
+              authorName: "",
+              updatedAt: "",
+            })),
+          )
+      : []),
     ...(state.matrixListHistory || []).map((entry, index) => ({
       ...entry,
       id: `history-${index}`,
@@ -185,13 +203,16 @@ function databaseMatrix(state: State, scrim: Scrim) {
     state.manualEstimates || [],
   );
 }
+function databaseId(army: Army) {
+  return `db:${createHash("sha256").update(armyKey(army)).digest("hex")}`;
+}
 function databaseEntries(
   state: State,
   scrim: Scrim,
   matrix = databaseMatrix(state, scrim),
 ) {
-  return matrix.armies.map(({ key, army }) => ({
-    id: `db:${createHash("sha256").update(key).digest("hex")}`,
+  return matrix.armies.map(({ army }) => ({
+    id: databaseId(army),
     name: army.listName || army.factionName,
     army,
   }));
@@ -221,12 +242,6 @@ function preparationCell(
 function seedEstimates(state: State, scrim: Scrim) {
   // Only already-shared estimates seed a team plan. Private journals never become team data.
   const shared = databaseMatrix(state, scrim);
-  const targets = new Map(
-    databaseEntries(state, scrim, shared).map((entry) => [
-      armyKey(entry.army),
-      entry,
-    ]),
-  );
   for (const team of scrim.teams) {
     if (team.external) {
       team.estimates = [];
@@ -243,12 +258,10 @@ function seedEstimates(state: State, scrim: Scrim) {
           const existing = team.estimates.find(
             (e) => e.ownId === own.id && e.enemyId === opponent.id,
           );
-          const target = opponent.army && targets.get(armyKey(opponent.army));
+          const target = opponent.army && databaseId(opponent.army);
           const prepared =
             target &&
-            preparation.find(
-              (e) => e.ownId === own.id && e.enemyId === target.id,
-            );
+            preparation.find((e) => e.ownId === own.id && e.enemyId === target);
           if (
             prepared &&
             (!existing?.updatedAt ||
@@ -285,7 +298,7 @@ export function scrimView(state: State, scrim: Scrim, actor: User): Scrim {
     Date.now() >= Date.parse(scrim.submissionDeadline) &&
     scrimListsSubmitted(scrim);
   visible.listsRevealed = revealed;
-  const database = databaseMatrix(state, scrim);
+  const database = databaseMatrix(state, scrim, actor);
   visible.databaseEntries = databaseEntries(state, scrim, database);
   if (revealed) seedEstimates(state, visible);
   for (const team of visible.teams) {
@@ -620,7 +633,8 @@ export function executeScrim(state: State, actor: User, input: unknown) {
       );
       if (!revealed) {
         const own = team!.entries.find((e) => e.id === command.ownId && e.army);
-        const enemy = databaseEntries(state, scrim).find(
+        const database = databaseMatrix(state, scrim, actor);
+        const enemy = databaseEntries(state, scrim, database).find(
           (e) => e.id === command.enemyId,
         );
         if (!own || !enemy)
@@ -628,7 +642,7 @@ export function executeScrim(state: State, actor: User, input: unknown) {
             "Choose a submitted team list and a public database list.",
           );
         if (!cell) {
-          cell = preparationCell(state, scrim, own, enemy);
+          cell = preparationCell(state, scrim, own, enemy, database);
           team!.estimates.push(cell);
         }
       }

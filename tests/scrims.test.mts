@@ -432,7 +432,11 @@ test("server hides opponent lists before the deadline and all private plans unti
   assert.ok(v.scrims![0].teams[0].entries[0].army);
   assert.equal(v.scrims![0].teams[1].entries.length, 0);
   assert.equal(v.scrims![0].listsRevealed, false);
-  assert.equal(v.scrims![0].teams[0].estimates.length, 0);
+  assert.ok(
+    v.scrims![0].teams[0].estimates.every((cell) =>
+      cell.enemyId.startsWith("db:"),
+    ),
+  );
   at(f.deadline + 1, () => {
     v = viewState(f.s, f.member(1));
     assert.ok(v.scrims![0].teams[1].entries[0].army);
@@ -455,7 +459,11 @@ test("list lock alone does not reveal incomplete or unfinalized opposing rosters
     const view = viewState(f.s, f.member(1));
     assert.equal(view.scrims![0].listsRevealed, false);
     assert.equal(view.scrims![0].teams[1].entries.length, 0);
-    assert.equal(view.scrims![0].teams[0].estimates.length, 0);
+    assert.ok(
+      view.scrims![0].teams[0].estimates.every((cell) =>
+        cell.enemyId.startsWith("db:"),
+      ),
+    );
     assert.equal(viewState(f.s, f.admin).scrims![0].teams[1].entries.length, 2);
   });
   f.scrim.teams[1].entries[0].army = army;
@@ -527,6 +535,7 @@ test("team members edit only their own matrix, with comments and independent sha
 });
 test("pre-lock database planning stays private to one scrim and carries into matching opposing lists", () => {
   const f = fixture();
+  f.s.games = [];
   f.fill();
   const enemyArmy = f.scrim.teams[1].entries[0].army!;
   f.s.matrixLists = [
@@ -631,6 +640,7 @@ test("pre-lock database planning stays private to one scrim and carries into mat
 });
 test("scrim preparation includes shared army archives and historical configurations for its patch", () => {
   const f = fixture();
+  f.s.games = [];
   f.fill();
   f.s.matrixLists = [];
   const publicArmy = armySnapshot(armyFor(2));
@@ -698,6 +708,58 @@ test("scrim preparation includes shared army archives and historical configurati
   assert.equal(
     viewState(f.s, f.member(3)).scrims![0].teams[0].estimates.length,
     0,
+  );
+});
+test("preparation includes journal configurations visible in the member's main matrix without sharing private journals", () => {
+  const f = fixture();
+  f.fill();
+  f.s.matrixLists = [];
+  f.s.savedArmies = [];
+  f.s.matrixListHistory = [];
+  const journal = {
+    ...f.s.games[0],
+    id: "private-journal",
+    userId: "p1",
+    patchId: f.scrim.patchId,
+    own: armySnapshot(armyFor(2)),
+    enemy: armySnapshot(armyFor(3)),
+    notes: "PRIVATE REFLECTION",
+    score: 19,
+  };
+  f.s.games = [journal];
+  const visible = viewState(f.s, f.member(1)).scrims![0];
+  assert.deepEqual(
+    new Set(visible.databaseEntries!.map((e) => armyKey(e.army!))),
+    new Set([armyKey(journal.own), armyKey(journal.enemy)]),
+  );
+  const teammate = viewState(f.s, f.member(2));
+  assert.equal(teammate.scrims![0].databaseEntries!.length, 0);
+  assert.equal(JSON.stringify(teammate).includes("PRIVATE REFLECTION"), false);
+  assert.ok(
+    visible.teams[0].estimates.every((cell) =>
+      Object.values(cell.scores).every((score) => score === null),
+    ),
+  );
+  const enemyId = visible.databaseEntries!.find(
+    (e) => armyKey(e.army!) === armyKey(journal.enemy),
+  )!.id;
+  f.run(f.member(1), {
+    type: "scrimEstimate",
+    teamId: f.scrim.teams[0].id,
+    ownId: f.scrim.teams[0].entries[0].id,
+    enemyId,
+    scores: { A: 14, B: null, C: null },
+  });
+  assert.throws(
+    () =>
+      f.run(f.member(2), {
+        type: "scrimEstimate",
+        teamId: f.scrim.teams[0].id,
+        ownId: f.scrim.teams[0].entries[0].id,
+        enemyId,
+        scores: { A: 1, B: 1, C: 1 },
+      }),
+    /public database/,
   );
 });
 test("deadline and finalization lock rosters/lists, including admin writes", () => {
