@@ -114,6 +114,7 @@ export default function ScrimMatrix({
     ].join(" ");
   const averageBadge = (key: string, opponents: string[]) => (
     <MatrixAverageBadge
+      numberOnly
       data={{ effective }}
       keyId={key}
       opponents={opponents}
@@ -195,6 +196,7 @@ export default function ScrimMatrix({
                 : undefined
             }
             showAverages={false}
+            averageAxes
             rows={rows}
             columns={columns}
             data={{ effective, manual }}

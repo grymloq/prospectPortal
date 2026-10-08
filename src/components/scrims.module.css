@@ -97,6 +97,28 @@
 .compactMatrix {
   padding: 12px;
 }
+:global(.matrix-compact).compactMatrix :global(.matrix-list-label) span,
+:global(.matrix-compact).compactMatrix :global(.matrix-list-label) small {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  max-width: none !important;
+  overflow-wrap: anywhere;
+}
+:global(.matrix-compact).compactMatrix :global(.matrix-army-heading),
+:global(.matrix-compact).compactMatrix :global(.disposition-label) {
+  flex-wrap: wrap;
+}
+:global(.matrix-compact).compactMatrix
+  :global(.matchup-table .matrix-average-axis) {
+  min-width: 40px;
+  max-width: 40px;
+  width: 40px;
+  text-align: center;
+}
+:global(.matrix-compact).compactMatrix :global(.matrix-average-row) td {
+  text-align: center;
+}
 :global(.matrix-compact).compactMatrix :global(.matchup-table) th,
 :global(.matrix-compact).compactMatrix :global(.matchup-table) td {
   min-width: 84px;

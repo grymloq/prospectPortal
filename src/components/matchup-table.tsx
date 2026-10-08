@@ -114,10 +114,12 @@ export default function MatchupTable({
   rowNames,
   columnNames,
   showAverages = true,
+  averageAxes = false,
 }: {
   rowNames?: Record<string, string>;
   columnNames?: Record<string, string>;
   showAverages?: boolean;
+  averageAxes?: boolean;
   rows: MatrixArmy[];
   columns: MatrixArmy[];
   visibleRows?: MatrixArmy[];
@@ -152,6 +154,11 @@ export default function MatchupTable({
         <thead>
           <tr>
             <th scope="col">Row ↓ / Opponent →</th>
+            {averageAxes && (
+              <th scope="col" className="matrix-average-axis">
+                <span className="sr-only">Player average</span>
+              </th>
+            )}
             {visibleColumns.map((a) => (
               <th
                 scope="col"
@@ -199,6 +206,22 @@ export default function MatchupTable({
               </th>
             ))}
           </tr>
+          {averageAxes && (
+            <tr className="matrix-average-row">
+              <th scope="row">
+                <span className="sr-only">Opponent averages</span>
+              </th>
+              <td className="matrix-average-axis" />
+              {visibleColumns.map((column) => (
+                <td key={column.key}>
+                  {averageBadge(
+                    column.key,
+                    rows.map((row) => row.key),
+                  )}
+                </td>
+              ))}
+            </tr>
+          )}
         </thead>
         <tbody>
           {visibleRows.map((row) => (
@@ -241,6 +264,14 @@ export default function MatchupTable({
                     columns.map((a) => a.key),
                   )}
               </th>
+              {averageAxes && (
+                <td className="matrix-average-axis">
+                  {averageBadge(
+                    row.key,
+                    columns.map((column) => column.key),
+                  )}
+                </td>
+              )}
               {visibleColumns.map((col) => {
                 const cell = data.effective.get(cellKey(row.key, col.key));
                 const label =
@@ -314,10 +345,12 @@ export function MatrixAverageBadge({
   data,
   keyId: key,
   opponents,
+  numberOnly = false,
 }: {
   data: { effective: Map<string, Matchup> };
   keyId: string;
   opponents: string[];
+  numberOnly?: boolean;
 }) {
   const values = opponents.flatMap((opponent) => {
     const cell = data.effective.get(cellKey(key, opponent));
@@ -331,7 +364,8 @@ export function MatrixAverageBadge({
       className={"matrix-average " + tone(average, values.length)}
       title="Mean of available A/B/C matchup scores against filtered opponents, including manual overrides. Each layout matchup has equal weight."
     >
-      Avg {values.length ? average.toFixed(1) : "—"}
+      {!numberOnly && "Avg "}
+      {values.length ? average.toFixed(1) : numberOnly ? "" : "—"}
     </span>
   );
 }
