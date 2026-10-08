@@ -574,6 +574,7 @@ export default function Journal({
                         g.own.factionName
                       )}
                     </strong>
+                    <small>{g.own.detachmentNames.join(" + ")}</small>
                     <small>
                       <Disposition name={g.own.dispositionName} />
                     </small>
@@ -592,6 +593,7 @@ export default function Journal({
                         g.enemy.factionName
                       )}
                     </small>
+                    <small>{g.enemy.detachmentNames.join(" + ")}</small>
                     <small>
                       <Disposition name={g.enemy.dispositionName} />
                     </small>
