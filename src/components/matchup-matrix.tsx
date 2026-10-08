@@ -397,7 +397,7 @@ export default function MatchupMatrix({
                           setMarkedColumns(toggle(markedColumns, a.key))
                         }
                       >
-                        <span>
+                        <span className="matrix-army-heading">
                           {a.army.factionName} -{" "}
                           <Disposition name={a.army.dispositionName} />
                         </span>
@@ -433,7 +433,7 @@ export default function MatchupMatrix({
                           setMarkedRows(toggle(markedRows, row.key))
                         }
                       >
-                        <span>
+                        <span className="matrix-army-heading">
                           {row.army.factionName} -{" "}
                           <Disposition name={row.army.dispositionName} />
                         </span>
@@ -484,7 +484,7 @@ export default function MatchupMatrix({
                           <button
                             className="matrix-cell"
                             aria-label={label}
-                            title={label}
+                            title={`Your detachments:\n${row.army.detachmentNames.join(" + ") || "No detachments"}\n\nOpponent's detachments:\n${col.army.detachmentNames.join(" + ") || "No detachments"}`}
                             onClick={() => setDetail({ row, column: col })}
                           >
                             {layouts.map((l) => (

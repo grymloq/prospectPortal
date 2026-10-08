@@ -2636,3 +2636,24 @@ tbody .matrix-list-label span {
     transition: none;
   }
 }
+.matrix-list-label .matrix-army-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
+}
+.matrix-list-label .matrix-army-heading .disposition-label {
+  display: inline-flex;
+  white-space: nowrap;
+  max-width: none;
+  overflow: visible;
+}
+.matrix-list-label .matrix-army-heading .disposition-label span {
+  display: inline;
+  max-width: none;
+  overflow: visible;
+  white-space: nowrap;
+}
