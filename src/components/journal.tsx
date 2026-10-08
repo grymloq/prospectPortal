@@ -584,7 +584,6 @@ export default function Journal({
                 <Field label="Opponent name">
                   <input
                     name="opponent"
-                    required
                     value={opponentName}
                     maxLength={120}
                     placeholder="Name or @player"

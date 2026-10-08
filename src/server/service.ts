@@ -136,7 +136,12 @@ const commands = z.discriminatedUnion("type", [
     type: z.literal("game"),
     id: z.string().optional(),
     date,
-    opponent: text.max(120),
+    opponent: z
+      .string()
+      .trim()
+      .max(120)
+      .optional()
+      .transform((name) => name || "unnamed player"),
     opponentUserId: z.string().max(100).optional(),
     own: army,
     enemy: army,
