@@ -218,7 +218,7 @@ export default function MatchupMatrix({
       >
         Avg {values.length ? average.toFixed(1) : "—"}
         <small>
-          {values.length} {values.length === 1 ? "layout" : "layouts"}
+          {values.length} {values.length === 1 ? "layout score" : "layout scores"}
         </small>
       </span>
     );
@@ -401,12 +401,7 @@ export default function MatchupMatrix({
                         }
                       >
                         <b>#{codes.get(a.key)}</b>
-                        <span>{a.army.factionName}</span>
-                        <small>{a.army.listName}</small>
-                        <small>{a.army.detachmentNames.join(" + ")}</small>
-                        <small>
-                          <Disposition name={a.army.dispositionName} />
-                        </small>
+                        <span>{a.army.listName || a.army.factionName}</span>
                       </button>
                       {averageBadge(
                         a.key,
@@ -439,12 +434,7 @@ export default function MatchupMatrix({
                         }
                       >
                         <b>#{codes.get(row.key)}</b>
-                        <span>{row.army.factionName}</span>
-                        <small>{row.army.listName}</small>
-                        <small>{row.army.detachmentNames.join(" + ")}</small>
-                        <small>
-                          <Disposition name={row.army.dispositionName} />
-                        </small>
+                        <span>{row.army.listName || row.army.factionName}</span>
                       </button>
                       {averageBadge(
                         row.key,
