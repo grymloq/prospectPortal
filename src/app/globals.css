@@ -248,6 +248,18 @@ hr {
   flex-direction: column;
   gap: 5px;
 }
+.admin-nav-divider {
+  border-top: 1px solid #ffffff45;
+  margin-top: 18px;
+  padding: 16px 13px 6px;
+  color: #becddd;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  flex-basis: 100%;
+  grid-column: 1 / -1;
+}
 .sidebar nav button,
 .sidebar-bottom > button {
   justify-content: flex-start;

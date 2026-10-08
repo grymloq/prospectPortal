@@ -1,6 +1,6 @@
 "use client";
 import TeamLogo from "@/components/team-logo";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import {
   Users,
   BookOpen,
@@ -134,9 +134,9 @@ export default function Workspace({
       : page;
   const nav = [
     {
-      name: admin ? "Prospects" : "My profile",
-      page: admin ? "Prospects" : "Profile",
-      icon: admin ? Users : UserRound,
+      name: "My profile",
+      page: "Profile",
+      icon: UserRound,
     },
     { name: "Game journal", page: "Game journal", icon: BookOpen },
     { name: "My armies", page: "My armies", icon: Trophy },
@@ -144,9 +144,10 @@ export default function Workspace({
     { name: "Calendar", page: "Calendar", icon: CalendarDays },
     ...(admin
       ? [
+          { name: "Prospects", page: "Prospects", icon: Users },
           { name: "Selection", page: "Selection", icon: Trophy },
-          { name: "Settings", page: "Settings", icon: Settings },
           { name: "Users", page: "Users", icon: Users },
+          { name: "Settings", page: "Settings", icon: Settings },
         ]
       : []),
   ];
@@ -161,30 +162,31 @@ export default function Workspace({
         <div className="nav-caption">TEAM WORKSPACE</div>
         <nav>
           {nav.map((item) => (
-            <button
-              key={item.name}
-              className={currentPage === item.page ? "active" : ""}
-              onClick={() => {
-                setPage(item.page);
-                setJournalKey(0);
-                if (item.page === "Profile") setProfileId(view.me.id);
-              }}
-            >
-              <item.icon size={19} />
-              {item.name}
-            </button>
+            <Fragment key={item.name}>
+              {item.page === "Prospects" && (
+                <div className="admin-nav-divider">Administration</div>
+              )}
+              <button
+                key={item.name}
+                className={
+                  currentPage === item.page &&
+                  (item.page !== "Profile" ||
+                    !profileId ||
+                    profileId === view.me.id)
+                    ? "active"
+                    : ""
+                }
+                onClick={() => {
+                  setPage(item.page);
+                  setJournalKey(0);
+                  if (item.page === "Profile") setProfileId(view.me.id);
+                }}
+              >
+                <item.icon size={19} />
+                {item.name}
+              </button>
+            </Fragment>
           ))}
-          {admin && (
-            <button
-              className={
-                page === "Profile" && profileId === view.me.id ? "active" : ""
-              }
-              onClick={() => openProfile(view.me.id)}
-            >
-              <UserRound size={19} />
-              My profile
-            </button>
-          )}
         </nav>
         <div className="sidebar-bottom">
           <div className="account">
