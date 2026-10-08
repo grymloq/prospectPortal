@@ -30,6 +30,7 @@ const army = z.object({
   listUrl: url,
 });
 const commands = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("defaultArmy"), id: z.string().max(100) }),
   z.object({
     type: z.literal("saveArmy"),
     id: id.optional(),
@@ -136,6 +137,7 @@ const commands = z.discriminatedUnion("type", [
     id: z.string().optional(),
     date,
     opponent: text.max(120),
+    opponentUserId: z.string().max(100).optional(),
     own: army,
     enemy: army,
     score: z.number().int().min(0).max(20),
@@ -173,6 +175,10 @@ export function viewState(s: State, actor: User): View {
   const admin = actor.role === "admin";
   return {
     me: publicUser(actor),
+    playerOptions: s.users
+      .filter((u) => !u.removedAt && u.id !== actor.id)
+      .map((u) => ({ id: u.id, name: u.name }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
     savedArmies: (s.savedArmies || []).filter(
       (a) =>
         a.userId === actor.id ||
@@ -236,6 +242,20 @@ export function execute(s: State, actor: User, input: unknown) {
       createdAt: now,
     });
   switch (c.type) {
+    case "defaultArmy": {
+      if (
+        c.id &&
+        !s.savedArmies?.some(
+          (a) =>
+            a.id === c.id &&
+            a.userId === actor.id &&
+            s.patches!.some((p) => p.id === a.patchId && !p.removedAt),
+        )
+      )
+        throw new Error("Choose one of your armies for an available ruleset.");
+      actor.defaultArmyId = c.id;
+      break;
+    }
     case "saveArmy": {
       const existing = c.id
         ? s.savedArmies?.find((a) => a.id === c.id)
@@ -272,7 +292,10 @@ export function execute(s: State, actor: User, input: unknown) {
       if (!saved || saved.userId !== actor.id)
         throw new Error("You can change only your own army lists.");
       if (c.type === "shareArmy") saved.shared = c.shared;
-      else s.savedArmies = s.savedArmies!.filter((a) => a.id !== c.id);
+      else {
+        s.savedArmies = s.savedArmies!.filter((a) => a.id !== c.id);
+        if (actor.defaultArmyId === c.id) actor.defaultArmyId = "";
+      }
       break;
     }
     case "userRole":
@@ -623,10 +646,18 @@ export function execute(s: State, actor: User, input: unknown) {
       break;
     }
     case "game": {
+      const old = c.id ? s.games.find((g) => g.id === c.id) : undefined;
+      if (
+        c.opponentUserId &&
+        c.opponentUserId !== old?.opponentUserId &&
+        !s.users.some(
+          (u) => u.id === c.opponentUserId && !u.removedAt && u.id !== actor.id,
+        )
+      )
+        throw new Error("Choose an active opponent player.");
       if (!c.patchId || !s.patches!.some((p) => p.id === c.patchId))
         throw new Error("Choose a valid patch.");
       if (!c.layout) throw new Error("Choose layout A, B, or C.");
-      const old = c.id ? s.games.find((g) => g.id === c.id) : undefined;
       if (
         s.patches!.find((p) => p.id === c.patchId)?.removedAt &&
         old?.patchId !== c.patchId

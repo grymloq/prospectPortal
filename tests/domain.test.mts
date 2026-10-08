@@ -542,6 +542,21 @@ test("saved army lists are private by default, owner-managed, and preserve game 
   const command = { type: "saveArmy", patchId: game.patchId, army };
   execute(s, member, command);
   const saved = s.savedArmies![0];
+  execute(s, member, { type: "defaultArmy", id: saved.id });
+  assert.equal(viewState(s, member).me.defaultArmyId, saved.id);
+  assert.throws(
+    () => execute(s, other, { type: "defaultArmy", id: saved.id }),
+    /one of your armies/,
+  );
+  assert.throws(
+    () => execute(s, member, { type: "defaultArmy", id: "missing" }),
+    /one of your armies/,
+  );
+  const directory = viewState(s, member).playerOptions;
+  assert.ok(directory.some((u) => u.id === other.id));
+  assert.ok(
+    directory.every((u) => Object.keys(u).sort().join(",") === "id,name"),
+  );
   assert.equal(saved.shared, false);
   assert.equal(viewState(s, member).savedArmies!.length, 1);
   assert.equal(viewState(s, other).savedArmies!.length, 0);
@@ -568,10 +583,25 @@ test("saved army lists are private by default, owner-managed, and preserve game 
     id: undefined,
     type: "game",
     layout: "A",
+    opponentUserId: other.id,
     own: saved.army,
     enemy: saved.army,
   });
   const snapshots = structuredClone(s.games);
+  assert.equal(s.games.at(-1)!.opponentUserId, other.id);
+  assert.throws(
+    () =>
+      execute(s, member, {
+        ...game,
+        id: undefined,
+        type: "game",
+        layout: "A",
+        opponentUserId: "missing",
+        own: saved.army,
+        enemy: saved.army,
+      }),
+    /active opponent/,
+  );
   execute(s, member, {
     ...command,
     id: saved.id,
@@ -590,6 +620,7 @@ test("saved army lists are private by default, owner-managed, and preserve game 
   );
   execute(s, member, { type: "deleteArmy", id: saved.id });
   assert.equal(s.savedArmies!.length, 0);
+  assert.equal(member.defaultArmyId, "");
   assert.deepEqual(s.games, snapshots);
 });
 

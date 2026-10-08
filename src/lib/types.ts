@@ -16,6 +16,7 @@ export type User = {
   role: "admin" | "member";
   faction: string;
   preferredFactions?: string[];
+  defaultArmyId?: string;
   city: string;
   discordName?: string;
   bio: string;
@@ -58,6 +59,7 @@ export type Game = {
   userId: string;
   date: string;
   opponent: string;
+  opponentUserId?: string;
   own: Army;
   enemy: Army;
   score: number;
@@ -172,6 +174,7 @@ export type State = {
   audit: Audit[];
 };
 export type View = State & {
+  playerOptions: { id: string; name: string }[];
   me: User;
   occupancy: Record<string, number>;
   patches: Patch[];

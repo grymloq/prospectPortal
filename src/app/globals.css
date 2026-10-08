@@ -1040,6 +1040,24 @@ td small {
   flex-wrap: wrap;
   gap: 8px;
 }
+.opponent-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: -10px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.opponent-suggestions button {
+  justify-content: flex-start;
+  text-align: left;
+}
+.saved-army-actions button[aria-pressed="true"] {
+  background: var(--yellow);
+}
 .disposition-icon {
   display: block;
   width: 1.65em;

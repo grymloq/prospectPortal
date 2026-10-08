@@ -92,6 +92,23 @@ export default function MyArmies({
               )}
             </div>
             <div className="saved-army-actions">
+              <button
+                aria-pressed={view.me.defaultArmyId === a.id}
+                disabled={
+                  view.patches.find((p) => p.id === a.patchId)?.removedAt !==
+                  undefined
+                }
+                onClick={() =>
+                  void mutate({
+                    type: "defaultArmy",
+                    id: view.me.defaultArmyId === a.id ? "" : a.id,
+                  })
+                }
+              >
+                {view.me.defaultArmyId === a.id
+                  ? "My default ✓"
+                  : "Make my default"}
+              </button>
               <button onClick={() => open(a.id)}>Edit</button>
               <button
                 aria-pressed={a.shared}

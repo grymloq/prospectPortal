@@ -34,6 +34,8 @@ function GameArmyFields({
   value,
   onChange,
   rules,
+  initialSavedId = "",
+  opponentUserId = "",
 }: {
   view: View;
   patchId: string;
@@ -41,12 +43,21 @@ function GameArmyFields({
   value: Choice;
   onChange: (c: Choice) => void;
   rules: Catalogue;
+  initialSavedId?: string;
+  opponentUserId?: string;
 }) {
-  const [selected, setSelected] = useState("");
-  const lists = (view.savedArmies || []).filter(
-    (a) =>
-      a.patchId === patchId && (opponent ? a.shared : a.userId === view.me.id),
-  );
+  const [selected, setSelected] = useState(initialSavedId);
+  const lists = (view.savedArmies || [])
+    .filter(
+      (a) =>
+        a.patchId === patchId &&
+        (opponent ? a.shared : a.userId === view.me.id),
+    )
+    .sort(
+      (a, b) =>
+        Number(b.userId === opponentUserId) -
+        Number(a.userId === opponentUserId),
+    );
   const saved = lists.find((a) => a.id === selected);
   return (
     <div>
@@ -260,6 +271,24 @@ export default function Journal({
   embedded?: boolean;
   startOpen?: boolean;
 }) {
+  const defaultArmy = (view.savedArmies || []).find(
+    (a) =>
+      a.id === view.me.defaultArmyId &&
+      a.userId === view.me.id &&
+      view.patches.some((p) => p.id === a.patchId && !p.removedAt),
+  );
+  const [opponentName, setOpponentName] = useState("");
+  const [opponentUserId, setOpponentUserId] = useState("");
+  const mentionQuery =
+    !opponentUserId && opponentName.startsWith("@")
+      ? opponentName.slice(1).toLowerCase()
+      : null;
+  const mentions =
+    mentionQuery === null
+      ? []
+      : view.playerOptions
+          .filter((p) => p.name.toLowerCase().includes(mentionQuery))
+          .slice(0, 8);
   const [query, setQuery] = useState(""),
     [outcome, setOutcome] = useState(""),
     [patchFilter, setPatchFilter] = useState(
@@ -275,26 +304,36 @@ export default function Journal({
       startOpen ? "new" : null,
     ),
     [detail, setDetail] = useState<Game | null>(null),
-    [own, setOwn] = useState<Choice>(blank(view.me.faction)),
+    [own, setOwn] = useState<Choice>(
+      defaultArmy?.army || blank(view.me.faction),
+    ),
     [enemy, setEnemy] = useState<Choice>(blank()),
     [saving, setSaving] = useState(false),
     [deleting, setDeleting] = useState(false);
   const [score, setScore] = useState("10");
   const [rulesPatch, setRulesPatch] = useState(
-    view.defaultPatchId || view.patches.find((p) => !p.removedAt)?.id || "",
+    defaultArmy?.patchId ||
+      view.defaultPatchId ||
+      view.patches.find((p) => !p.removedAt)?.id ||
+      "",
   );
   const rules =
     view.patches.find((p) => p.id === rulesPatch)?.catalogue || catalogue;
   function open(game: Game | "new") {
     setRulesPatch(
       game === "new"
-        ? view.defaultPatchId ||
+        ? defaultArmy?.patchId ||
+            view.defaultPatchId ||
             view.patches.find((p) => !p.removedAt)?.id ||
             ""
         : game.patchId || "",
     );
     setScore(String(game === "new" ? 10 : game.score));
-    setOwn(game === "new" ? blank(view.me.faction) : game.own);
+    setOwn(
+      game === "new" ? defaultArmy?.army || blank(view.me.faction) : game.own,
+    );
+    setOpponentName(game === "new" ? "" : game.opponent);
+    setOpponentUserId(game === "new" ? "" : game.opponentUserId || "");
     setEnemy(game === "new" ? blank() : game.enemy);
     setEdit(game);
   }
@@ -514,6 +553,7 @@ export default function Journal({
                 ...(edit !== "new" ? { id: edit.id } : {}),
                 date: f.get("date"),
                 opponent: f.get("opponent"),
+                opponentUserId,
                 score: Number(f.get("score")),
                 layout: f.get("layout"),
                 patchId: f.get("patchId"),
@@ -540,19 +580,56 @@ export default function Journal({
                   }
                 />
               </Field>
-              <Field label="Opponent name">
-                <input
-                  name="opponent"
-                  required
-                  defaultValue={edit === "new" ? "" : edit.opponent}
-                />
-              </Field>
+              <div>
+                <Field label="Opponent name">
+                  <input
+                    name="opponent"
+                    required
+                    value={opponentName}
+                    maxLength={120}
+                    placeholder="Name or @player"
+                    autoComplete="off"
+                    onChange={(e) => {
+                      setOpponentName(e.target.value);
+                      setOpponentUserId("");
+                    }}
+                  />
+                </Field>
+                {mentionQuery !== null && (
+                  <div
+                    className="opponent-suggestions"
+                    aria-label="Player suggestions"
+                  >
+                    {mentions.length ? (
+                      mentions.map((p) => (
+                        <button
+                          type="button"
+                          key={p.id}
+                          onClick={() => {
+                            setOpponentName(`@${p.name}`);
+                            setOpponentUserId(p.id);
+                          }}
+                        >
+                          @{p.name}
+                        </button>
+                      ))
+                    ) : (
+                      <small>No matching players</small>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="form-grid armies">
               <GameArmyFields
                 key={`own-${rulesPatch}`}
                 view={view}
                 patchId={rulesPatch}
+                initialSavedId={
+                  edit === "new" && defaultArmy?.patchId === rulesPatch
+                    ? defaultArmy.id
+                    : ""
+                }
                 value={own}
                 onChange={setOwn}
                 rules={rules}
@@ -562,6 +639,7 @@ export default function Journal({
                 view={view}
                 patchId={rulesPatch}
                 opponent
+                opponentUserId={opponentUserId}
                 rules={rules}
                 value={enemy}
                 onChange={setEnemy}
@@ -615,7 +693,11 @@ export default function Journal({
                   value={rulesPatch}
                   onChange={(e) => {
                     setRulesPatch(e.target.value);
-                    setOwn(blank(own.faction));
+                    setOwn(
+                      defaultArmy?.patchId === e.target.value
+                        ? defaultArmy.army
+                        : blank(own.faction),
+                    );
                     setEnemy(blank(enemy.faction));
                   }}
                 >

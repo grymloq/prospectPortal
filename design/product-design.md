@@ -12,6 +12,8 @@ The player profile is the central workspace: game history and statistics, develo
 
 **Confirmed:** Players can import a New Recruit shared-list link into the army editor for a selected ruleset. Import fills the list name, faction, detachments, disposition, and source link; players review and save it. The import must match the selected ruleset and obey the 3-DP limit.
 
+**Confirmed:** Players can choose a personal default saved army. New games prefill that army and its ruleset when available. Opponent names support @ player selection from a directory exposing only active player IDs and names; that player's shared armies appear first for the selected ruleset. Private armies remain private.
+
 **Proposed:** Selection remains a human decision. Evaluation scores and game statistics support discussion; they never automatically accept, advance, or reject a player.
 
 ## 2. People, roles, and selection status
