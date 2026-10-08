@@ -2636,7 +2636,7 @@ tbody .matrix-list-label span {
     transition: none;
   }
 }
-.matrix-list-label .matrix-army-heading {
+.matrix-list-label span.matrix-army-heading {
   display: inline-flex;
   align-items: center;
   gap: 4px;
