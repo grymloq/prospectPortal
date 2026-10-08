@@ -80,6 +80,33 @@ try {
   });
   assert.equal(player.status, 200);
   const memberView = await request("/api/state", null, player.cookie);
+  const importBody = {
+    url: "https://www.newrecruit.eu/app/list/OxJAH",
+    patchId: "2026-09-02",
+  };
+  assert.equal((await request("/api/army-import", importBody)).status, 401);
+  assert.equal(
+    (
+      await request("/api/army-import", importBody, player.cookie, "POST", {
+        Origin: "https://other.example",
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await request(
+        "/api/army-import",
+        { ...importBody, url: "https://example.com/app/list/OxJAH" },
+        player.cookie,
+      )
+    ).status,
+    400,
+  );
+  check(
+    "army imports require sign-in, same origin, and a New Recruit shared URL",
+    () => {},
+  );
   const blockedDirectory = await request(
     "/api/admin/users",
     null,

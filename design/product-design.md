@@ -10,6 +10,8 @@ The player profile is the central workspace: game history and statistics, develo
 
 **Confirmed:** My armies lets each player save named army configurations and list links for a ruleset. Lists are private by default and editable only by their owner. Owners can make a list available to others as an opponent selection and withdraw that sharing. Game logging offers the player's saved armies and shared opponent armies for the selected ruleset, while retaining manual entry. Logged games keep independent snapshots when saved lists are edited, unshared, or removed.
 
+**Confirmed:** Players can import a New Recruit shared-list link into the army editor for a selected ruleset. Import fills the list name, faction, detachments, disposition, and source link; players review and save it. The import must match the selected ruleset and obey the 3-DP limit.
+
 **Proposed:** Selection remains a human decision. Evaluation scores and game statistics support discussion; they never automatically accept, advance, or reject a player.
 
 ## 2. People, roles, and selection status

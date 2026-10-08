@@ -10,6 +10,72 @@ const { execute, viewState } = await import("../src/server/service");
 const { armySnapshot, catalogue, dispositionsFor, defaultDisposition } =
   await import("../src/lib/catalogue");
 const baseline = readState();
+const { armyFromNewRecruit, newRecruitListUrl } =
+  await import("../src/server/newrecruit-army");
+test("New Recruit list imports map configurations and reject incompatible sources", () => {
+  const faction = catalogue.factions.find((f) => f.name === "Orks")!;
+  const detachment = faction.detachments.find((d) => d.name === "Dread Mob")!;
+  const option = (
+    name: string,
+    option_id: string,
+    options: unknown[] = [],
+  ) => ({ name, option_id, options });
+  const input = {
+    id_system: catalogue.systemId,
+    id_book: faction.id,
+    name: "Practice",
+    army: {
+      name: "Practice",
+      options: [
+        option("Detachment", "group", [option(detachment.name, detachment.id)]),
+        option("Force Disposition", "group2", [
+          option("Purge the Foe", "7da4-f0a6-65ec-da48"),
+        ]),
+      ],
+    },
+  };
+  const url = "https://www.newrecruit.eu/app/list/OxJAH";
+  const army = armyFromNewRecruit(input, url, catalogue);
+  assert.equal(army.listName, "Practice");
+  assert.deepEqual(army.detachmentNames, ["Dread Mob"]);
+  assert.equal(army.dispositionName, "Purge the Foe");
+  assert.equal(army.listUrl, url);
+  const warmindRules = structuredClone(catalogue);
+  warmindRules.factions
+    .find((f) => f.id === faction.id)!
+    .detachments.find((d) => d.id === detachment.id)!.id = "warmind-detachment";
+  assert.deepEqual(armyFromNewRecruit(input, url, warmindRules).detachments, [
+    "warmind-detachment",
+  ]);
+  assert.throws(
+    () => armyFromNewRecruit({ ...input, id_system: "other" }, url, catalogue),
+    /different game system/,
+  );
+  assert.throws(
+    () =>
+      armyFromNewRecruit(
+        {
+          ...input,
+          army: {
+            options: [
+              option("Detachment", "g", [option("Missing", "unknown")]),
+            ],
+          },
+        },
+        url,
+        catalogue,
+      ),
+    /unavailable/,
+  );
+  assert.equal(newRecruitListUrl(url).id, "OxJAH");
+  for (const bad of [
+    "https://example.com/app/list/OxJAH",
+    "http://www.newrecruit.eu/app/list/OxJAH",
+    "https://www.newrecruit.eu/other",
+    "https://user:pass@www.newrecruit.eu/app/list/OxJAH",
+  ])
+    assert.throws(() => newRecruitListUrl(bad));
+});
 test("disposition defaults select the only option or prefer a non-Disruption choice", () => {
   const disruption = { id: "d", name: "Disruption" };
   const recon = { id: "r", name: "Reconnaissance" };

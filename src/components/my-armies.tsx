@@ -18,6 +18,27 @@ export default function MyArmies({
   const [patchId, setPatchId] = useState(view.defaultPatchId || "");
   const [army, setArmy] = useState<Choice>(blank(view.me.faction));
   const [saving, setSaving] = useState(false);
+  const [importUrl, setImportUrl] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState("");
+  async function importList() {
+    setImporting(true);
+    setImportError("");
+    try {
+      const response = await fetch("/api/army-import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: importUrl, patchId }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      setArmy(data.army);
+    } catch (error) {
+      setImportError((error as Error).message);
+    } finally {
+      setImporting(false);
+    }
+  }
   const lists = (view.savedArmies || []).filter((a) => a.userId === view.me.id);
   const rules =
     view.patches.find((p) => p.id === patchId)?.catalogue || catalogue;
@@ -28,6 +49,8 @@ export default function MyArmies({
       saved?.army || blank(view.me.preferredFactions?.[0] || view.me.faction),
     );
     setEditing(id);
+    setImportUrl("");
+    setImportError("");
   }
   return (
     <>
@@ -111,6 +134,7 @@ export default function MyArmies({
             <Field label="Ruleset">
               <select
                 required
+                disabled={importing}
                 value={patchId}
                 onChange={(e) => {
                   setPatchId(e.target.value);
@@ -129,6 +153,24 @@ export default function MyArmies({
                   ))}
               </select>
             </Field>
+            <div className="panel padded">
+              <Field label="Import from New Recruit">
+                <input
+                  type="url"
+                  value={importUrl}
+                  onChange={(e) => setImportUrl(e.target.value)}
+                  placeholder="https://www.newrecruit.eu/app/list/…"
+                />
+              </Field>
+              <button
+                type="button"
+                disabled={importing || saving || !importUrl || !patchId}
+                onClick={() => void importList()}
+              >
+                {importing ? "Importing…" : "Import army list"}
+              </button>
+              {importError && <p role="alert">{importError}</p>}
+            </div>
             <Field label="Army-list name">
               <input
                 required
@@ -148,7 +190,7 @@ export default function MyArmies({
               preferredFactions={view.me.preferredFactions ?? [view.me.faction]}
               hideListName
             />
-            <button className="primary" disabled={saving}>
+            <button className="primary" disabled={saving || importing}>
               {saving ? "Saving…" : "Save army list"}
             </button>
           </form>
