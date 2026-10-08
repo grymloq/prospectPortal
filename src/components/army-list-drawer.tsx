@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 export function ArmyListLink({
   url,
@@ -67,7 +68,7 @@ function ArmyListDrawer({
       window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 220,
     );
   }
-  return (
+  return createPortal(
     <dialog
       ref={dialog}
       className={`army-list-drawer ${closing ? "closing" : ""}`}
@@ -120,6 +121,7 @@ function ArmyListDrawer({
         referrerPolicy="no-referrer"
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
       />
-    </dialog>
+    </dialog>,
+    document.body,
   );
 }
