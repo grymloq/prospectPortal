@@ -135,6 +135,16 @@ export default function MyArmies({
         <Modal
           title={editing === "new" ? "Add army list" : "Edit army list"}
           onClose={() => setEditing(null)}
+          draftKey={`army:${editing}`}
+          busy={saving || importing}
+          draft={{
+            value: { patchId, army, importUrl },
+            restore: (saved) => {
+              setPatchId(saved.patchId);
+              setArmy(saved.army);
+              setImportUrl(saved.importUrl);
+            },
+          }}
         >
           <form
             onSubmit={async (e) => {

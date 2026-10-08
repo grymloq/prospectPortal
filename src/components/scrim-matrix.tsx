@@ -195,7 +195,19 @@ function EstimateEditor({
     enemyId: enemy.id,
   };
   return (
-    <Modal title={`${own.name} vs ${enemy.name}`} onClose={onClose}>
+    <Modal
+      title={`${own.name} vs ${enemy.name}`}
+      onClose={onClose}
+      draftKey={`scrim:${scrim.id}:matrix:${team.id}:${own.id}:${enemy.id}`}
+      busy={busy}
+      draft={{
+        value: { scores, comment },
+        restore: (saved) => {
+          setScores(saved.scores);
+          setComment(saved.comment);
+        },
+      }}
+    >
       <p>
         {own.army?.listName} vs {enemy.army?.listName}
       </p>

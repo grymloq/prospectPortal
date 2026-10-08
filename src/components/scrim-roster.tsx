@@ -189,7 +189,19 @@ function RosterEditor({
       p.id !== other.captainId && !other.entries.some((e) => e.userId === p.id),
   );
   return (
-    <Modal title={`Assign players · ${team.name}`} onClose={onClose}>
+    <Modal
+      title={`Assign players · ${team.name}`}
+      onClose={onClose}
+      draftKey={`scrim:${scrim.id}:roster:${team.id}`}
+      busy={busy}
+      draft={{
+        value: { selected, external },
+        restore: (saved) => {
+          setSelected(saved.selected);
+          setExternal(saved.external);
+        },
+      }}
+    >
       <p>
         {team.external
           ? "Enter the opposing players. They do not need portal accounts."
@@ -294,7 +306,21 @@ function ListEditor({
     (a) => a.userId === entry.userId && a.patchId === scrim.patchId,
   );
   return (
-    <Modal wide title={`Submit list · ${entry.name}`} onClose={onClose}>
+    <Modal
+      wide
+      title={`Submit list · ${entry.name}`}
+      onClose={onClose}
+      draftKey={`scrim:${scrim.id}:list:${entry.id}`}
+      busy={busy}
+      draft={{
+        value: { army, savedId, url },
+        restore: (saved) => {
+          setArmy(saved.army);
+          setSavedId(saved.savedId);
+          setUrl(saved.url);
+        },
+      }}
+    >
       <p>
         Rules: {view.patches.find((p) => p.id === scrim.patchId)?.name}.{" "}
         {entry.userId

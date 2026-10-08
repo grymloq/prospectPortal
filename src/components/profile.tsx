@@ -655,6 +655,8 @@ export default function Profile({
             }[modal] || ""
           }
           onClose={() => setModal("")}
+          draftKey={`profile:${user.id}:${modal}`}
+          busy={saving}
         >
           <form
             onSubmit={(e) => {
@@ -785,7 +787,7 @@ export default function Profile({
               </>
             )}
             <div className="form-footer">
-              <button type="button" onClick={() => setModal("")}>
+              <button type="button" data-modal-close>
                 Cancel
               </button>
               <button className="primary" disabled={saving}>

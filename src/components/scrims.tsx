@@ -268,7 +268,20 @@ function CreateScrim({
     ...view.playerOptions,
   ];
   return (
-    <Modal wide title="Create scrim" onClose={onClose}>
+    <Modal
+      wide
+      title="Create scrim"
+      onClose={onClose}
+      draftKey="scrim:new"
+      busy={busy}
+      draft={{
+        value: { kind, online },
+        restore: (saved) => {
+          setKind(saved.kind);
+          setOnline(saved.online);
+        },
+      }}
+    >
       <form
         onSubmit={async (e) => {
           e.preventDefault();

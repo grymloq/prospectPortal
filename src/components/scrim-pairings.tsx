@@ -188,7 +188,14 @@ function PairingEditor({
   );
   const [busy, setBusy] = useState(false);
   return (
-    <Modal wide title="Enter scrim pairings" onClose={onClose}>
+    <Modal
+      wide
+      title="Enter scrim pairings"
+      onClose={onClose}
+      draftKey={`scrim:${scrim.id}:pairings`}
+      busy={busy}
+      draft={{ value: pairs, restore: setPairs }}
+    >
       <p>
         Assign each opponent once and choose a layout for every game. Publishing
         locks all pairings.

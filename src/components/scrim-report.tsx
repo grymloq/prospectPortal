@@ -53,6 +53,16 @@ export default function ScrimReport({
           : "Scrim result and reflection"
       }
       onClose={onClose}
+      draftKey={`scrim:${scrim.id}:result:${pair.id}`}
+      busy={busy}
+      draft={{
+        value: { result, date, notes },
+        restore: (saved) => {
+          setResult(saved.result);
+          setDate(saved.date);
+          setNotes(saved.notes);
+        },
+      }}
     >
       <p>
         <strong>{event.title}</strong> · Layout {pair.layout} ·{" "}

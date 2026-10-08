@@ -209,6 +209,7 @@ export default function MatchupMatrix({
   mutate: Mutate;
 }) {
   const [adding, setAdding] = useState(false);
+  const [editingListKey, setEditingListKey] = useState("new");
   const [choice, setChoice] = useState<Choice>(blank());
   const [busy, setBusy] = useState(false);
   const [patch, setPatch] = useState(
@@ -308,6 +309,7 @@ export default function MatchupMatrix({
             disabled={!patch}
             onClick={() => {
               setChoice(blank());
+              setEditingListKey("new");
               setAdding(true);
             }}
           >
@@ -611,6 +613,9 @@ export default function MatchupMatrix({
         <Modal
           title="Add or update shared army list"
           onClose={() => setAdding(false)}
+          draftKey={`matrix:${patch}:list:${editingListKey}`}
+          busy={busy}
+          draft={{ value: choice, restore: setChoice }}
         >
           <form
             onSubmit={async (e) => {
@@ -654,6 +659,7 @@ export default function MatchupMatrix({
                   disabled={!patch}
                   onClick={() => {
                     setChoice(l.army);
+                    setEditingListKey(l.id);
                     setAdding(true);
                   }}
                 >
@@ -684,6 +690,8 @@ export default function MatchupMatrix({
         <Modal
           title={detail.column ? "Matchup detail" : "Army configuration"}
           onClose={() => setDetail(null)}
+          draftKey={`matrix:${patch}:${detail.row.key}:${detail.column?.key || ""}`}
+          busy={busy}
         >
           <h3>
             #{codes.get(detail.row.key)} · {detail.row.army.factionName}

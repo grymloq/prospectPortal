@@ -28,7 +28,8 @@ function GameArmyFields({
   value,
   onChange,
   rules,
-  initialSavedId = "",
+  selected,
+  setSelected,
   opponentUserId = "",
 }: {
   view: View;
@@ -37,10 +38,10 @@ function GameArmyFields({
   value: Choice;
   onChange: (c: Choice) => void;
   rules: Catalogue;
-  initialSavedId?: string;
+  selected: string;
+  setSelected: (id: string) => void;
   opponentUserId?: string;
 }) {
-  const [selected, setSelected] = useState(initialSavedId);
   const lists = (view.savedArmies || [])
     .filter(
       (a) =>
@@ -312,6 +313,8 @@ export default function Journal({
     [saving, setSaving] = useState(false),
     [deleting, setDeleting] = useState(false);
   const [score, setScore] = useState("10");
+  const [ownSavedId, setOwnSavedId] = useState(defaultArmy?.id || "");
+  const [enemySavedId, setEnemySavedId] = useState("");
   const [rulesPatch, setRulesPatch] = useState(
     defaultArmy?.patchId ||
       view.defaultPatchId ||
@@ -342,6 +345,8 @@ export default function Journal({
     setOpponentName(game === "new" ? "" : game.opponent);
     setOpponentUserId(game === "new" ? "" : game.opponentUserId || "");
     setEnemy(game === "new" ? blank() : game.enemy);
+    setOwnSavedId(game === "new" ? defaultArmy?.id || "" : "");
+    setEnemySavedId("");
     setEdit(game);
   }
   const canLog = !userId || userId === view.me.id;
@@ -663,6 +668,30 @@ export default function Journal({
           title={edit === "new" ? "Log a game" : "Edit game"}
           wide
           onClose={() => setEdit(null)}
+          draftKey={`game:${edit === "new" ? "new" : edit.id}`}
+          busy={saving}
+          draft={{
+            value: {
+              own,
+              enemy,
+              score,
+              rulesPatch,
+              opponentName,
+              opponentUserId,
+              ownSavedId,
+              enemySavedId,
+            },
+            restore: (saved) => {
+              setOwn(saved.own);
+              setEnemy(saved.enemy);
+              setScore(saved.score);
+              setRulesPatch(saved.rulesPatch);
+              setOpponentName(saved.opponentName);
+              setOpponentUserId(saved.opponentUserId);
+              setOwnSavedId(saved.ownSavedId);
+              setEnemySavedId(saved.enemySavedId);
+            },
+          }}
         >
           {edit === "new" && (
             <Field label="Scrim (optional)">
@@ -787,11 +816,8 @@ export default function Journal({
                 key={`own-${rulesPatch}`}
                 view={view}
                 patchId={rulesPatch}
-                initialSavedId={
-                  edit === "new" && defaultArmy?.patchId === rulesPatch
-                    ? defaultArmy.id
-                    : ""
-                }
+                selected={ownSavedId}
+                setSelected={setOwnSavedId}
                 value={own}
                 onChange={setOwn}
                 rules={rules}
@@ -802,6 +828,8 @@ export default function Journal({
                 patchId={rulesPatch}
                 opponent
                 opponentUserId={opponentUserId}
+                selected={enemySavedId}
+                setSelected={setEnemySavedId}
                 rules={rules}
                 value={enemy}
                 onChange={setEnemy}
@@ -855,6 +883,12 @@ export default function Journal({
                   value={rulesPatch}
                   onChange={(e) => {
                     setRulesPatch(e.target.value);
+                    setOwnSavedId(
+                      defaultArmy?.patchId === e.target.value
+                        ? defaultArmy.id
+                        : "",
+                    );
+                    setEnemySavedId("");
                     setOwn(
                       defaultArmy?.patchId === e.target.value
                         ? defaultArmy.army
@@ -911,7 +945,7 @@ export default function Journal({
               />
             </Field>
             <div className="form-footer">
-              <button type="button" onClick={() => setEdit(null)}>
+              <button type="button" data-modal-close>
                 Cancel
               </button>
               <button className="primary" disabled={saving}>

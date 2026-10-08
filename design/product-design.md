@@ -436,3 +436,9 @@ Admins have a Users directory including Supabase accounts which have not yet ope
 **Confirmed:** Scores are whole numbers from 0 to 20; the opponent receives 20 minus the reported score. The scrim completes when every pairing has a result. Compare the sums for both teams: a lead greater than five points wins; a difference of five or less is a draw (for eight games, 82–78 is a draw and 83–77 is a win). Result corrections update both journals and recompute the winner. Known mirrored scrim records count once in the aggregate matchup matrix; unrelated independent journals are not automatically deduplicated.
 
 **Implementation convention:** Reporting can occur after the calendar span ends, but the played date must fall within that span and cannot be in the future. Deleting only one side's linked journal record is prohibited. Admin cancellation retains existing history. Teams can continue reviewing and updating their own estimates and comments after completion; previous estimates retain author and timestamp history. Result corrections remain available.
+
+## 16. Modal form drafts
+
+**Confirmed:** Dismissing a modal after changing its form asks whether to keep editing or close. Clicking outside, the close button, Escape, and Cancel use the same protection. Closing keeps the form input and restores it when that specific form is reopened. Untouched forms close immediately.
+
+**Implementation convention:** Drafts belong to the current signed-in workspace and specific edited item. Both ordinary fields and controlled army/roster/pairing selections are restored. Successful submission consumes the draft. Drafts survive navigation within the workspace, but are cleared on sign-out, account or role changes, and page reload; they are not published or written to another user's storage. Dismissal is disabled while a form is saving/importing. Passwords, file inputs and read-only invitation links are excluded from draft capture.

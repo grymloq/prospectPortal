@@ -26,6 +26,7 @@ import Scrims from "./scrims";
 import Selection from "./selection";
 import UserManagement from "./user-management";
 import { Avatar } from "./ui";
+import { ModalDraftProvider } from "./modal-drafts";
 export type Mutate = (
   command: object,
   onError?: (message: string) => void,
@@ -191,193 +192,195 @@ export default function Workspace({
       : []),
   ];
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <TeamLogo />
-          <strong>SWEDISH 40K</strong>
-          <span>NATIONAL TEAM</span>
-        </div>
-        <div className="nav-caption">TEAM WORKSPACE</div>
-        <nav>
-          {nav.map((item) => (
-            <Fragment key={item.name}>
-              {item.page === "Prospects" && (
-                <div className="admin-nav-divider">Administration</div>
-              )}
-              <button
-                key={item.name}
-                className={
-                  currentPage === item.page &&
-                  (item.page !== "Profile" ||
-                    !profileId ||
-                    profileId === view.me.id)
-                    ? "active"
-                    : ""
-                }
-                onClick={() => {
-                  setPage(item.page);
-                  setJournalKey(0);
-                  if (item.page === "Profile") setProfileId(view.me.id);
-                }}
-              >
-                <item.icon size={19} />
-                {item.name}
-              </button>
-            </Fragment>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="account">
-            <Avatar name={view.me.name} />
-            <div>
-              <strong>{view.me.name}</strong>
-              <small>{admin ? "Coach · administrator" : "Player"}</small>
+    <ModalDraftProvider key={`${view.me.id}:${view.me.role}`}>
+      <div className="app-shell">
+        <aside className="sidebar">
+          <div className="brand">
+            <TeamLogo />
+            <strong>SWEDISH 40K</strong>
+            <span>NATIONAL TEAM</span>
+          </div>
+          <div className="nav-caption">TEAM WORKSPACE</div>
+          <nav>
+            {nav.map((item) => (
+              <Fragment key={item.name}>
+                {item.page === "Prospects" && (
+                  <div className="admin-nav-divider">Administration</div>
+                )}
+                <button
+                  key={item.name}
+                  className={
+                    currentPage === item.page &&
+                    (item.page !== "Profile" ||
+                      !profileId ||
+                      profileId === view.me.id)
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() => {
+                    setPage(item.page);
+                    setJournalKey(0);
+                    if (item.page === "Profile") setProfileId(view.me.id);
+                  }}
+                >
+                  <item.icon size={19} />
+                  {item.name}
+                </button>
+              </Fragment>
+            ))}
+          </nav>
+          <div className="sidebar-bottom">
+            <div className="account">
+              <Avatar name={view.me.name} />
+              <div>
+                <strong>{view.me.name}</strong>
+                <small>{admin ? "Coach · administrator" : "Player"}</small>
+              </div>
             </div>
-          </div>
-          <div className="local-label">
-            {localDemo
-              ? "Local demo · sample data"
-              : "Swedish 40k National Team"}
-          </div>
-          <button
-            onClick={async () => {
-              const r = await fetch("/api/session", { method: "DELETE" });
-              if (r.ok) {
-                setView(null);
-                setProfileId("");
-              } else setError("Could not sign out. Please retry.");
-            }}
-          >
-            <LogOut size={18} />
-            Sign out
-          </button>
-        </div>
-      </aside>
-      <main className="main">
-        <div className="topbar">
-          <span>
-            <span className="status-dot" /> Swedish 40k /{" "}
-            {currentPage === "Profile" ? "Player profile" : currentPage}
-          </span>
-          <div className="row">
+            <div className="local-label">
+              {localDemo
+                ? "Local demo · sample data"
+                : "Swedish 40k National Team"}
+            </div>
             <button
-              className="icon-button"
-              title="Refresh workspace"
-              aria-label="Refresh workspace"
-              onClick={reload}
-            >
-              <RefreshCw size={16} />
-            </button>
-            <button
-              className="icon-button mobile-signout"
-              aria-label="Sign out of account"
               onClick={async () => {
                 const r = await fetch("/api/session", { method: "DELETE" });
-                if (r.ok) setView(null);
+                if (r.ok) {
+                  setView(null);
+                  setProfileId("");
+                } else setError("Could not sign out. Please retry.");
               }}
             >
-              <LogOut size={16} />
-            </button>
-            <button
-              className="small"
-              onClick={() => {
-                setJournalKey((k) => k + 1);
-                setPage("Game journal");
-              }}
-            >
-              <Plus size={15} />
-              Log a game
+              <LogOut size={18} />
+              Sign out
             </button>
           </div>
-        </div>
-        {error && (
-          <div className="alert" role="alert">
-            {error}
-            <button
-              className="icon-button"
-              aria-label="Dismiss error"
-              onClick={() => setError("")}
-            >
-              <X size={16} />
-            </button>
+        </aside>
+        <main className="main">
+          <div className="topbar">
+            <span>
+              <span className="status-dot" /> Swedish 40k /{" "}
+              {currentPage === "Profile" ? "Player profile" : currentPage}
+            </span>
+            <div className="row">
+              <button
+                className="icon-button"
+                title="Refresh workspace"
+                aria-label="Refresh workspace"
+                onClick={reload}
+              >
+                <RefreshCw size={16} />
+              </button>
+              <button
+                className="icon-button mobile-signout"
+                aria-label="Sign out of account"
+                onClick={async () => {
+                  const r = await fetch("/api/session", { method: "DELETE" });
+                  if (r.ok) setView(null);
+                }}
+              >
+                <LogOut size={16} />
+              </button>
+              <button
+                className="small"
+                onClick={() => {
+                  setJournalKey((k) => k + 1);
+                  setPage("Game journal");
+                }}
+              >
+                <Plus size={15} />
+                Log a game
+              </button>
+            </div>
           </div>
-        )}
-        {notice && (
-          <div className="toast" role="status">
-            {notice}
+          {error && (
+            <div className="alert" role="alert">
+              {error}
+              <button
+                className="icon-button"
+                aria-label="Dismiss error"
+                onClick={() => setError("")}
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
+          {notice && (
+            <div className="toast" role="status">
+              {notice}
+            </div>
+          )}
+          <div className="page-content" aria-busy={busy}>
+            {currentPage === "Prospects" && (
+              <Prospects
+                view={view}
+                openProfile={openProfile}
+                openEvents={() => setPage("Calendar")}
+              />
+            )}{" "}
+            {currentPage === "Profile" && (
+              <Profile
+                key={profileId || view.me.id}
+                view={view}
+                userId={admin ? profileId || view.me.id : view.me.id}
+                mutate={mutate}
+              />
+            )}{" "}
+            {currentPage === "Game journal" && (
+              <Journal
+                key={journalKey}
+                startOpen={journalKey > 0}
+                view={view}
+                mutate={mutate}
+              />
+            )}{" "}
+            {admin && currentPage === "Users" && (
+              <UserManagement view={view} mutate={mutate} onView={setView} />
+            )}
+            {currentPage === "Matchup matrix" && (
+              <MatchupMatrix view={view} mutate={mutate} />
+            )}
+            {currentPage === "My armies" && (
+              <MyArmies view={view} mutate={mutate} />
+            )}
+            {currentPage === "Calendar" && (
+              <Events
+                view={view}
+                mutate={mutate}
+                onScrim={(id) => {
+                  setScrimId(id);
+                  setPage("Scrims");
+                }}
+              />
+            )}{" "}
+            {currentPage === "Scrims" && (
+              <Scrims
+                view={view}
+                mutate={mutate}
+                selectedId={scrimId}
+                onSelect={setScrimId}
+              />
+            )}
+            {(currentPage === "Selection" || currentPage === "Settings") && (
+              <Selection
+                key={currentPage}
+                view={view}
+                mutate={mutate}
+                openProfile={openProfile}
+                settings={currentPage === "Settings"}
+              />
+            )}
           </div>
-        )}
-        <div className="page-content" aria-busy={busy}>
-          {currentPage === "Prospects" && (
-            <Prospects
-              view={view}
-              openProfile={openProfile}
-              openEvents={() => setPage("Calendar")}
-            />
-          )}{" "}
-          {currentPage === "Profile" && (
-            <Profile
-              key={profileId || view.me.id}
-              view={view}
-              userId={admin ? profileId || view.me.id : view.me.id}
-              mutate={mutate}
-            />
-          )}{" "}
-          {currentPage === "Game journal" && (
-            <Journal
-              key={journalKey}
-              startOpen={journalKey > 0}
-              view={view}
-              mutate={mutate}
-            />
-          )}{" "}
-          {admin && currentPage === "Users" && (
-            <UserManagement view={view} mutate={mutate} onView={setView} />
-          )}
-          {currentPage === "Matchup matrix" && (
-            <MatchupMatrix view={view} mutate={mutate} />
-          )}
-          {currentPage === "My armies" && (
-            <MyArmies view={view} mutate={mutate} />
-          )}
-          {currentPage === "Calendar" && (
-            <Events
-              view={view}
-              mutate={mutate}
-              onScrim={(id) => {
-                setScrimId(id);
-                setPage("Scrims");
-              }}
-            />
-          )}{" "}
-          {currentPage === "Scrims" && (
-            <Scrims
-              view={view}
-              mutate={mutate}
-              selectedId={scrimId}
-              onSelect={setScrimId}
-            />
-          )}
-          {(currentPage === "Selection" || currentPage === "Settings") && (
-            <Selection
-              key={currentPage}
-              view={view}
-              mutate={mutate}
-              openProfile={openProfile}
-              settings={currentPage === "Settings"}
-            />
-          )}
-        </div>
-        <footer className="page-footer">
-          <span>
-            TEAM SWEDEN <span className="muted">/</span> Better together.
-          </span>
-          <span>
-            {localDemo ? "Local workspace" : "Team workspace"} · English
-          </span>
-        </footer>
-      </main>
-    </div>
+          <footer className="page-footer">
+            <span>
+              TEAM SWEDEN <span className="muted">/</span> Better together.
+            </span>
+            <span>
+              {localDemo ? "Local workspace" : "Team workspace"} · English
+            </span>
+          </footer>
+        </main>
+      </div>
+    </ModalDraftProvider>
   );
 }

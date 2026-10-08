@@ -445,6 +445,9 @@ export default function Events({
         <Modal
           title={edit === "new" ? "Create an event" : "Edit event"}
           onClose={() => setEdit(null)}
+          draftKey={`event:${edit === "new" ? "new" : edit.id}`}
+          busy={busy}
+          draft={{ value: online, restore: setOnline }}
         >
           <form
             onSubmit={async (e) => {
@@ -559,7 +562,7 @@ export default function Events({
             )}
             {formError && <p className="error">{formError}</p>}
             <div className="form-footer">
-              <button type="button" onClick={() => setEdit(null)}>
+              <button type="button" data-modal-close>
                 Cancel
               </button>
               <button className="primary" disabled={busy}>

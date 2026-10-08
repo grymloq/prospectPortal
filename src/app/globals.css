@@ -852,6 +852,19 @@ td small {
 .metrics.three .metric {
   padding: 21px;
 }
+.modal-close-confirmation {
+  padding: 20px;
+  margin: 0 0 20px;
+  background: #fff8df;
+  border: 1px solid #e2c654;
+  border-radius: 10px;
+}
+.modal-close-confirmation h3 {
+  margin-top: 0;
+}
+.modal-close-confirmation .form-footer {
+  flex-wrap: wrap;
+}
 .metrics.three .metric strong {
   font-size: 25px;
 }

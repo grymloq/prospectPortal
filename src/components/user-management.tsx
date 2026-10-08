@@ -15,6 +15,7 @@ export default function UserManagement({
   const [search, setSearch] = useState(""),
     [showRemoved, setShowRemoved] = useState(false),
     [invite, setInvite] = useState(false),
+    [inviteTarget, setInviteTarget] = useState("new"),
     [name, setName] = useState(""),
     [email, setEmail] = useState(""),
     [link, setLink] = useState(""),
@@ -47,6 +48,7 @@ export default function UserManagement({
       `${u.name} ${u.email}`.toLowerCase().includes(search.toLowerCase()),
   );
   function openInvite(user?: User) {
+    setInviteTarget(user?.id || "new");
     setName(user?.name || "");
     setEmail(user?.email || "");
     setLink("");
@@ -241,7 +243,19 @@ export default function UserManagement({
         </Modal>
       )}
       {invite && (
-        <Modal title="Invite team member" onClose={() => setInvite(false)}>
+        <Modal
+          title="Invite team member"
+          onClose={() => setInvite(false)}
+          draftKey={`user:invite:${inviteTarget}`}
+          busy={busy}
+          draft={{
+            value: { name, email },
+            restore: (saved) => {
+              setName(saved.name);
+              setEmail(saved.email);
+            },
+          }}
+        >
           {link ? (
             <div>
               <p>{message}</p>
