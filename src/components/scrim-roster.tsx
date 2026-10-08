@@ -4,7 +4,6 @@ import type { Scrim, ScrimEntry, ScrimTeam, View } from "@/lib/types";
 import { catalogue } from "@/lib/catalogue";
 import { onScrimTeam, rosterWarnings } from "@/lib/scrims";
 import { ArmyFields, blank, type Choice } from "./journal";
-import { ArmyListLink } from "./army-list-drawer";
 import { Disposition } from "./disposition";
 import { Badge, Field, Modal } from "./ui";
 import type { Mutate } from "./workspace";
@@ -90,7 +89,10 @@ export default function ScrimRoster({
       {team.entries.map((player) => (
         <div className={styles.player} key={player.id}>
           <div className={styles.heading}>
-            <strong>{player.name}</strong>
+            <strong>
+              {player.name}
+              {player.army && ` - ${player.army.factionName}`}
+            </strong>
             {!readOnly &&
               !locked &&
               !team.finalizedAt &&
@@ -101,20 +103,7 @@ export default function ScrimRoster({
               )}
           </div>
           {player.army ? (
-            <>
-              <p>
-                {player.army.listName} ·{" "}
-                <strong>{player.army.factionName}</strong>
-              </p>
-              <small>{player.army.detachmentNames.join(" + ")}</small>
-              <Disposition name={player.army.dispositionName} />
-              {player.army.listUrl && (
-                <ArmyListLink
-                  url={player.army.listUrl}
-                  name={`${player.name}'s list`}
-                />
-              )}
-            </>
+            <Disposition name={player.army.dispositionName} />
           ) : canSeeLists ? (
             <small>List not submitted</small>
           ) : null}

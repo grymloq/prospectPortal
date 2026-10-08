@@ -111,7 +111,13 @@ export default function MatchupTable({
   markColumns: setMarkedColumns,
   averageBadge,
   onCell,
+  rowNames,
+  columnNames,
+  showAverages = true,
 }: {
+  rowNames?: Record<string, string>;
+  columnNames?: Record<string, string>;
+  showAverages?: boolean;
   rows: MatrixArmy[];
   columns: MatrixArmy[];
   visibleRows?: MatrixArmy[];
@@ -160,16 +166,31 @@ export default function MatchupTable({
                   aria-pressed={markedColumns.includes(a.key)}
                   onClick={() => setMarkedColumns(toggle(markedColumns, a.key))}
                 >
-                  <span className="matrix-army-heading">
-                    {a.army.factionName} -{" "}
-                    <Disposition name={a.army.dispositionName} />
-                  </span>
-                  <small>{a.army.listName || a.army.factionName}</small>
+                  {columnNames?.[a.key] ? (
+                    <>
+                      <span className="matrix-team-name">
+                        {columnNames[a.key]} - {a.army.factionName}
+                      </span>
+                      <span className="matrix-army-heading">
+                        <Disposition name={a.army.dispositionName} />
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      {" "}
+                      <span className="matrix-army-heading">
+                        {a.army.factionName} -{" "}
+                        <Disposition name={a.army.dispositionName} />
+                      </span>
+                      <small>{a.army.listName || a.army.factionName}</small>
+                    </>
+                  )}
                 </button>
-                {averageBadge(
-                  a.key,
-                  rows.map((r) => r.key),
-                )}
+                {showAverages &&
+                  averageBadge(
+                    a.key,
+                    rows.map((r) => r.key),
+                  )}
                 <div className="matrix-layout-labels">
                   <span>A</span>
                   <span>B</span>
@@ -194,16 +215,31 @@ export default function MatchupTable({
                   aria-pressed={markedRows.includes(row.key)}
                   onClick={() => setMarkedRows(toggle(markedRows, row.key))}
                 >
-                  <span className="matrix-army-heading">
-                    {row.army.factionName} -{" "}
-                    <Disposition name={row.army.dispositionName} />
-                  </span>
-                  <small>{row.army.listName || row.army.factionName}</small>
+                  {rowNames?.[row.key] ? (
+                    <>
+                      <span className="matrix-team-name">
+                        {rowNames[row.key]} - {row.army.factionName}
+                      </span>
+                      <span className="matrix-army-heading">
+                        <Disposition name={row.army.dispositionName} />
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      {" "}
+                      <span className="matrix-army-heading">
+                        {row.army.factionName} -{" "}
+                        <Disposition name={row.army.dispositionName} />
+                      </span>
+                      <small>{row.army.listName || row.army.factionName}</small>
+                    </>
+                  )}
                 </button>
-                {averageBadge(
-                  row.key,
-                  columns.map((a) => a.key),
-                )}
+                {showAverages &&
+                  averageBadge(
+                    row.key,
+                    columns.map((a) => a.key),
+                  )}
               </th>
               {visibleColumns.map((col) => {
                 const cell = data.effective.get(cellKey(row.key, col.key));

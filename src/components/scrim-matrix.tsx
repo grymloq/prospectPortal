@@ -121,7 +121,9 @@ export default function ScrimMatrix({
   );
   const canEdit = !!team && onScrimTeam(team, view.me.id) && !scrim.cancelled;
   return (
-    <section className={styles.card}>
+    <section
+      className={`matrix-compact ${styles.card} ${styles.compactMatrix}`}
+    >
       <div className={styles.heading}>
         <div>
           <h2>Team matchup matrix</h2>
@@ -177,13 +179,22 @@ export default function ScrimMatrix({
       ) : (
         <>
           <p className={styles.muted}>
-            Scores are from {team.name}’s perspective. Each cell shows A / B /
-            C.{" "}
-            {ready
-              ? "Shared matrix estimates provide the starting values; changes here affect only this scrim."
-              : "Your submitted lists are shown against all accessible lists in the matchup database for this rules patch. Shared estimates provide starting scores; your edits and comments stay private to this team and scrim. Once opposing lists are revealed, only that team's lists will appear."}
+            A / B / C · {team.name}’s scores ·{" "}
+            {ready ? "Opposing lists" : "All patch lists"} · Edits stay in this
+            scrim.
           </p>
           <MatchupTable
+            rowNames={Object.fromEntries(
+              submitted.map((entry) => [entry.id, entry.name]),
+            )}
+            columnNames={
+              ready
+                ? Object.fromEntries(
+                    opponents.map((entry) => [entry.id, entry.name]),
+                  )
+                : undefined
+            }
+            showAverages={false}
             rows={rows}
             columns={columns}
             data={{ effective, manual }}
