@@ -159,10 +159,29 @@ function rulesFor(state: State, scrim: Scrim) {
   );
 }
 function databaseMatrix(state: State, scrim: Scrim) {
+  // Archive configurations are public reference data; private libraries and
+  // journals must never become visible through a team's preparation matrix.
+  const archive = [
+    ...(state.matrixListHistory || []).map((entry, index) => ({
+      ...entry,
+      id: `history-${index}`,
+      userId: "",
+    })),
+    ...(state.savedArmies || [])
+      .filter(
+        (entry) =>
+          entry.shared &&
+          state.users.some(
+            (user) => user.id === entry.userId && !user.removedAt,
+          ),
+      )
+      .map((entry) => ({ ...entry, authorName: entry.ownerName })),
+    ...(state.matrixLists || []),
+  ];
   return matrixWithManual(
     [],
     scrim.patchId,
-    state.matrixLists || [],
+    archive,
     state.manualEstimates || [],
   );
 }
@@ -201,12 +220,7 @@ function preparationCell(
 }
 function seedEstimates(state: State, scrim: Scrim) {
   // Only already-shared estimates seed a team plan. Private journals never become team data.
-  const shared = matrixWithManual(
-    [],
-    scrim.patchId,
-    state.matrixLists || [],
-    state.manualEstimates || [],
-  );
+  const shared = databaseMatrix(state, scrim);
   const targets = new Map(
     databaseEntries(state, scrim, shared).map((entry) => [
       armyKey(entry.army),

@@ -629,6 +629,77 @@ test("pre-lock database planning stays private to one scrim and carries into mat
     );
   });
 });
+test("scrim preparation includes shared army archives and historical configurations for its patch", () => {
+  const f = fixture();
+  f.fill();
+  f.s.matrixLists = [];
+  const publicArmy = armySnapshot(armyFor(2));
+  const historicalArmy = armySnapshot(armyFor(3));
+  const privateArmy = armySnapshot(armyFor(4));
+  f.s.savedArmies = [
+    {
+      id: "archive-public",
+      userId: "p3",
+      patchId: f.scrim.patchId,
+      army: publicArmy,
+      shared: true,
+      ownerName: "Archive author",
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "archive-private",
+      userId: "p3",
+      patchId: f.scrim.patchId,
+      army: privateArmy,
+      shared: false,
+      ownerName: "Private author",
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "wrong-patch",
+      userId: "p3",
+      patchId: "other-patch",
+      army: privateArmy,
+      shared: true,
+      ownerName: "Archive author",
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+  f.s.matrixListHistory = [
+    {
+      patchId: f.scrim.patchId,
+      army: historicalArmy,
+      authorName: "Archive author",
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+  const visible = viewState(f.s, f.member(1)).scrims![0];
+  assert.deepEqual(
+    new Set(visible.databaseEntries!.map((e) => armyKey(e.army!))),
+    new Set([armyKey(publicArmy), armyKey(historicalArmy)]),
+  );
+  assert.equal(visible.teams[0].estimates.length, 4);
+  const target = visible.databaseEntries!.find(
+    (e) => armyKey(e.army!) === armyKey(publicArmy),
+  )!;
+  f.run(f.member(1), {
+    type: "scrimEstimate",
+    teamId: f.scrim.teams[0].id,
+    ownId: f.scrim.teams[0].entries[0].id,
+    enemyId: target.id,
+    scores: { A: 16, B: null, C: null },
+  });
+  assert.equal(
+    viewState(f.s, f.member(2)).scrims![0].teams[0].estimates.find(
+      (e) => e.enemyId === target.id,
+    )!.scores.A,
+    16,
+  );
+  assert.equal(
+    viewState(f.s, f.member(3)).scrims![0].teams[0].estimates.length,
+    0,
+  );
+});
 test("deadline and finalization lock rosters/lists, including admin writes", () => {
   const f = fixture();
   f.fill();
