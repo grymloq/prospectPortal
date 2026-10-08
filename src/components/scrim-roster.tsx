@@ -5,6 +5,8 @@ import type { Scrim, ScrimEntry, ScrimTeam, View } from "@/lib/types";
 import { catalogue } from "@/lib/catalogue";
 import { onScrimTeam, rosterWarnings } from "@/lib/scrims";
 import { ArmyFields, blank, type Choice } from "./journal";
+import { ArmyListLink } from "./army-list-drawer";
+import { Disposition } from "./disposition";
 import { Badge, Field, Modal } from "./ui";
 import type { Mutate } from "./workspace";
 import styles from "./scrims.module.css";
@@ -122,8 +124,12 @@ export default function ScrimRoster({
           <div className={styles.heading}>
             <strong>
               {player.name}
-              {player.army &&
-                ` - ${player.army.factionName} - ${player.army.dispositionName}`}
+              {player.army && (
+                <>
+                  {` - ${player.army.factionName} - `}
+                  <Disposition name={player.army.dispositionName} />
+                </>
+              )}
             </strong>
             {!readOnly &&
               !locked &&
@@ -136,14 +142,14 @@ export default function ScrimRoster({
           </div>
           {player.army ? (
             player.army.listUrl ? (
-              <a
-                href={player.army.listUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`View ${player.name}'s list (opens in a new tab)`}
-              >
-                View list
-              </a>
+              <div>
+                <ArmyListLink
+                  url={player.army.listUrl}
+                  name={`${player.name}'s army list`}
+                >
+                  View list
+                </ArmyListLink>
+              </div>
             ) : (
               <small>List link not provided</small>
             )
