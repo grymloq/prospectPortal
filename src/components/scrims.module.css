@@ -148,10 +148,14 @@
   gap: 1px;
   min-height: 0;
   padding: 2px;
+  font-size: 11px;
 }
 :global(.matrix-compact).compactMatrix :global(.matrix-team-name) {
   max-width: none;
   white-space: normal;
+  font-size: 12px;
+}
+:global(.matrix-compact).compactMatrix :global(.matrix-list-label) small {
   font-size: 11px;
 }
 :global(.matrix-compact).compactMatrix :global(.matrix-cell) {
