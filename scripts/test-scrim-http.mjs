@@ -101,6 +101,22 @@ export async function testScrimHttp({ request, check, admin, player }) {
   await new Promise((resolve) =>
     setTimeout(resolve, Math.max(0, start + 20 - Date.now())),
   );
+  const rename = {
+    type: "scrimTeamName",
+    teamId: scrim.teams[0].id,
+    name: "HTTP renamed Blue",
+  };
+  assert.equal((await run(rename, other.cookie)).status, 400);
+  assert.equal((await run(rename, outsider.cookie)).status, 400);
+  response = await run(rename, player.cookie);
+  assert.equal(response.status, 200);
+  check(
+    "captains rename their own team after the deadline and other members are blocked",
+    () => {
+      assert.equal(scrim.teams[0].name, "HTTP renamed Blue");
+      assert.equal(scrim.teams[1].name, "HTTP Yellow");
+    },
+  );
   response = await run(
     {
       type: "scrimPairings",

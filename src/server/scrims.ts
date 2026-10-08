@@ -58,6 +58,12 @@ export const scrimCommands = [
     ]),
   }),
   z.object({
+    type: z.literal("scrimTeamName"),
+    ...ref,
+    teamId: id,
+    name: label,
+  }),
+  z.object({
     type: z.literal("scrimRoster"),
     ...ref,
     teamId: id,
@@ -330,6 +336,16 @@ export function executeScrim(state: State, actor: User, input: unknown) {
       throw new Error("Reopen the team submission before editing it.");
   };
   switch (command.type) {
+    case "scrimTeamName": {
+      if (!manage(actor, scrim, team))
+        throw new Error(
+          "Only this team's captain or an admin can rename the team.",
+        );
+      const previous = team!.name;
+      team!.name = command.name;
+      audit(`renamed scrim team ${previous} to ${team!.name}.`);
+      break;
+    }
     case "scrimRoster": {
       if (!manage(actor, scrim, team))
         throw new Error(

@@ -154,6 +154,44 @@ function fixture(size = 2, kind: "internal" | "external" = "internal") {
   };
 }
 
+test("team names are validated and revision-protected; captains rename only their own side", () => {
+  const f = fixture();
+  const team = f.scrim.teams[0],
+    other = f.scrim.teams[1];
+  const rename = {
+    type: "scrimTeamName",
+    teamId: team.id,
+    name: "  Blue Falcons  ",
+  };
+  assert.throws(() => f.run(f.member(2), rename), /captain or an admin/);
+  assert.throws(() => f.run(f.member(3), rename), /captain or an admin/);
+  const previousRevision = f.scrim.revision;
+  f.run(f.member(1), rename);
+  assert.equal(team.name, "Blue Falcons");
+  assert.equal(other.name, "Yellow");
+  assert.equal(f.scrim.revision, previousRevision + 1);
+  assert.match(f.s.audit[0].text, /renamed scrim team Blue to Blue Falcons/);
+  assert.throws(
+    () => f.run(f.admin, { ...rename, revision: previousRevision }),
+    /changed/,
+  );
+  assert.throws(() => f.run(f.admin, { ...rename, name: "   " }));
+  assert.throws(() => f.run(f.admin, { ...rename, name: "x".repeat(151) }));
+  f.fill();
+  f.pair();
+  f.report(0, 15);
+  f.report(1, 10);
+  f.run(f.admin, { ...rename, name: "Champion Falcons" });
+  assert.equal(scrimScore(f.scrim).winner, "Champion Falcons");
+  const external = fixture(2, "external");
+  external.run(external.member(1), {
+    type: "scrimTeamName",
+    teamId: external.scrim.teams[1].id,
+    name: "Visiting team",
+  });
+  assert.equal(external.scrim.teams[1].name, "Visiting team");
+});
+
 test("existing users migrate without losing content; new pending users cannot read or write", () => {
   const s = structuredClone(base);
   delete s.membershipCutoverAt;

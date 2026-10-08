@@ -35,6 +35,8 @@ export default function ScrimRoster({
     now >= Date.parse(scrim.submissionDeadline);
   const canSeeLists = locked || manage || onScrimTeam(team, view.me.id);
   const [roster, setRoster] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameError, setRenameError] = useState("");
   const [entry, setEntry] = useState<ScrimEntry | null>(null);
   const [busy, setBusy] = useState(false);
   const warnings = rosterWarnings(scrim, team, rules.dispositions);
@@ -43,6 +45,17 @@ export default function ScrimRoster({
       <div className={styles.heading}>
         <div>
           <h2>{team.name}</h2>
+          {manage && !scrim.cancelled && (
+            <button
+              onClick={() => {
+                setRenameError("");
+                setRenaming(true);
+              }}
+              aria-label={`Rename ${team.name}`}
+            >
+              Rename team
+            </button>
+          )}
           <p className={styles.muted}>
             {team.external
               ? "External roster · managed by our captain"
@@ -131,6 +144,47 @@ export default function ScrimRoster({
               : "Finalize team submission"}
           </button>
         </div>
+      )}
+      {renaming && (
+        <Modal
+          title="Rename team"
+          onClose={() => setRenaming(false)}
+          draftKey={`scrim:${scrim.id}:name:${team.id}`}
+          busy={busy}
+        >
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const name = new FormData(e.currentTarget).get("name");
+              setBusy(true);
+              const ok = await mutate(
+                {
+                  type: "scrimTeamName",
+                  scrimId: scrim.id,
+                  revision: scrim.revision,
+                  teamId: team.id,
+                  name,
+                },
+                setRenameError,
+              );
+              setBusy(false);
+              if (ok) setRenaming(false);
+            }}
+          >
+            <Field label="Team name">
+              <input
+                name="name"
+                defaultValue={team.name}
+                required
+                maxLength={150}
+              />
+            </Field>
+            {renameError && <p role="alert">{renameError}</p>}
+            <button className="primary" disabled={busy}>
+              Save team name
+            </button>
+          </form>
+        </Modal>
       )}
       {roster && (
         <RosterEditor
