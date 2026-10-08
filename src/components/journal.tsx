@@ -26,6 +26,77 @@ export type Choice = Pick<
 export function blank(faction = catalogue.factions[0].id): Choice {
   return { faction, detachments: [], disposition: "", listUrl: "" };
 }
+function GameArmyFields({
+  view,
+  patchId,
+  opponent = false,
+  value,
+  onChange,
+  rules,
+}: {
+  view: View;
+  patchId: string;
+  opponent?: boolean;
+  value: Choice;
+  onChange: (c: Choice) => void;
+  rules: Catalogue;
+}) {
+  const [selected, setSelected] = useState("");
+  const lists = (view.savedArmies || []).filter(
+    (a) =>
+      a.patchId === patchId && (opponent ? a.shared : a.userId === view.me.id),
+  );
+  const saved = lists.find((a) => a.id === selected);
+  return (
+    <div>
+      <Field label={opponent ? "Saved opponent army" : "My saved armies"}>
+        <select
+          value={saved?.id || ""}
+          onChange={(e) => {
+            setSelected(e.target.value);
+            const list = lists.find((a) => a.id === e.target.value);
+            if (list)
+              onChange({
+                ...list.army,
+                detachments: [...list.army.detachments],
+              });
+          }}
+        >
+          <option value="">Enter army manually</option>
+          {lists.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.army.listName} · {a.army.factionName}
+              {opponent ? ` · ${a.ownerName}` : ""}
+            </option>
+          ))}
+        </select>
+      </Field>
+      {saved ? (
+        <div className="army-summary">
+          <strong>{value.listName}</strong>
+          <p>
+            {saved.army.factionName} · {saved.army.detachmentNames.join(" + ")}
+          </p>
+          <Disposition name={saved.army.dispositionName} />
+          <p>
+            <button type="button" onClick={() => setSelected("")}>
+              Customize army
+            </button>
+          </p>
+        </div>
+      ) : (
+        <ArmyFields
+          title={opponent ? "Opponent's army" : "Your army"}
+          value={value}
+          onChange={onChange}
+          rules={rules}
+          maxDP={3}
+          preferredFactions={view.me.preferredFactions ?? [view.me.faction]}
+        />
+      )}
+    </div>
+  );
+}
 export function ArmyFields({
   title,
   value,
@@ -33,6 +104,7 @@ export function ArmyFields({
   rules = catalogue,
   preferredFactions = [],
   maxDP = Infinity,
+  hideListName = false,
 }: {
   title: string;
   value: Choice;
@@ -40,6 +112,7 @@ export function ArmyFields({
   rules?: Catalogue;
   preferredFactions?: string[];
   maxDP?: number;
+  hideListName?: boolean;
 }) {
   const dispositionGroup = useId();
   const faction = rules.factions.find((f) => f.id === value.faction),
@@ -147,13 +220,15 @@ export function ArmyFields({
           <small>Select detachments to see available dispositions.</small>
         )}
       </fieldset>
-      <Field label="Army-list name (optional)">
-        <input
-          maxLength={100}
-          value={value.listName || ""}
-          onChange={(e) => onChange({ ...value, listName: e.target.value })}
-        />
-      </Field>
+      {!hideListName && (
+        <Field label="Army-list name (optional)">
+          <input
+            maxLength={100}
+            value={value.listName || ""}
+            onChange={(e) => onChange({ ...value, listName: e.target.value })}
+          />
+        </Field>
+      )}
       <Field label="Army-list link (optional)">
         <input
           type="url"
@@ -473,23 +548,20 @@ export default function Journal({
               </Field>
             </div>
             <div className="form-grid armies">
-              <ArmyFields
-                title="Your army"
+              <GameArmyFields
+                key={`own-${rulesPatch}`}
+                view={view}
+                patchId={rulesPatch}
                 value={own}
                 onChange={setOwn}
                 rules={rules}
-                maxDP={3}
-                preferredFactions={
-                  view.me.preferredFactions ?? [view.me.faction]
-                }
               />
-              <ArmyFields
+              <GameArmyFields
+                key={`enemy-${rulesPatch}`}
+                view={view}
+                patchId={rulesPatch}
+                opponent
                 rules={rules}
-                maxDP={3}
-                preferredFactions={
-                  view.me.preferredFactions ?? [view.me.faction]
-                }
-                title="Opponent's army"
                 value={enemy}
                 onChange={setEnemy}
               />

@@ -31,6 +31,14 @@ const army = z.object({
 });
 const commands = z.discriminatedUnion("type", [
   z.object({
+    type: z.literal("saveArmy"),
+    id: id.optional(),
+    patchId: id,
+    army,
+  }),
+  z.object({ type: z.literal("shareArmy"), id, shared: z.boolean() }),
+  z.object({ type: z.literal("deleteArmy"), id }),
+  z.object({
     type: z.literal("userRole"),
     userId: id,
     role: z.enum(["admin", "member"]),
@@ -165,6 +173,11 @@ export function viewState(s: State, actor: User): View {
   const admin = actor.role === "admin";
   return {
     me: publicUser(actor),
+    savedArmies: (s.savedArmies || []).filter(
+      (a) =>
+        a.userId === actor.id ||
+        (a.shared && s.users.some((u) => u.id === a.userId && !u.removedAt)),
+    ),
     matrixListHistory: s.matrixListHistory || [],
     matrixChanges: s.matrixChanges || [],
     matrixLists: s.matrixLists || [],
@@ -223,6 +236,45 @@ export function execute(s: State, actor: User, input: unknown) {
       createdAt: now,
     });
   switch (c.type) {
+    case "saveArmy": {
+      const existing = c.id
+        ? s.savedArmies?.find((a) => a.id === c.id)
+        : undefined;
+      if (c.id && (!existing || existing.userId !== actor.id))
+        throw new Error("You can edit only your own army lists.");
+      const patch = s.patches!.find((p) => p.id === c.patchId && !p.removedAt);
+      if (!patch) throw new Error("Choose an available rules patch.");
+      if (!c.army.listName?.trim()) throw new Error("Name your army list.");
+      const snapshot = armySnapshot(c.army, patch.catalogue || catalogue, 3);
+      s.savedArmies ||= [];
+      if (existing)
+        Object.assign(existing, {
+          patchId: patch.id,
+          army: snapshot,
+          updatedAt: now,
+          ownerName: actor.name,
+        });
+      else
+        s.savedArmies.push({
+          id: randomUUID(),
+          userId: actor.id,
+          patchId: patch.id,
+          army: snapshot,
+          shared: false,
+          ownerName: actor.name,
+          updatedAt: now,
+        });
+      break;
+    }
+    case "shareArmy":
+    case "deleteArmy": {
+      const saved = s.savedArmies?.find((a) => a.id === c.id);
+      if (!saved || saved.userId !== actor.id)
+        throw new Error("You can change only your own army lists.");
+      if (c.type === "shareArmy") saved.shared = c.shared;
+      else s.savedArmies = s.savedArmies!.filter((a) => a.id !== c.id);
+      break;
+    }
     case "userRole":
     case "removeUser": {
       requireAdmin();

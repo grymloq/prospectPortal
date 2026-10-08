@@ -1020,6 +1020,26 @@ td small {
   vertical-align: middle;
   line-height: 1.3;
 }
+.saved-army-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+}
+.saved-army-card:last-child {
+  border-bottom: 0;
+}
+.saved-army-card h3 {
+  margin-top: 0;
+}
+.saved-army-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .disposition-icon {
   display: block;
   width: 1.65em;

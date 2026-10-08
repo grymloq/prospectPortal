@@ -393,6 +393,47 @@ try {
       game.score === 10 ? "Draw" : game.score > 10 ? "Win" : "Loss",
     );
   });
+  const armySaved = await request(
+    "/api/state",
+    {
+      type: "saveArmy",
+      patchId: game.patchId,
+      army: { ...game.own, listName: "HTTP saved list" },
+    },
+    registered.cookie,
+  );
+  assert.equal(armySaved.status, 200);
+  const list = armySaved.data.savedArmies[0];
+  const ownerReload = await request("/api/state", null, registered.cookie);
+  const privateView = await request("/api/state", null, player.cookie);
+  check("saved armies persist privately and reject other owners", () => {
+    assert.equal(ownerReload.data.savedArmies[0].id, list.id);
+    assert.equal(privateView.data.savedArmies.length, 0);
+  });
+  const forbiddenArmy = await request(
+    "/api/state",
+    { type: "shareArmy", id: list.id, shared: true },
+    player.cookie,
+  );
+  assert.equal(forbiddenArmy.status, 400);
+  await request(
+    "/api/state",
+    { type: "shareArmy", id: list.id, shared: true },
+    registered.cookie,
+  );
+  const sharedView = await request("/api/state", null, player.cookie);
+  check("shared saved armies become visible and can be withdrawn", () =>
+    assert.equal(sharedView.data.savedArmies[0].id, list.id),
+  );
+  await request(
+    "/api/state",
+    { type: "shareArmy", id: list.id, shared: false },
+    registered.cookie,
+  );
+  assert.equal(
+    (await request("/api/state", null, player.cookie)).data.savedArmies.length,
+    0,
+  );
   const goal = await request(
     "/api/state",
     {

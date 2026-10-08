@@ -19,6 +19,7 @@ import Auth from "./auth";
 import Prospects from "./prospects";
 import Profile from "./profile";
 import Journal from "./journal";
+import MyArmies from "./my-armies";
 import MatchupMatrix from "./matchup-matrix";
 import Events from "./events";
 import Selection from "./selection";
@@ -138,6 +139,7 @@ export default function Workspace({
       icon: admin ? Users : UserRound,
     },
     { name: "Game journal", page: "Game journal", icon: BookOpen },
+    { name: "My armies", page: "My armies", icon: Trophy },
     { name: "Matchup matrix", page: "Matchup matrix", icon: Grid3X3 },
     { name: "Calendar", page: "Calendar", icon: CalendarDays },
     ...(admin
@@ -294,6 +296,9 @@ export default function Workspace({
           )}
           {currentPage === "Matchup matrix" && (
             <MatchupMatrix view={view} mutate={mutate} />
+          )}
+          {currentPage === "My armies" && (
+            <MyArmies view={view} mutate={mutate} />
           )}
           {currentPage === "Calendar" && <Events view={view} mutate={mutate} />}{" "}
           {(currentPage === "Selection" || currentPage === "Settings") && (

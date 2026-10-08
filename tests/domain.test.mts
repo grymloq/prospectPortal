@@ -444,6 +444,81 @@ test("game army snapshots enforce the 3 DP budget for either army", () => {
   }
 });
 
+test("saved army lists are private by default, owner-managed, and preserve game snapshots", () => {
+  const s = structuredClone(baseline);
+  const member = s.users.find((u) => u.id === "p1")!;
+  const other = s.users.find((u) => u.id === "p2")!;
+  const admin = s.users.find((u) => u.role === "admin")!;
+  const game = s.games.find((g) => g.userId === member.id)!;
+  const faction = catalogue.factions.find(
+    (f) =>
+      !f.titan &&
+      f.detachments.some((d) => d.points <= 3 && d.dispositions.length),
+  )!;
+  const detachment = faction.detachments.find(
+    (d) => d.points <= 3 && d.dispositions.length,
+  )!;
+  const army = {
+    faction: faction.id,
+    detachments: [detachment.id],
+    disposition: detachment.dispositions[0],
+    listName: "Practice list",
+    listUrl: "https://www.newrecruit.eu/example",
+  };
+  const command = { type: "saveArmy", patchId: game.patchId, army };
+  execute(s, member, command);
+  const saved = s.savedArmies![0];
+  assert.equal(saved.shared, false);
+  assert.equal(viewState(s, member).savedArmies!.length, 1);
+  assert.equal(viewState(s, other).savedArmies!.length, 0);
+  assert.equal(viewState(s, admin).savedArmies!.length, 0);
+  for (const actor of [other, admin]) {
+    assert.throws(
+      () => execute(s, actor, { ...command, id: saved.id }),
+      /only your own/,
+    );
+    assert.throws(
+      () =>
+        execute(s, actor, { type: "shareArmy", id: saved.id, shared: true }),
+      /only your own/,
+    );
+    assert.throws(
+      () => execute(s, actor, { type: "deleteArmy", id: saved.id }),
+      /only your own/,
+    );
+  }
+  execute(s, member, { type: "shareArmy", id: saved.id, shared: true });
+  assert.equal(viewState(s, other).savedArmies![0].id, saved.id);
+  execute(s, member, {
+    ...game,
+    id: undefined,
+    type: "game",
+    layout: "A",
+    own: saved.army,
+    enemy: saved.army,
+  });
+  const snapshots = structuredClone(s.games);
+  execute(s, member, {
+    ...command,
+    id: saved.id,
+    army: { ...army, listName: "Revised list" },
+  });
+  assert.deepEqual(s.games, snapshots);
+  execute(s, member, { type: "shareArmy", id: saved.id, shared: false });
+  assert.equal(viewState(s, other).savedArmies!.length, 0);
+  assert.throws(
+    () => execute(s, member, { ...command, army: { ...army, listName: "" } }),
+    /Name your army/,
+  );
+  assert.throws(
+    () => execute(s, member, { ...command, patchId: "missing" }),
+    /available rules patch/,
+  );
+  execute(s, member, { type: "deleteArmy", id: saved.id });
+  assert.equal(s.savedArmies!.length, 0);
+  assert.deepEqual(s.games, snapshots);
+});
+
 test("game boundaries validate score, URL, ownership and date", () => {
   const s = structuredClone(baseline),
     u = s.users.find((u) => u.id === "p1")!,

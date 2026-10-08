@@ -139,6 +139,15 @@ export type ManualEstimate = {
   authorName: string;
 };
 export type State = {
+  savedArmies?: {
+    id: string;
+    userId: string;
+    patchId: string;
+    army: Army;
+    shared: boolean;
+    ownerName: string;
+    updatedAt: string;
+  }[];
   matrixListHistory?: {
     authorName: string;
     updatedAt: string;
