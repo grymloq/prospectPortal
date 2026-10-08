@@ -186,7 +186,12 @@ export default function Journal({
 }) {
   const [query, setQuery] = useState(""),
     [outcome, setOutcome] = useState(""),
-    [patchFilter, setPatchFilter] = useState(""),
+    [patchFilter, setPatchFilter] = useState(
+      () =>
+        view.patches
+          .filter((p) => !p.removedAt)
+          .sort((a, b) => b.date.localeCompare(a.date))[0]?.id || "",
+    ),
     [from, setFrom] = useState(""),
     [to, setTo] = useState(""),
     [player, setPlayer] = useState("");
