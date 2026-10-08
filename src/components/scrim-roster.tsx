@@ -47,6 +47,8 @@ export default function ScrimRoster({
           <h2>{team.name}</h2>
           {manage && !scrim.cancelled && (
             <button
+              type="button"
+              className={styles.renameLink}
               onClick={() => {
                 setRenameError("");
                 setRenaming(true);
