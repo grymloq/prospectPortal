@@ -4,9 +4,11 @@ import { X } from "lucide-react";
 export function ArmyListLink({
   url,
   name = "Army list",
+  children,
 }: {
   url: string;
   name?: string;
+  children?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -16,7 +18,7 @@ export function ArmyListLink({
         className="text-button"
         onClick={() => setOpen(true)}
       >
-        Open army list
+        {children || "Open army list"}
       </button>
       {open && (
         <ArmyListDrawer url={url} name={name} onClose={() => setOpen(false)} />

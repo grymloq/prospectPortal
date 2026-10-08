@@ -483,14 +483,39 @@ export default function Journal({
                     </small>
                   </td>
                   <td>
-                    <strong>{g.own.factionName}</strong>
+                    <strong>
+                      {g.own.listUrl ? (
+                        <ArmyListLink
+                          url={g.own.listUrl}
+                          name={g.own.listName || g.own.factionName}
+                        >
+                          {g.own.factionName}
+                        </ArmyListLink>
+                      ) : (
+                        g.own.factionName
+                      )}
+                    </strong>
                     <small>
                       <Disposition name={g.own.dispositionName} />
                     </small>
                   </td>
                   <td>
                     {g.opponent}
-                    <small>{g.enemy.factionName}</small>
+                    <small>
+                      {g.enemy.listUrl ? (
+                        <ArmyListLink
+                          url={g.enemy.listUrl}
+                          name={g.enemy.listName || g.enemy.factionName}
+                        >
+                          {g.enemy.factionName}
+                        </ArmyListLink>
+                      ) : (
+                        g.enemy.factionName
+                      )}
+                    </small>
+                    <small>
+                      <Disposition name={g.enemy.dispositionName} />
+                    </small>
                   </td>
                   <td>
                     <Badge
