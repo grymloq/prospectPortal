@@ -8,6 +8,8 @@ import { onScrimTeam } from "@/lib/scrims";
 import { Field, Modal } from "./ui";
 import type { Mutate } from "./workspace";
 import styles from "./scrims.module.css";
+import { AxisFilter, emptyFilter, type Filter } from "./matrix-axis-filter";
+import MatrixListEditor from "./matrix-list-editor";
 
 export default function ScrimMatrix({
   view,
@@ -25,7 +27,11 @@ export default function ScrimMatrix({
   const team = visible.find((t) => t.id === selectedTeam) || visible[0];
   const other = scrim.teams.find((t) => t.id !== team?.id);
   const [editing, setEditing] = useState<ScrimEstimate | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [opponentFilter, setOpponentFilter] = useState<Filter>(emptyFilter);
+  const [filterMode, setFilterMode] = useState(false);
   const ready = !!scrim.listsRevealed;
+  const activeFilter = filterMode === ready ? opponentFilter : emptyFilter();
   const opponents = ready
     ? other?.entries.filter((entry) => entry.army) || []
     : scrim.databaseEntries || [];
@@ -38,10 +44,16 @@ export default function ScrimMatrix({
       listName: `${entry.name} · ${entry.army!.listName || entry.army!.factionName}`,
     },
   }));
-  const columns = opponents.map((entry) => ({
+  const allColumns = opponents.map((entry) => ({
     key: entry.id,
     army: entry.army!,
   }));
+  const columns = allColumns.filter(
+    (column) =>
+      (!activeFilter.factions.length ||
+        activeFilter.factions.includes(column.army.faction)) &&
+      (!activeFilter.lists.length || activeFilter.lists.includes(column.key)),
+  );
   const effective = new Map<string, Matchup>();
   const manual = new Set<string>();
   for (const own of submitted)
@@ -134,13 +146,33 @@ export default function ScrimMatrix({
           </Field>
         )}
       </div>
+      {team && (
+        <>
+          <div className="row">
+            <button onClick={() => setAdding(true)}>Add army list</button>
+            <button onClick={() => setOpponentFilter(emptyFilter())}>
+              Reset opponent filters
+            </button>
+          </div>
+          <AxisFilter
+            axis="Opponents (X)"
+            armies={allColumns}
+            value={activeFilter}
+            onChange={(filter) => {
+              setFilterMode(ready);
+              setOpponentFilter(filter);
+            }}
+          />
+        </>
+      )}
       {!team ? (
         <p>Team plans will be revealed here when the scrim is complete.</p>
       ) : !submitted.length ? (
         <p>Submit a team list to start preparing matchups.</p>
-      ) : !opponents.length ? (
+      ) : !columns.length ? (
         <p>
-          No lists are available in the matchup database for this rules patch.
+          No opponent lists match. Clear the filters or add a shared list for
+          this patch.
         </p>
       ) : (
         <>
@@ -191,6 +223,14 @@ export default function ScrimMatrix({
           canEdit={canEdit}
           mutate={mutate}
           onClose={() => setEditing(null)}
+        />
+      )}
+      {adding && (
+        <MatrixListEditor
+          view={view}
+          patchId={scrim.patchId}
+          mutate={mutate}
+          onClose={() => setAdding(false)}
         />
       )}
     </section>

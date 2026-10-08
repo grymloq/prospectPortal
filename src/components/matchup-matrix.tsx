@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import type { View } from "@/lib/types";
 import { cellKey, layouts, type MatrixArmy } from "@/lib/matchups";
 import { Empty, Modal, Field } from "./ui";
@@ -8,108 +8,10 @@ import MatchupTable, { MatrixAverageBadge } from "./matchup-table";
 import { Disposition } from "./disposition";
 import { patchLabel } from "@/lib/patches";
 
-import { ArmyFields, blank, type Choice } from "./journal";
+import { blank, type Choice } from "./journal";
+import { AxisFilter, emptyFilter, type Filter } from "./matrix-axis-filter";
+import MatrixListEditor from "./matrix-list-editor";
 import type { Mutate } from "./workspace";
-type Filter = { factions: string[]; lists: string[] };
-const emptyFilter = (): Filter => ({ factions: [], lists: [] });
-function Picker({
-  label,
-  options,
-  selected,
-  onChange,
-}: {
-  label: string;
-  options: { id: string; label: ReactNode }[];
-  selected: string[];
-  onChange: (ids: string[]) => void;
-}) {
-  return (
-    <details className="matrix-picker">
-      <summary>
-        {label}{" "}
-        <span>{selected.length ? selected.length + " selected" : "All"}</span>
-      </summary>
-      <div className="matrix-options">
-        <button
-          type="button"
-          className="text-button"
-          onClick={() => onChange([])}
-        >
-          Show all (clear filter)
-        </button>
-        {options.map((o) => (
-          <label key={o.id}>
-            <input
-              type="checkbox"
-              checked={selected.includes(o.id)}
-              onChange={(e) =>
-                onChange(
-                  e.target.checked
-                    ? [...selected, o.id]
-                    : selected.filter((id) => id !== o.id),
-                )
-              }
-            />
-            <span>{o.label}</span>
-          </label>
-        ))}
-        {!options.length && <p>No lists match these factions.</p>}
-      </div>
-    </details>
-  );
-}
-function AxisFilter({
-  axis,
-  armies,
-  value,
-  onChange,
-}: {
-  axis: string;
-  armies: MatrixArmy[];
-  value: Filter;
-  onChange: (v: Filter) => void;
-}) {
-  const factions = [
-    ...new Map(
-      armies.map((a) => [a.army.faction, a.army.factionName]),
-    ).entries(),
-  ].map(([id, label]) => ({ id, label }));
-  const available = armies.filter(
-    (a) => !value.factions.length || value.factions.includes(a.army.faction),
-  );
-  return (
-    <section className="panel matrix-axis">
-      <h3>{axis}</h3>
-      <Picker
-        label={axis + " factions"}
-        options={factions}
-        selected={value.factions}
-        onChange={(factions) => onChange({ factions, lists: [] })}
-      />
-      <Picker
-        label={axis + " army lists"}
-        options={available.map((a) => ({
-          id: a.key,
-          label: (
-            <>
-              {[
-                a.army.listName,
-                a.army.factionName,
-                a.army.detachmentNames.join(" + "),
-              ]
-                .filter(Boolean)
-                .join(" · ")}{" "}
-              · <Disposition name={a.army.dispositionName} />
-            </>
-          ),
-        }))}
-        selected={value.lists}
-        onChange={(lists) => onChange({ ...value, lists })}
-      />
-    </section>
-  );
-}
-
 export default function MatchupMatrix({
   view,
   mutate,
@@ -352,41 +254,14 @@ export default function MatchupMatrix({
         </p>
       </details>
       {adding && (
-        <Modal
-          title="Add or update shared army list"
+        <MatrixListEditor
+          view={view}
+          patchId={patch}
+          draftId={editingListKey}
+          initialArmy={choice}
+          mutate={mutate}
           onClose={() => setAdding(false)}
-          draftKey={`matrix:${patch}:list:${editingListKey}`}
-          busy={busy}
-          draft={{ value: choice, restore: setChoice }}
-        >
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              setBusy(true);
-              const ok = await mutate({
-                type: "matrixList",
-                patchId: patch,
-                army: choice,
-              });
-              setBusy(false);
-              if (ok) setAdding(false);
-            }}
-          >
-            <p>
-              Shared with the team for this patch. The same faction, detachments
-              and disposition update the existing configuration’s name and link.
-            </p>
-            <ArmyFields
-              rules={view.patches.find((p) => p.id === patch)?.catalogue}
-              title="Matrix army"
-              value={choice}
-              onChange={setChoice}
-            />
-            <button className="primary" disabled={busy}>
-              Save army list
-            </button>
-          </form>
-        </Modal>
+        />
       )}
       {!!view.matrixLists?.length && (
         <details className="matrix-method">

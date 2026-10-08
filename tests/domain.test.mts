@@ -789,6 +789,11 @@ test("team members share matrix lists and overrides with server-owned attributio
     army: { ...own, listName: "Team list" },
   });
   assert.equal(viewState(s, second).matrixLists![0].army.listName, "Team list");
+  assert.equal(
+    s.manualEstimates?.length || 0,
+    0,
+    "Adding a shared list must not create estimates",
+  );
   execute(s, second, {
     type: "matrixList",
     patchId,
