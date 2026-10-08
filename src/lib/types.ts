@@ -234,6 +234,8 @@ export type ScrimTeam = {
   external: boolean;
   captainId: string;
   captainName: string;
+  additionalCaptains?: { userId: string; name: string }[];
+  coaches?: { userId: string; name: string }[];
   entries: ScrimEntry[];
   finalizedAt?: string;
   estimates: ScrimEstimate[];

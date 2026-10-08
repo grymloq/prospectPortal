@@ -6,6 +6,7 @@ import { armySnapshot, catalogue } from "@/lib/catalogue";
 import { armyKey, cellKey, layouts, outcomeForScore } from "@/lib/matchups";
 import {
   onScrimTeam,
+  isScrimCaptain,
   rosterWarnings,
   scrimScore,
   scrimListsSubmitted,
@@ -39,6 +40,14 @@ const army = z.object({
   listUrl: link,
 });
 export const scrimCommands = [
+  z.object({
+    type: z.literal("scrimStaff"),
+    ...ref,
+    teamId: id,
+    captainId: id,
+    additionalCaptainIds: z.array(id).max(20),
+    coachIds: z.array(id).max(20),
+  }),
   z.object({
     type: z.literal("scrimCreate"),
     title: label,
@@ -143,9 +152,9 @@ function manage(actor: User, scrim: Scrim, team?: ScrimTeam) {
   return (
     actor.role === "admin" ||
     (team
-      ? team.captainId === actor.id ||
-        (team.external && scrim.teams[0].captainId === actor.id)
-      : scrim.teams.some((t) => t.captainId === actor.id))
+      ? isScrimCaptain(team, actor.id) ||
+        (team.external && isScrimCaptain(scrim.teams[0], actor.id))
+      : scrim.teams.some((t) => isScrimCaptain(t, actor.id)))
   );
 }
 function rulesFor(state: State, scrim: Scrim) {
@@ -284,7 +293,7 @@ export function scrimView(state: State, scrim: Scrim, actor: User): Scrim {
   for (const team of visible.teams) {
     const ownTeam =
       onScrimTeam(team, actor.id) ||
-      (team.external && scrim.teams[0].captainId === actor.id);
+      (team.external && isScrimCaptain(scrim.teams[0], actor.id));
     if (!scrim.completedAt && !ownTeam) team.estimates = [];
     else if (!revealed) {
       team.estimates = team.entries
@@ -427,6 +436,48 @@ export function executeScrim(state: State, actor: User, input: unknown) {
       throw new Error("Reopen the team submission before editing it.");
   };
   switch (command.type) {
+    case "scrimStaff": {
+      if (actor.role !== "admin")
+        throw new Error("Only admins can change team captains and coaches.");
+      if (team!.external)
+        throw new Error("Staff assignments require an internal team.");
+      if (scrim.completedAt) throw new Error("This scrim is complete.");
+      const ids = [
+        command.captainId,
+        ...command.additionalCaptainIds,
+        ...command.coachIds,
+      ];
+      if (new Set(ids).size !== ids.length)
+        throw new Error("Each person can have only one staff role.");
+      const other = scrim.teams.find((t) => t.id !== team!.id)!;
+      const members = ids.map((id) => {
+        const user = state.users.find(
+          (u) => u.id === id && u.confirmedMember && !u.removedAt,
+        );
+        if (!user)
+          throw new Error("Choose a confirmed member for each staff role.");
+        if (onScrimTeam(other, id))
+          throw new Error("Staff cannot belong to opposing teams.");
+        if (
+          command.coachIds.includes(id) &&
+          team!.entries.some((entry) => entry.userId === id)
+        )
+          throw new Error("Coaches must be non-playing team members.");
+        return user;
+      });
+      const person = (id: string) => {
+        const user = members.find((u) => u.id === id)!;
+        return { userId: id, name: user.name };
+      };
+      team!.captainId = command.captainId;
+      team!.captainName = members[0].name;
+      team!.additionalCaptains = command.additionalCaptainIds.map(person);
+      team!.coaches = command.coachIds.map(person);
+      audit(
+        `updated captains and non-playing coaches for ${team!.name}: captains ${[team!.captainName, ...team!.additionalCaptains.map((p) => p.name)].join(", ")}; coaches ${team!.coaches.map((p) => p.name).join(", ") || "none"}.`,
+      );
+      break;
+    }
     case "scrimTeamName": {
       if (!manage(actor, scrim, team))
         throw new Error(
@@ -462,9 +513,13 @@ export function executeScrim(state: State, actor: User, input: unknown) {
         if (!user) throw new Error("Choose a confirmed member.");
         if (
           other.entries.some((entry) => entry.userId === user.id) ||
-          other.captainId === user.id
+          onScrimTeam(other, user.id)
         )
           throw new Error("A player or captain cannot belong to both teams.");
+        if (team!.coaches?.some((person) => person.userId === user.id))
+          throw new Error(
+            "Remove the coach assignment before adding this person as a player.",
+          );
         const old = team!.entries.find((entry) => entry.userId === user.id);
         return {
           ...old,

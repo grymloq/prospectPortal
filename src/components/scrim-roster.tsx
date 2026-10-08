@@ -1,4 +1,5 @@
 "use client";
+import { isScrimCaptain } from "@/lib/scrims";
 import { useState } from "react";
 import type { Scrim, ScrimEntry, ScrimTeam, View } from "@/lib/types";
 import { catalogue } from "@/lib/catalogue";
@@ -9,6 +10,7 @@ import { Badge, Field, Modal } from "./ui";
 import type { Mutate } from "./workspace";
 import styles from "./scrims.module.css";
 import { useScrimClock } from "./use-scrim-clock";
+import ScrimStaff from "./scrim-staff";
 
 export default function ScrimRoster({
   view,
@@ -28,8 +30,8 @@ export default function ScrimRoster({
   const manage =
     !readOnly &&
     (view.me.role === "admin" ||
-      team.captainId === view.me.id ||
-      (team.external && scrim.teams[0].captainId === view.me.id));
+      isScrimCaptain(team, view.me.id) ||
+      (team.external && isScrimCaptain(scrim.teams[0], view.me.id)));
   const now = useScrimClock();
   const locked =
     !!scrim.cancelled ||
@@ -37,6 +39,7 @@ export default function ScrimRoster({
     now >= Date.parse(scrim.submissionDeadline);
   const canSeeLists = locked || manage || onScrimTeam(team, view.me.id);
   const [roster, setRoster] = useState(false);
+  const [staff, setStaff] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameError, setRenameError] = useState("");
   const [entry, setEntry] = useState<ScrimEntry | null>(null);
@@ -65,12 +68,41 @@ export default function ScrimRoster({
               ? "External roster · managed by our captain"
               : `Captain: ${team.captainName}${team.entries.some((e) => e.userId === team.captainId) ? " · playing" : " · non-playing"}`}
           </p>
+          {team.additionalCaptains?.length ? (
+            <p className={styles.muted}>
+              Additional captains:{" "}
+              {team.additionalCaptains.map((p) => p.name).join(", ")}
+            </p>
+          ) : null}
+          {team.coaches?.length ? (
+            <p className={styles.muted}>
+              Non-playing coaches: {team.coaches.map((p) => p.name).join(", ")}
+            </p>
+          ) : null}
+          {!readOnly &&
+            view.me.role === "admin" &&
+            !team.external &&
+            !scrim.cancelled &&
+            !scrim.completedAt && (
+              <button type="button" onClick={() => setStaff(true)}>
+                Manage captains and coaches
+              </button>
+            )}
         </div>
         <Badge tone={team.finalizedAt ? "green" : "amber"}>
           {team.finalizedAt ? "Submitted" : "Draft"} · {team.entries.length}/
           {scrim.teamSize}
         </Badge>
       </div>
+      {staff && (
+        <ScrimStaff
+          view={view}
+          scrim={scrim}
+          team={team}
+          mutate={mutate}
+          onClose={() => setStaff(false)}
+        />
+      )}
       {canSeeLists && !team.finalizedAt && warnings.length > 0 && (
         <div className={styles.warning}>
           <strong>Before final submission</strong>
@@ -235,7 +267,8 @@ function RosterEditor({
     ...view.playerOptions,
   ].filter(
     (p) =>
-      p.id !== other.captainId && !other.entries.some((e) => e.userId === p.id),
+      !onScrimTeam(other, p.id) &&
+      !team.coaches?.some((coach) => coach.userId === p.id),
   );
   return (
     <Modal

@@ -1,8 +1,16 @@
 import type { Scrim, ScrimTeam } from "./types";
 
-export function onScrimTeam(team: ScrimTeam, userId: string) {
+export function isScrimCaptain(team: ScrimTeam, userId: string) {
   return (
     team.captainId === userId ||
+    !!team.additionalCaptains?.some((person) => person.userId === userId)
+  );
+}
+
+export function onScrimTeam(team: ScrimTeam, userId: string) {
+  return (
+    isScrimCaptain(team, userId) ||
+    !!team.coaches?.some((person) => person.userId === userId) ||
     team.entries.some((entry) => entry.userId === userId)
   );
 }

@@ -1016,3 +1016,78 @@ test("transaction rollback retains history when a scrim write fails", () => {
   );
   assert.equal(JSON.stringify(readState()), before);
 });
+
+test("admins replace and add captains and non-playing coaches with revision and team boundaries", () => {
+  const f = fixture();
+  f.fill();
+  const team = f.scrim.teams[0],
+    other = f.scrim.teams[1];
+  const command = {
+    type: "scrimStaff",
+    teamId: team.id,
+    captainId: f.member(13).id,
+    additionalCaptainIds: [f.member(14).id],
+    coachIds: [f.member(15).id],
+  };
+  assert.throws(() => f.run(f.member(1), command), /Only admins/);
+  assert.throws(
+    () => f.run(f.admin, { ...command, coachIds: [team.entries[0].userId] }),
+    /non-playing/,
+  );
+  assert.throws(
+    () => f.run(f.admin, { ...command, captainId: other.captainId }),
+    /opposing/,
+  );
+  assert.throws(
+    () => f.run(f.admin, { ...command, coachIds: [f.member(14).id] }),
+    /only one staff/,
+  );
+  const entries = structuredClone(team.entries);
+  at(f.deadline + 1, () => f.run(f.admin, command));
+  assert.deepEqual(team.entries, entries);
+  assert.equal(team.captainId, f.member(13).id);
+  assert.equal(team.additionalCaptains![0].userId, f.member(14).id);
+  assert.equal(team.coaches![0].userId, f.member(15).id);
+  f.run(f.member(14), {
+    type: "scrimTeamName",
+    teamId: team.id,
+    name: "Captain renamed",
+  });
+  assert.throws(
+    () =>
+      f.run(f.member(15), {
+        type: "scrimTeamName",
+        teamId: team.id,
+        name: "Coach renamed",
+      }),
+    /captain or an admin/,
+  );
+  execute(f.s, f.admin, { type: "matrixList", patchId: f.scrim.patchId, army: armyFor(0) });
+  const own = team.entries[0];
+  const enemy = viewState(f.s, f.member(15)).scrims![0].databaseEntries![0];
+  f.run(f.member(15), {
+    type: "scrimPlanComment",
+    teamId: team.id,
+    ownId: own.id,
+    enemyId: enemy.id,
+    text: "Private coach analysis",
+  });
+  assert.ok(
+    viewState(f.s, f.member(15)).scrims![0].teams[0].estimates.some(
+      (estimate) =>
+        estimate.comments.some(
+          (comment) => comment.text === "Private coach analysis",
+        ),
+    ),
+  );
+  assert.equal(
+    viewState(f.s, f.member(3)).scrims![0].teams[0].estimates.length,
+    0,
+  );
+  f.run(f.admin, { ...command, coachIds: [], additionalCaptainIds: [] });
+  assert.equal(
+    viewState(f.s, f.member(15)).scrims![0].teams[0].estimates.length,
+    0,
+  );
+  assert.throws(() => f.run(f.admin, { ...command, revision: 0 }), /changed/);
+});

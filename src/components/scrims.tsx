@@ -1,4 +1,5 @@
 "use client";
+import { isScrimCaptain } from "@/lib/scrims";
 import { useState } from "react";
 import { ArrowLeft, Plus } from "lucide-react";
 import type { View } from "@/lib/types";
@@ -41,7 +42,7 @@ export default function Scrims({
     scrim?.teams.filter((team) => !ownTeam || team.id !== ownTeam.id) || [];
   const canManageTeams =
     admin ||
-    (scrim?.kind === "external" && scrim.teams[0].captainId === view.me.id);
+    (scrim?.kind === "external" && isScrimCaptain(scrim.teams[0], view.me.id));
   const opposingUnlocked = !!scrim?.listsRevealed;
   const sections = [
     "Our Team",

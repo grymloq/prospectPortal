@@ -1,4 +1,5 @@
 "use client";
+import { isScrimCaptain } from "@/lib/scrims";
 import { useState } from "react";
 import type { Layout, Scrim, ScrimPairing, View } from "@/lib/types";
 import { layouts } from "@/lib/matchups";
@@ -19,7 +20,7 @@ export default function ScrimPairings({
 }) {
   const manage =
     view.me.role === "admin" ||
-    scrim.teams.some((t) => t.captainId === view.me.id);
+    scrim.teams.some((t) => isScrimCaptain(t, view.me.id));
   const event = view.events.find((e) => e.id === scrim.eventId)!;
   const [editing, setEditing] = useState(false);
   const [report, setReport] = useState("");
