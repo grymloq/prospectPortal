@@ -217,9 +217,6 @@ export default function MatchupMatrix({
         title="Mean of available A/B/C matchup scores against filtered opponents, including manual overrides. Each layout matchup has equal weight."
       >
         Avg {values.length ? average.toFixed(1) : "—"}
-        <small>
-          {values.length} {values.length === 1 ? "layout score" : "layout scores"}
-        </small>
       </span>
     );
   }
@@ -400,8 +397,11 @@ export default function MatchupMatrix({
                           setMarkedColumns(toggle(markedColumns, a.key))
                         }
                       >
-                        <b>#{codes.get(a.key)}</b>
-                        <span>{a.army.listName || a.army.factionName}</span>
+                        <span>
+                          {a.army.factionName} -{" "}
+                          <Disposition name={a.army.dispositionName} />
+                        </span>
+                        <small>{a.army.listName || a.army.factionName}</small>
                       </button>
                       {averageBadge(
                         a.key,
@@ -433,8 +433,13 @@ export default function MatchupMatrix({
                           setMarkedRows(toggle(markedRows, row.key))
                         }
                       >
-                        <b>#{codes.get(row.key)}</b>
-                        <span>{row.army.listName || row.army.factionName}</span>
+                        <span>
+                          {row.army.factionName} -{" "}
+                          <Disposition name={row.army.dispositionName} />
+                        </span>
+                        <small>
+                          {row.army.listName || row.army.factionName}
+                        </small>
                       </button>
                       {averageBadge(
                         row.key,
