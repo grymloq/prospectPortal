@@ -6,7 +6,6 @@ import { onScrimTeam } from "@/lib/scrims";
 import { Field, Modal } from "./ui";
 import type { Mutate } from "./workspace";
 import styles from "./scrims.module.css";
-import { useScrimClock } from "./use-scrim-clock";
 
 export default function ScrimMatrix({
   view,
@@ -24,10 +23,11 @@ export default function ScrimMatrix({
   const team = visible.find((t) => t.id === selectedTeam) || visible[0];
   const other = scrim.teams.find((t) => t.id !== team?.id);
   const [editing, setEditing] = useState<ScrimEstimate | null>(null);
-  const now = useScrimClock();
-  const ready =
-    now >= Date.parse(scrim.submissionDeadline) &&
-    scrim.teams.every((t) => t.finalizedAt);
+  const ready = !!scrim.listsRevealed;
+  const opponents = ready
+    ? other?.entries.filter((entry) => entry.army) || []
+    : scrim.databaseEntries || [];
+  const submitted = team?.entries.filter((entry) => entry.army) || [];
   const canEdit = !!team && onScrimTeam(team, view.me.id) && !scrim.cancelled;
   return (
     <section className={styles.card}>
@@ -55,19 +55,22 @@ export default function ScrimMatrix({
           </Field>
         )}
       </div>
-      {!ready ? (
-        <p>
-          Available after both teams finalize their lists and the submission
-          deadline passes.
-        </p>
-      ) : !team ? (
+      {!team ? (
         <p>Team plans will be revealed here when the scrim is complete.</p>
+      ) : !submitted.length ? (
+        <p>Submit a team list to start preparing matchups.</p>
+      ) : !opponents.length ? (
+        <p>
+          No lists are available in the matchup database for this rules patch.
+        </p>
       ) : (
         <>
           <p className={styles.muted}>
             Scores are from {team.name}’s perspective. Each cell shows A / B /
-            C. Shared matrix estimates provide the starting values; changes here
-            affect only this scrim.
+            C.{" "}
+            {ready
+              ? "Shared matrix estimates provide the starting values; changes here affect only this scrim."
+              : "Your submitted lists are shown against all accessible lists in the matchup database for this rules patch. Shared estimates provide starting scores; your edits and comments stay private to this team and scrim. Once opposing lists are revealed, only that team's lists will appear."}
           </p>
           <div
             className={styles.tableScroll}
@@ -80,9 +83,9 @@ export default function ScrimMatrix({
                 <tr>
                   <th scope="col">
                     {team.name} ↓<br />
-                    {other?.name} →
+                    {ready ? other?.name : "Database lists"} →
                   </th>
-                  {other?.entries.map((entry) => (
+                  {opponents.map((entry) => (
                     <th scope="col" key={entry.id}>
                       {entry.name}
                       <small>{entry.army?.factionName}</small>
@@ -94,7 +97,7 @@ export default function ScrimMatrix({
                 </tr>
               </thead>
               <tbody>
-                {team.entries.map((entry) => (
+                {submitted.map((entry) => (
                   <tr key={entry.id}>
                     <th scope="row">
                       {entry.name}
@@ -103,7 +106,7 @@ export default function ScrimMatrix({
                         {entry.army?.listName} · {entry.army?.dispositionName}
                       </small>
                     </th>
-                    {other?.entries.map((enemy) => {
+                    {opponents.map((enemy) => {
                       const cell = team.estimates.find(
                         (c) => c.ownId === entry.id && c.enemyId === enemy.id,
                       );
@@ -172,9 +175,10 @@ function EstimateEditor({
   onClose: () => void;
 }) {
   const own = team.entries.find((e) => e.id === cell.ownId)!;
-  const enemy = scrim.teams
-    .flatMap((t) => t.entries)
-    .find((e) => e.id === cell.enemyId)!;
+  const enemy = [
+    ...scrim.teams.flatMap((t) => t.entries),
+    ...(scrim.databaseEntries || []),
+  ].find((e) => e.id === cell.enemyId)!;
   const [revision] = useState(scrim.revision);
   const [error, setError] = useState("");
   const [scores, setScores] = useState(

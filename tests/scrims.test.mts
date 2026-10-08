@@ -525,6 +525,110 @@ test("team members edit only their own matrix, with comments and independent sha
     );
   });
 });
+test("pre-lock database planning stays private to one scrim and carries into matching opposing lists", () => {
+  const f = fixture();
+  f.fill();
+  const enemyArmy = f.scrim.teams[1].entries[0].army!;
+  f.s.matrixLists = [
+    {
+      id: "public-list",
+      userId: f.admin.id,
+      patchId: f.scrim.patchId,
+      army: enemyArmy,
+      authorName: f.admin.name,
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+  const globalBefore = JSON.stringify({
+    lists: f.s.matrixLists,
+    estimates: f.s.manualEstimates,
+  });
+  const team = f.scrim.teams[0];
+  const prep = viewState(f.s, f.member(1)).scrims![0];
+  assert.equal(prep.listsRevealed, false);
+  assert.equal(prep.databaseEntries!.length, 1);
+  const target = {
+    teamId: team.id,
+    ownId: team.entries[0].id,
+    enemyId: prep.databaseEntries![0].id,
+  };
+  f.run(f.member(1), {
+    type: "scrimEstimate",
+    ...target,
+    scores: { A: 17, B: 12, C: null },
+  });
+  f.run(f.member(2), {
+    type: "scrimPlanComment",
+    ...target,
+    text: "Secret preparation",
+  });
+  assert.equal(
+    viewState(f.s, f.member(2)).scrims![0].teams[0].estimates[0].scores.A,
+    17,
+  );
+  for (const actor of [f.member(3), f.member(20), f.admin]) {
+    assert.equal(
+      JSON.stringify(viewState(f.s, actor)).includes("Secret preparation"),
+      false,
+    );
+  }
+  assert.throws(
+    () =>
+      f.run(f.member(3), {
+        type: "scrimEstimate",
+        ...target,
+        scores: { A: 1, B: 1, C: 1 },
+      }),
+    /Only team/,
+  );
+  assert.throws(
+    () =>
+      f.run(f.member(1), {
+        type: "scrimEstimate",
+        ...target,
+        enemyId: "db:forged",
+        scores: { A: 1, B: 1, C: 1 },
+      }),
+    /public database/,
+  );
+  assert.equal(
+    JSON.stringify({ lists: f.s.matrixLists, estimates: f.s.manualEstimates }),
+    globalBefore,
+  );
+  at(f.deadline + 1, () => {
+    const revealed = viewState(f.s, f.member(1)).scrims![0];
+    const cell = revealed.teams[0].estimates.find(
+      (e) =>
+        e.ownId === target.ownId &&
+        e.enemyId === f.scrim.teams[1].entries[0].id,
+    )!;
+    assert.equal(cell.scores.A, 17);
+    assert.equal(cell.comments[0].text, "Secret preparation");
+    assert.equal(
+      revealed.teams[0].estimates.some((e) => e.enemyId.startsWith("db:")),
+      false,
+    );
+    f.run(f.member(1), {
+      type: "scrimEstimate",
+      teamId: team.id,
+      ownId: cell.ownId,
+      enemyId: cell.enemyId,
+      scores: { A: 19, B: 10, C: 9 },
+    });
+    assert.equal(
+      viewState(f.s, f.member(2)).scrims![0].teams[0].estimates.find(
+        (e) => e.ownId === cell.ownId && e.enemyId === cell.enemyId,
+      )!.scores.A,
+      19,
+    );
+    assert.equal(
+      JSON.stringify(viewState(f.s, f.member(3))).includes(
+        "Secret preparation",
+      ),
+      false,
+    );
+  });
+});
 test("deadline and finalization lock rosters/lists, including admin writes", () => {
   const f = fixture();
   f.fill();
@@ -670,9 +774,9 @@ test("a scrim completes only after all results and uses the five-point differenc
   f.report(7, 13);
   assert.equal(scrimScore(f.scrim).winner, "Blue");
   assert.ok(
-    viewState(f.s, f.member(20)).scrims![0].teams.every(
-      (t) => t.estimates.length === 64,
-    ),
+    at(f.start + 60_000, () =>
+      viewState(f.s, f.member(20)),
+    ).scrims![0].teams.every((t) => t.estimates.length === 64),
   );
   assert.equal(
     viewState(f.s, f.member(20)).games.some((g) => g.scrimId === f.scrim.id),

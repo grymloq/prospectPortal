@@ -233,6 +233,8 @@ export type ScrimPairing = {
 export type Scrim = {
   /** Derived by the server for the current response; never a client permission. */
   listsRevealed?: boolean;
+  /** Public database configurations for preparing this scrim, supplied by the server. */
+  databaseEntries?: ScrimEntry[];
   id: string;
   eventId: string;
   revision: number;

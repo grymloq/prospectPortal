@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { Army, Layout, Scrim, ScrimTeam, State, User } from "@/lib/types";
 import { armySnapshot, catalogue } from "@/lib/catalogue";
@@ -158,6 +158,47 @@ function rulesFor(state: State, scrim: Scrim) {
     state.patches?.find((p) => p.id === scrim.patchId)?.catalogue || catalogue
   );
 }
+function databaseMatrix(state: State, scrim: Scrim) {
+  return matrixWithManual(
+    [],
+    scrim.patchId,
+    state.matrixLists || [],
+    state.manualEstimates || [],
+  );
+}
+function databaseEntries(
+  state: State,
+  scrim: Scrim,
+  matrix = databaseMatrix(state, scrim),
+) {
+  return matrix.armies.map(({ key, army }) => ({
+    id: `db:${createHash("sha256").update(key).digest("hex")}`,
+    name: army.listName || army.factionName,
+    army,
+  }));
+}
+function preparationCell(
+  state: State,
+  scrim: Scrim,
+  own: import("@/lib/types").ScrimEntry,
+  enemy: import("@/lib/types").ScrimEntry,
+  matrix = databaseMatrix(state, scrim),
+) {
+  const shared = matrix.effective.get(
+    cellKey(armyKey(own.army!), armyKey(enemy.army!)),
+  );
+  return {
+    ownId: own.id,
+    enemyId: enemy.id,
+    scores: Object.fromEntries(
+      layouts.map((layout) => [
+        layout,
+        shared?.[layout].count ? shared[layout].average : null,
+      ]),
+    ) as Record<Layout, number | null>,
+    comments: [],
+  };
+}
 function seedEstimates(state: State, scrim: Scrim) {
   // Only already-shared estimates seed a team plan. Private journals never become team data.
   const shared = matrixWithManual(
@@ -166,37 +207,61 @@ function seedEstimates(state: State, scrim: Scrim) {
     state.matrixLists || [],
     state.manualEstimates || [],
   );
+  const targets = new Map(
+    databaseEntries(state, scrim, shared).map((entry) => [
+      armyKey(entry.army),
+      entry,
+    ]),
+  );
   for (const team of scrim.teams) {
     if (team.external) {
       team.estimates = [];
       continue;
     }
     const enemy = scrim.teams.find((t) => t.id !== team.id)!;
-    team.estimates = team.entries.flatMap((own) =>
-      enemy.entries.map((opponent) => {
-        const existing = team.estimates.find(
-          (e) => e.ownId === own.id && e.enemyId === opponent.id,
-        );
-        if (existing) return existing;
-        const cell =
-          own.army && opponent.army
-            ? shared.effective.get(
-                cellKey(armyKey(own.army), armyKey(opponent.army)),
-              )
-            : undefined;
-        return {
-          ownId: own.id,
-          enemyId: opponent.id,
-          scores: Object.fromEntries(
-            layouts.map((layout) => [
-              layout,
-              cell?.[layout].count ? cell[layout].average : null,
-            ]),
-          ) as Record<Layout, number | null>,
-          comments: [],
-        };
-      }),
+    const preparation = team.estimates.filter((e) =>
+      e.enemyId.startsWith("db:"),
     );
+    team.estimates = [
+      ...preparation,
+      ...team.entries.flatMap((own) =>
+        enemy.entries.map((opponent) => {
+          const existing = team.estimates.find(
+            (e) => e.ownId === own.id && e.enemyId === opponent.id,
+          );
+          const target = opponent.army && targets.get(armyKey(opponent.army));
+          const prepared =
+            target &&
+            preparation.find(
+              (e) => e.ownId === own.id && e.enemyId === target.id,
+            );
+          if (
+            prepared &&
+            (!existing?.updatedAt ||
+              (prepared.updatedAt || "") > existing.updatedAt)
+          )
+            return { ...structuredClone(prepared), enemyId: opponent.id };
+          if (existing) return existing;
+          const cell =
+            own.army && opponent.army
+              ? shared.effective.get(
+                  cellKey(armyKey(own.army), armyKey(opponent.army)),
+                )
+              : undefined;
+          return {
+            ownId: own.id,
+            enemyId: opponent.id,
+            scores: Object.fromEntries(
+              layouts.map((layout) => [
+                layout,
+                cell?.[layout].count ? cell[layout].average : null,
+              ]),
+            ) as Record<Layout, number | null>,
+            comments: [],
+          };
+        }),
+      ),
+    ];
   }
 }
 
@@ -206,11 +271,29 @@ export function scrimView(state: State, scrim: Scrim, actor: User): Scrim {
     Date.now() >= Date.parse(scrim.submissionDeadline) &&
     scrimListsSubmitted(scrim);
   visible.listsRevealed = revealed;
+  const database = databaseMatrix(state, scrim);
+  visible.databaseEntries = databaseEntries(state, scrim, database);
+  if (revealed) seedEstimates(state, visible);
   for (const team of visible.teams) {
     const ownTeam =
       onScrimTeam(team, actor.id) ||
       (team.external && scrim.teams[0].captainId === actor.id);
-    if (!scrim.completedAt && (!ownTeam || !revealed)) team.estimates = [];
+    if (!scrim.completedAt && !ownTeam) team.estimates = [];
+    else if (!revealed) {
+      team.estimates = team.entries
+        .filter((e) => e.army)
+        .flatMap((own) =>
+          visible.databaseEntries!.map(
+            (enemy) =>
+              team.estimates.find(
+                (e) => e.ownId === own.id && e.enemyId === enemy.id,
+              ) || preparationCell(state, scrim, own, enemy, database),
+          ),
+        );
+    } else
+      team.estimates = team.estimates.filter(
+        (e) => !e.enemyId.startsWith("db:"),
+      );
     if (!revealed && !ownTeam && actor.role !== "admin") {
       team.entries = [];
     }
@@ -391,7 +474,11 @@ export function executeScrim(state: State, actor: User, input: unknown) {
         throw new Error("Each player can appear only once.");
       team!.entries = entries;
       scrim.teams.forEach((t) => {
-        t.estimates = [];
+        t.estimates = t.estimates.filter(
+          (e) =>
+            e.enemyId.startsWith("db:") &&
+            t.entries.some((entry) => entry.id === e.ownId),
+        );
       });
       audit(`updated the ${team!.name} scrim roster.`);
       break;
@@ -434,10 +521,15 @@ export function executeScrim(state: State, actor: User, input: unknown) {
           });
         }
       }
+      const changed = !entry.army || armyKey(entry.army) !== armyKey(snapshot);
       entry.army = snapshot;
       entry.savedArmyId = savedArmyId;
       scrim.teams.forEach((t) => {
-        t.estimates = [];
+        t.estimates = t.estimates.filter(
+          (e) =>
+            e.enemyId.startsWith("db:") &&
+            !(changed && t.id === team!.id && e.ownId === entry.id),
+        );
       });
       audit(`submitted ${entry.name}'s list for ${team!.name}.`);
       break;
@@ -501,23 +593,38 @@ export function executeScrim(state: State, actor: User, input: unknown) {
     case "scrimPlanComment": {
       if (!onScrimTeam(team!, actor.id))
         throw new Error("Only team members can change their team's matrix.");
-      if (
-        Date.now() < Date.parse(scrim.submissionDeadline) ||
-        !scrim.teams.every((t) => t.finalizedAt)
-      )
-        throw new Error(
-          "Team matrices open when final lists are revealed at the deadline.",
-        );
-      const cell = team!.estimates.find(
+      const revealed =
+        Date.now() >= Date.parse(scrim.submissionDeadline) &&
+        scrimListsSubmitted(scrim);
+      if (revealed) seedEstimates(state, scrim);
+      else if (!command.enemyId.startsWith("db:"))
+        throw new Error("Opposing lists are not revealed yet.");
+      if (revealed && command.enemyId.startsWith("db:"))
+        throw new Error("Choose an opposing team's submitted list.");
+      let cell = team!.estimates.find(
         (e) => e.ownId === command.ownId && e.enemyId === command.enemyId,
       );
+      if (!revealed) {
+        const own = team!.entries.find((e) => e.id === command.ownId && e.army);
+        const enemy = databaseEntries(state, scrim).find(
+          (e) => e.id === command.enemyId,
+        );
+        if (!own || !enemy)
+          throw new Error(
+            "Choose a submitted team list and a public database list.",
+          );
+        if (!cell) {
+          cell = preparationCell(state, scrim, own, enemy);
+          team!.estimates.push(cell);
+        }
+      }
       if (!cell) throw new Error("Matchup not found.");
       if (command.type === "scrimEstimate") {
         cell.history ||= [
           {
             scores: { ...cell.scores },
             authorName: "Shared starting estimates",
-            createdAt: scrim.teams[0].finalizedAt!,
+            createdAt: now,
           },
         ];
         cell.history.push({
