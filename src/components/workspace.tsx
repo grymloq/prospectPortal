@@ -29,6 +29,7 @@ import { Avatar } from "./ui";
 import { ModalDraftProvider } from "./modal-drafts";
 import BetaFeedback, { FeedbackInbox } from "./feedback";
 import MobileNavigation from "./mobile-navigation";
+import AccessPreview from "./access-preview";
 export type Mutate = (
   command: object,
   onError?: (message: string) => void,
@@ -50,7 +51,7 @@ export default function Workspace({
   const [scrimSection, setScrimSection] = useState("Our Team");
   const [locationOwner, setLocationOwner] = useState("");
   const locationKey = view
-    ? `team-sweden:location:v1:${view.me.id}:${view.me.role}`
+    ? `team-sweden:location:v1:${view.accessPreview?.active ? "preview:" : ""}${view.me.id}:${view.me.role}`
     : "";
   const restoredOwner = useRef("");
   function acceptView(view: View | null) {
@@ -60,7 +61,7 @@ export default function Workspace({
       setLocationOwner("");
       return;
     }
-    const locationKey = `team-sweden:location:v1:${view.me.id}:${view.me.role}`;
+    const locationKey = `team-sweden:location:v1:${view.accessPreview?.active ? "preview:" : ""}${view.me.id}:${view.me.role}`;
     if (restoredOwner.current === locationKey) return;
     restoredOwner.current = locationKey;
     let saved: {
@@ -196,6 +197,13 @@ export default function Workspace({
     };
   }, [view]);
   async function mutate(command: object, onError?: (message: string) => void) {
+    if (view?.accessPreview?.active) {
+      const message =
+        "Access preview is read-only. Exit preview to make changes.";
+      setError(message);
+      onError?.(message);
+      return false;
+    }
     setBusy(true);
     setError("");
     try {
@@ -276,7 +284,9 @@ export default function Workspace({
       : []),
   ];
   return (
-    <ModalDraftProvider key={`${view.me.id}:${view.me.role}`}>
+    <ModalDraftProvider
+      key={`${view.me.id}:${view.me.role}:${!!view.accessPreview?.active}`}
+    >
       <div className="app-shell">
         <aside className="sidebar">
           <div className="brand">
@@ -392,6 +402,7 @@ export default function Workspace({
               </button>
             </div>
           </div>
+          <AccessPreview view={view} onView={acceptView} />
           {error && (
             <div className="alert" role="alert">
               {error}

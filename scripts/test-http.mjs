@@ -630,6 +630,92 @@ try {
     assert.equal(progress.data.goals[0].status, "Ready for review"),
   );
   await testScrimHttp({ request, check, admin, player });
+  const deniedPreview = await request(
+    "/api/admin/view-as",
+    { userId: "p1", role: "admin" },
+    player.cookie,
+  );
+  const anonymousPreview = await request("/api/admin/view-as", {
+    userId: "p1",
+    role: "actual",
+  });
+  check("access preview requires an authenticated administrator", () => {
+    assert.equal(deniedPreview.status, 403);
+    assert.equal(anonymousPreview.status, 401);
+  });
+  const preview = await request(
+    "/api/admin/view-as",
+    { userId: "p1", role: "actual" },
+    admin.cookie,
+  );
+  assert.equal(preview.status, 200);
+  const previewSession = `${admin.cookie}; ${preview.cookie}`;
+  const previewRead = await request("/api/state", null, previewSession);
+  check(
+    "user preview applies server privacy filtering and retains the actual admin session",
+    () => {
+      assert.equal(previewRead.status, 200);
+      assert.equal(previewRead.data.me.id, "p1");
+      assert.equal(previewRead.data.me.role, "member");
+      assert.deepEqual(
+        previewRead.data.users.map((u) => u.id),
+        ["p1"],
+      );
+      assert.deepEqual(previewRead.data.feedback, []);
+      assert.ok(previewRead.data.games.every((g) => g.userId === "p1"));
+      assert.ok(previewRead.data.accessPreview.active);
+      assert.ok(!JSON.stringify(previewRead.data).includes('"password"'));
+    },
+  );
+  for (const [route, method, body] of [
+    ["/api/state", "POST", { type: "profile", name: "Preview write" }],
+    ["/api/admin/users", "DELETE", { userId: "p1" }],
+    ["/api/password", "POST", {}],
+    ["/api/army-import", "POST", {}],
+    ["/api/patch-import", "POST", {}],
+  ]) {
+    const result = await request(route, body, previewSession, method);
+    assert.equal(result.status, 403);
+    assert.match(result.data.error, /read-only/);
+  }
+  check(
+    "preview blocks writes across state, account, password and import routes",
+    () => {},
+  );
+  const forgedPreviewCookie = `${player.cookie}; team_access_preview=${encodeURIComponent(JSON.stringify({ actorId: "p1", userId: "admin", role: "admin" }))}`;
+  assert.equal(
+    (await request("/api/state", null, forgedPreviewCookie)).status,
+    403,
+  );
+  const wrongOwner = `${admin.cookie}; team_access_preview=${encodeURIComponent(JSON.stringify({ actorId: "p1", userId: "admin", role: "admin" }))}`;
+  assert.equal((await request("/api/state", null, wrongOwner)).status, 403);
+  const rolePreview = await request(
+    "/api/admin/view-as",
+    { userId: "admin", role: "member" },
+    previewSession,
+  );
+  assert.equal(rolePreview.status, 200);
+  assert.equal(rolePreview.data.me.role, "member");
+  assert.deepEqual(
+    rolePreview.data.users.map((u) => u.id),
+    ["admin"],
+  );
+  const restored = await request(
+    "/api/admin/view-as",
+    null,
+    `${admin.cookie}; ${rolePreview.cookie}`,
+    "DELETE",
+  );
+  check(
+    "forged previews are rejected, role simulation works and exit restores admin access",
+    () => {
+      assert.equal(restored.status, 200);
+      assert.equal(restored.data.me.id, "admin");
+      assert.equal(restored.data.me.role, "admin");
+      assert.equal(restored.data.accessPreview.active, false);
+      assert.ok(restored.data.users.length > 1);
+    },
+  );
   const logout = await request(
     "/api/session",
     null,

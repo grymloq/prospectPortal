@@ -96,6 +96,7 @@ export async function DELETE(req: NextRequest) {
     if (token) db.prepare("DELETE FROM sessions WHERE token=?").run(token);
     const response = NextResponse.json({ ok: true });
     response.cookies.delete("team_session");
+    response.cookies.delete("team_access_preview");
     return response;
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 403 });

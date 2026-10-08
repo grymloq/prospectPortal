@@ -79,7 +79,9 @@ export async function DELETE(req: NextRequest) {
     const supabase = await authClient();
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-    return NextResponse.json({ ok: true });
+    const response = NextResponse.json({ ok: true });
+    response.cookies.delete("team_access_preview");
+    return response;
   } catch {
     return NextResponse.json({ error: "Could not sign out." }, { status: 400 });
   }

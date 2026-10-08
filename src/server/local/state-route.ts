@@ -3,6 +3,7 @@ import { z } from "zod";
 import { readState, transaction } from "@/server/store";
 import { viewState, execute } from "@/server/service";
 import { sessionUserId, sameOrigin } from "./session";
+import { previewCookie, previewView } from "../access-preview";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
@@ -14,9 +15,19 @@ export async function GET(req: NextRequest) {
       { error: "Sign in to continue." },
       { status: 401 },
     );
-  return NextResponse.json(viewState(s, user), {
-    headers: { "Cache-Control": "no-store" },
-  });
+  try {
+    return NextResponse.json(
+      previewView(s, user, req.cookies.get(previewCookie)?.value),
+      {
+        headers: { "Cache-Control": "no-store" },
+      },
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: (error as Error).message },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
 }
 export async function POST(req: NextRequest) {
   try {

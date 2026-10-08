@@ -3,9 +3,10 @@ import type { User as AuthUser } from "@supabase/supabase-js";
 import type { State, User, View } from "@/lib/types";
 import { catalogue } from "@/lib/catalogue";
 import { databaseClient } from "./supabase";
-import { execute, viewState } from "./service";
+import { execute } from "./service";
 import { ensurePatches } from "@/lib/patches";
 import { accessError, ensureMembership } from "./membership";
+import { previewView } from "./access-preview";
 
 export function ensureProfile(
   state: State,
@@ -48,6 +49,7 @@ export async function cloudView(
   command?: unknown,
   trustedUpdate?: (state: State, actor: User) => void,
   inspect?: (state: State, actor: User) => void,
+  preview?: string,
 ): Promise<View> {
   const db = databaseClient();
   for (let attempt = 0; attempt < 12; attempt++) {
@@ -70,7 +72,7 @@ export async function cloudView(
       if (command !== undefined) execute(state, actor, command);
       if (trustedUpdate) trustedUpdate(state, actor);
     }
-    const view = denied ? null : viewState(state, actor);
+    const view = denied ? null : previewView(state, actor, preview);
     if (!denied && inspect) inspect(state, actor);
     if (
       !changed &&

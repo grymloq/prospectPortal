@@ -271,6 +271,11 @@ export type Scrim = {
   cancelled?: boolean;
 };
 export type View = State & {
+  accessPreview?: {
+    active: boolean;
+    actorName: string;
+    users: { id: string; name: string; role: User["role"] }[];
+  };
   playerOptions: { id: string; name: string }[];
   me: User;
   occupancy: Record<string, number>;

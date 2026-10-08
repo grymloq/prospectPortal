@@ -5,6 +5,7 @@ import { authClient } from "@/server/supabase";
 import { cloudView } from "@/server/cloud-store";
 import { sameOrigin } from "@/server/session";
 import { pendingMembership } from "@/server/membership";
+import { previewCookie } from "@/server/access-preview";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "private, no-store" };
@@ -22,7 +23,13 @@ async function handle(req: NextRequest, mutate: boolean) {
         { status: 401, headers },
       );
     return NextResponse.json(
-      await cloudView(user, mutate ? await req.json() : undefined),
+      await cloudView(
+        user,
+        mutate ? await req.json() : undefined,
+        undefined,
+        undefined,
+        req.cookies.get(previewCookie)?.value,
+      ),
       { headers },
     );
   } catch (e) {
