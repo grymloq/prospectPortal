@@ -1,3 +1,4 @@
+import { notifyRegistration } from "../notifications";
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
@@ -46,6 +47,7 @@ export async function POST(req: NextRequest) {
           application: "",
         };
         s.users.push(u);
+        notifyRegistration(s, u);
         return u;
       });
       return NextResponse.json(

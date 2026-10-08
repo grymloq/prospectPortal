@@ -1,4 +1,11 @@
-import { randomUUID } from "node:crypto";
+import {
+  notificationCommands,
+  executeNotification,
+  notificationView,
+  notificationSnapshot,
+  notifyChanges,
+} from "./notifications";
+import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { State, User, View, Army } from "@/lib/types";
 import { armySnapshot, catalogue } from "@/lib/catalogue";
@@ -33,6 +40,7 @@ const army = z.object({
   listUrl: url,
 });
 const commands = z.discriminatedUnion("type", [
+  ...notificationCommands,
   feedbackCommand,
   z.object({ type: z.literal("feedbackRead"), id, read: z.boolean() }),
   z.object({ type: z.literal("feedbackDelete"), id }),
@@ -173,6 +181,16 @@ const commands = z.discriminatedUnion("type", [
     location: z.string().trim().max(300),
     online: z.boolean().optional(),
     onlineUrl: url.optional(),
+    deadlines: z
+      .array(
+        z.object({
+          id,
+          title: z.string().trim().min(1).max(100),
+          at: z.iso.datetime(),
+        }),
+      )
+      .max(20)
+      .optional(),
     startsAt: z.iso.datetime(),
     endsAt: z.iso.datetime(),
     capacity: z.number().int().min(1).max(1000),
@@ -197,6 +215,10 @@ export function viewState(s: State, actor: User): View {
   const admin = actor.role === "admin";
   return {
     me: publicUser(actor),
+    pushDeviceIds: (s.pushSubscriptions || [])
+      .filter((p) => p.userId === actor.id)
+      .map((p) => createHash("sha256").update(p.endpoint).digest("hex")),
+    notifications: notificationView(s, actor),
     feedback: admin
       ? (s.feedback || []).map((f) => ({
           ...f,
@@ -249,10 +271,23 @@ export function viewState(s: State, actor: User): View {
   };
 }
 export function execute(s: State, actor: User, input: unknown) {
+  const before = notificationSnapshot(s);
+  executeCommand(s, actor, input);
+  notifyChanges(s, before, actor.id);
+}
+function executeCommand(s: State, actor: User, input: unknown) {
   ensureMembership(s);
   requireMember(actor);
   ensurePatches(s);
   const c = commands.parse(input);
+  if (
+    c.type === "notificationRead" ||
+    c.type === "pushSubscribe" ||
+    c.type === "pushUnsubscribe"
+  ) {
+    executeNotification(s, actor, c);
+    return;
+  }
   if (c.type === "feedback") {
     submitFeedback(s, actor, c);
     return;
@@ -808,7 +843,16 @@ export function execute(s: State, actor: User, input: unknown) {
         throw new Error("Capacity is below the number already approved.");
       const { type: _, ...fields } = c;
       void _;
-      const event = { ...fields, id: old?.id || randomUUID() };
+      if (
+        c.deadlines &&
+        new Set(c.deadlines.map((d) => d.id)).size !== c.deadlines.length
+      )
+        throw new Error("Deadline identifiers must be unique.");
+      const event = {
+        ...fields,
+        deadlines: c.deadlines ?? old?.deadlines,
+        id: old?.id || randomUUID(),
+      };
       s.events = s.events.filter((e) => e.id !== event.id);
       s.events.push(event);
       audit(`${old ? "Updated" : "Created"} event: ${event.title}.`);

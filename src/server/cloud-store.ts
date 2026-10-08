@@ -1,3 +1,7 @@
+import {
+  generateDeadlineNotifications,
+  notifyRegistration,
+} from "./notifications";
 import "server-only";
 import type { User as AuthUser } from "@supabase/supabase-js";
 import type { State, User, View } from "@/lib/types";
@@ -41,6 +45,7 @@ export function ensureProfile(
     application: "",
   };
   state.users.push(actor);
+  notifyRegistration(state, actor);
   return { actor, changed: true };
 }
 
@@ -72,9 +77,14 @@ export async function cloudView(
       if (command !== undefined) execute(state, actor, command);
       if (trustedUpdate) trustedUpdate(state, actor);
     }
+    const notificationsBefore = JSON.stringify(state.notifications);
+    generateDeadlineNotifications(state);
+    const notificationChanged =
+      notificationsBefore !== JSON.stringify(state.notifications);
     const view = denied ? null : previewView(state, actor, preview);
     if (!denied && inspect) inspect(state, actor);
     if (
+      !notificationChanged &&
       !changed &&
       !migrated &&
       (denied || (command === undefined && !trustedUpdate))

@@ -629,6 +629,39 @@ try {
   check("goal evidence and review workflow", () =>
     assert.equal(progress.data.goals[0].status, "Ready for review"),
   );
+  const notificationAnon = await request("/api/notifications");
+  check("notifications require authentication", () =>
+    assert.equal(notificationAnon.status, 401),
+  );
+  const dispatchAnon = await request("/api/notifications/dispatch");
+  check("notification worker rejects unauthenticated requests", () =>
+    assert.equal(dispatchAnon.status, 401),
+  );
+  const playerNotifications = await request(
+    "/api/notifications",
+    undefined,
+    player.cookie,
+  );
+  check(
+    "notification inbox excludes admin records and delivery secrets",
+    () => {
+      assert.equal(playerNotifications.status, 200);
+      assert.ok(
+        playerNotifications.data.notifications.every(
+          (n) => n.userId === "p1" && !n.adminOnly && !n.deliveries,
+        ),
+      );
+    },
+  );
+  const readNotifications = await request(
+    "/api/state",
+    { type: "notificationRead" },
+    player.cookie,
+  );
+  check("mark all notifications read persists", () => {
+    assert.equal(readNotifications.status, 200);
+    assert.ok(readNotifications.data.notifications.every((n) => n.readAt));
+  });
   await testScrimHttp({ request, check, admin, player });
   const deniedPreview = await request(
     "/api/admin/view-as",

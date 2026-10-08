@@ -1,6 +1,7 @@
+import { generateDeadlineNotifications } from "../notifications";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { readState, transaction } from "@/server/store";
+import { transaction } from "@/server/store";
 import { viewState, execute } from "@/server/service";
 import { sessionUserId, sameOrigin } from "./session";
 import { previewCookie, previewView } from "../access-preview";
@@ -8,7 +9,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const id = sessionUserId(req);
-  const s = readState();
+  const s = transaction((s) => {
+    generateDeadlineNotifications(s);
+    return s;
+  });
   const user = s.users.find((u) => u.id === id);
   if (!user)
     return NextResponse.json(

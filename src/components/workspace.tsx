@@ -30,6 +30,7 @@ import { ModalDraftProvider } from "./modal-drafts";
 import BetaFeedback, { FeedbackInbox } from "./feedback";
 import MobileNavigation from "./mobile-navigation";
 import AccessPreview from "./access-preview";
+import Notifications, { disableDevicePush } from "./notifications";
 export type Mutate = (
   command: object,
   onError?: (message: string) => void,
@@ -394,6 +395,14 @@ export default function Workspace({
             </div>
             <button
               onClick={async () => {
+                try {
+                  if (!previewActive) await disableDevicePush();
+                } catch {
+                  setError(
+                    "Could not disable device push. Please retry signing out.",
+                  );
+                  return;
+                }
                 const r = await fetch("/api/session", { method: "DELETE" });
                 if (r.ok) {
                   acceptView(null);
@@ -413,6 +422,19 @@ export default function Workspace({
               {currentPage === "Profile" ? "Player profile" : currentPage}
             </span>
             <div className="row">
+              <Notifications
+                key={`${view.me.id}:${previewActive}`}
+                view={view}
+                mutate={mutate}
+                navigate={(n) => {
+                  setPage(n.page);
+                  if (n.profileId) setProfileId(n.profileId);
+                  if (n.scrimId) {
+                    setScrimId(n.scrimId);
+                    setScrimSection("Our Team");
+                  }
+                }}
+              />
               <button
                 className="icon-button"
                 title="Refresh workspace"
@@ -425,6 +447,14 @@ export default function Workspace({
                 className="icon-button mobile-signout"
                 aria-label="Sign out of account"
                 onClick={async () => {
+                  try {
+                    if (!previewActive) await disableDevicePush();
+                  } catch {
+                    setError(
+                      "Could not disable device push. Please retry signing out.",
+                    );
+                    return;
+                  }
                   const r = await fetch("/api/session", { method: "DELETE" });
                   if (r.ok) acceptView(null);
                 }}

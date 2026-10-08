@@ -104,6 +104,7 @@ export type Goal = {
   createdBy: string;
 };
 export type TeamEvent = {
+  deadlines?: { id: string; title: string; at: string }[];
   scrimId?: string;
   id: string;
   title: string;
@@ -147,7 +148,35 @@ export type ManualEstimate = {
   updatedAt: string;
   authorName: string;
 };
+export type PortalNotification = {
+  id: string;
+  key: string;
+  userId: string;
+  title: string;
+  createdAt: string;
+  readAt?: string;
+  adminOnly?: boolean;
+  page: "Profile" | "Users" | "Feedback inbox" | "Calendar" | "Scrims";
+  profileId?: string;
+  eventId?: string;
+  scrimId?: string;
+  deadline?: string;
+  deliveries?: {
+    subscriptionId: string;
+    attempts: number;
+    nextAttemptAt: number;
+    sentAt?: string;
+  }[];
+};
+export type BrowserSubscription = {
+  id: string;
+  userId: string;
+  endpoint: string;
+  keys: { auth: string; p256dh: string };
+};
 export type State = {
+  notifications?: PortalNotification[];
+  pushSubscriptions?: BrowserSubscription[];
   feedback?: Feedback[];
   membershipCutoverAt?: string;
   scrims?: Scrim[];
@@ -271,6 +300,7 @@ export type Scrim = {
   cancelled?: boolean;
 };
 export type View = State & {
+  pushDeviceIds?: string[];
   accessPreview?: {
     active: boolean;
     actorName: string;

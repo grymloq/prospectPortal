@@ -1,3 +1,5 @@
+import { after } from "next/server";
+import { deliverNotifications } from "@/server/notification-worker";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { localMode } from "@/server/config";
@@ -55,6 +57,13 @@ export async function GET(req: NextRequest) {
   return handle(req, false);
 }
 export async function POST(req: NextRequest) {
+  after(async () => {
+    try {
+      await deliverNotifications();
+    } catch {
+      console.error("Notification delivery deferred to scheduled retry.");
+    }
+  });
   if (localMode())
     return (await import("@/server/local/state-route")).POST(req);
   return handle(req, true);

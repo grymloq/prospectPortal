@@ -1160,3 +1160,205 @@ test("account deletion revokes access before completion and clears credentials i
   assert.equal(state.audit.length, auditLength);
   assert.deepEqual(state.games, games);
 });
+
+test("notifications preserve ownership, admin confidentiality, status history and read state", async () => {
+  const { notifyRegistration } = await import("../src/server/notifications");
+  const s = structuredClone(baseline);
+  const admin = s.users.find((u) => u.role === "admin")!;
+  const member = s.users.find((u) => u.role === "member")!;
+  execute(s, admin, {
+    type: "message",
+    userId: member.id,
+    internal: true,
+    text: "Confidential",
+  });
+  assert.equal(viewState(s, member).notifications?.length, 0);
+  execute(s, admin, {
+    type: "message",
+    userId: member.id,
+    internal: false,
+    text: "Welcome",
+  });
+  const notification = viewState(s, member).notifications![0];
+  assert.ok(notification);
+  assert.equal(notification.deliveries, undefined);
+  assert.equal(viewState(s, admin).pushSubscriptions, undefined);
+  assert.throws(
+    () =>
+      execute(s, s.users[2], { type: "notificationRead", id: notification.id }),
+    /not found/,
+  );
+  execute(s, member, { type: "notificationRead", id: notification.id });
+  assert.ok(viewState(s, member).notifications![0].readAt);
+  execute(s, admin, {
+    type: "phase",
+    userId: member.id,
+    phaseId: "phase1",
+    rejected: false,
+    reason: "PRIVATE reason",
+  });
+  assert.ok(
+    viewState(s, member).notifications!.some((n) =>
+      n.title.includes("Phase 1"),
+    ),
+  );
+  assert.ok(
+    !JSON.stringify(viewState(s, member).notifications).includes("PRIVATE"),
+  );
+  execute(s, member, {
+    type: "feedback",
+    category: "Bug",
+    text: "Test",
+    page: "Profile",
+    attachments: [],
+  });
+  assert.ok(
+    viewState(s, admin).notifications!.some((n) => n.page === "Feedback inbox"),
+  );
+  const count = s.notifications!.length;
+  notifyRegistration(s, {
+    ...member,
+    id: "pending-new",
+    confirmedMember: false,
+  });
+  notifyRegistration(s, {
+    ...member,
+    id: "pending-new",
+    confirmedMember: false,
+  });
+  assert.equal(s.notifications!.length, count + 1);
+  admin.role = "member";
+  assert.ok(!viewState(s, admin).notifications!.some((n) => n.adminOnly));
+});
+
+test("deadline reminders are timed, deduplicated, participant-only and invalidated on cancellation or reschedule", async () => {
+  const { generateDeadlineNotifications } =
+    await import("../src/server/notifications");
+  const s = structuredClone(baseline);
+  const now = Date.now();
+  s.events = [
+    {
+      ...s.events[0],
+      id: "event1",
+      startsAt: new Date(now + 86400001).toISOString(),
+      endsAt: new Date(now + 3 * 86400000).toISOString(),
+      deadlines: [
+        {
+          id: "list",
+          title: "Lists",
+          at: new Date(now + 3600000).toISOString(),
+        },
+      ],
+    },
+  ];
+  generateDeadlineNotifications(s, now);
+  assert.equal(s.notifications!.length, 1);
+  assert.equal(s.notifications![0].userId, "p1");
+  generateDeadlineNotifications(s, now);
+  assert.equal(s.notifications!.length, 1);
+  generateDeadlineNotifications(s, now + 2);
+  assert.equal(s.notifications!.length, 2);
+  const member = s.users.find((u) => u.id === "p1")!;
+  s.events[0].deadlines![0].at = new Date(now + 2 * 86400000).toISOString();
+  assert.equal(viewState(s, member).notifications!.length, 1);
+  s.events[0].cancelled = true;
+  assert.equal(viewState(s, member).notifications!.length, 0);
+  s.events[0].cancelled = false;
+  s.applications[0].status = "Withdrawn";
+  assert.equal(viewState(s, member).notifications!.length, 0);
+});
+
+test("push subscriptions reject arbitrary destinations, remain secret, transfer devices and unsubscribe by owner", () => {
+  const s = structuredClone(baseline);
+  const member = s.users[1],
+    other = s.users[2];
+  const input = {
+    type: "pushSubscribe",
+    endpoint: "https://fcm.googleapis.com/send/test",
+    keys: { auth: "a".repeat(22), p256dh: "b".repeat(87) },
+  };
+  for (const endpoint of [
+    "http://fcm.googleapis.com/a",
+    "https://localhost/a",
+    "https://fcm.googleapis.com.evil.test/a",
+    "https://fcm.googleapis.com:8443/a",
+  ])
+    assert.throws(
+      () => execute(s, member, { ...input, endpoint }),
+      /Unsupported/,
+    );
+  execute(s, member, input);
+  execute(s, member, input);
+  assert.equal(s.pushSubscriptions!.length, 1);
+  execute(s, other, { type: "pushUnsubscribe", endpoint: input.endpoint });
+  assert.equal(s.pushSubscriptions!.length, 1);
+  execute(s, other, input);
+  assert.equal(s.pushSubscriptions!.length, 1);
+  assert.equal(s.pushSubscriptions![0].userId, other.id);
+  assert.equal(viewState(s, member).pushSubscriptions, undefined);
+  execute(s, other, { type: "pushUnsubscribe", endpoint: input.endpoint });
+  assert.equal(s.pushSubscriptions!.length, 0);
+});
+
+test("prospect applications notify admins and scrim deadlines include players and staff only", async () => {
+  const { generateDeadlineNotifications } =
+    await import("../src/server/notifications");
+  const s = structuredClone(baseline);
+  const member = s.users[1];
+  member.phaseId = null;
+  member.application = "";
+  execute(s, member, {
+    type: "applyTeam",
+    application: "I would like to join",
+  });
+  assert.ok(
+    s.notifications!.some(
+      (n) => n.adminOnly && n.title.includes("prospect application"),
+    ),
+  );
+  s.notifications = [];
+  const now = Date.now();
+  s.events = [
+    {
+      ...s.events[0],
+      startsAt: new Date(now + 1000).toISOString(),
+      endsAt: new Date(now + 2000).toISOString(),
+    },
+  ];
+  const team = {
+    id: "a",
+    name: "A",
+    external: false,
+    captainId: "p2",
+    captainName: "Captain",
+    entries: [{ id: "entry", userId: "p1", name: "Player" }],
+    coaches: [{ userId: "p3", name: "Coach" }],
+    estimates: [],
+  };
+  s.scrims = [
+    {
+      id: "scrim",
+      eventId: "event1",
+      revision: 1,
+      kind: "internal",
+      teamSize: 1,
+      patchId: "default",
+      submissionDeadline: new Date(now + 500).toISOString(),
+      teams: [
+        team,
+        { ...team, id: "b", captainId: "p4", entries: [], coaches: [] },
+      ],
+      pairings: [],
+    },
+  ];
+  generateDeadlineNotifications(s, now);
+  assert.equal(s.notifications.length, 12);
+  assert.deepEqual(
+    new Set(s.notifications.map((n) => n.userId)),
+    new Set(["p1", "p2", "p3", "p4"]),
+  );
+  generateDeadlineNotifications(s, now);
+  assert.equal(s.notifications.length, 12);
+  s.scrims[0].completedAt = new Date(now).toISOString();
+  assert.equal(viewState(s, member).notifications!.length, 0);
+});

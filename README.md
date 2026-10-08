@@ -103,7 +103,7 @@ Browser checks covered admin sign-in, roster/profile navigation, all 18 rating c
 
 - Final criterion rubrics and English terminology, especially “Bordsalfa & Bordshök”. Original labels are retained as tooltips in the evaluation form.
 - Historic logs without a layout remain unclassified and excluded from layout estimates until their owner edits them. Outcomes are recalculated from scores when read, so old inconsistent outcomes no longer affect stats.
-- Notification channels, waitlists, event application deadlines, message editing/attachments, and multi-admin agreement are not implemented.
+- Waitlists, enforcement of event application deadlines, message editing/attachments, and multi-admin agreement are not implemented.
 - Current working behavior displays a rejected player as “Not selected”; detailed admin reasons remain private.
 - New Recruit refresh is a script, not an admin UI importer.
 
@@ -122,3 +122,16 @@ Settings → Rules patches → **Import from New Recruit** fetches the current 1
 The compact overview shows A/B/C averages horizontally, short clickable list headers, sticky axes, and up to 24 rows/columns per page. Clicking a cell opens sample counts and layout differences. Configuration details remain available by clicking a list label.
 
 The isolated demo dataset has 264 games, 12 configurations, and eight factions. The expansion adds Necrons, Astra Militarum, Death Guard, and Chaos Knights without replacing the original demo records. All existing and added demo games use the Ork release patch.
+
+
+## Notifications and device push
+
+The top-right bell shows each signed-in user's notification history and unread count. Enable push is opt-in for the current browser/device; disabling it or signing out unsubscribes that device. iOS/iPadOS users must open the installed Home Screen web app. Browser permission and platform support are required. Denied or unavailable push does not disable the in-app inbox.
+
+Notifications cover selection and membership/role changes, profile conversations, admin registration/application/feedback alerts, and reminders during the 24 hours before an approved attendee's event or a scrim participant's deadlines. Event start/end and named deadlines are included; scrims additionally include list lock. Captains and coaches count as scrim participants. Internal profile discussions are admin-only, including after demotion. Lock-screen pushes use generic text, never private messages or evaluation reasons. Named deadlines are reminders; they do not close event applications automatically.
+
+Notification records, device subscriptions and delivery attempts live inside the existing server-only `portal_state` JSON document (or isolated local SQLite state). All writes use the existing revision transaction. Delivery claims use two-minute leases, retry transient failures up to eight attempts, and remove expired subscriptions on 404/410. Delivery is at least once; the service-worker notification tag collapses duplicate retries. Notifications are retained for 90 days.
+
+Production configuration: generate VAPID keys once, set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` and a random `CRON_SECRET` in the Vercel project. Preserve the VAPID keypair when redeploying. Store that same cron secret in Supabase Vault under `team_sweden_notifications_cron`, then apply the notification scheduler migration. It invokes `/api/notifications/dispatch` every minute. The endpoint requires its bearer secret; browser mutation routes enforce session, same origin, membership and read-only preview restrictions. State changes also trigger delivery after the response. No public database access is added.
+
+Validation for this change: 71 domain tests, 42 HTTP checks, lint and production build passed. Desktop and 390px browser checks verified the bell, unread count, read action and panel bounds. Production Vercel deployment and the authenticated scheduled HTTP request were verified. Actual OS push display requires an opted-in device and was not exercised by automated browser QA.

@@ -1,3 +1,5 @@
+import { after } from "next/server";
+import { deliverNotifications } from "@/server/notification-worker";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { localMode } from "@/server/config";
@@ -16,6 +18,13 @@ const schema = z.object({
   register: z.boolean().optional(),
 });
 export async function POST(req: NextRequest) {
+  after(async () => {
+    try {
+      await deliverNotifications();
+    } catch {
+      console.error("Notification delivery deferred to scheduled retry.");
+    }
+  });
   if (localMode())
     return (await import("@/server/local/session-route")).POST(req);
   try {
@@ -25,13 +34,20 @@ export async function POST(req: NextRequest) {
       if (!input.name) throw new Error("Please enter your name.");
       // Server-only creation does not send a confirmation email or issue a session.
       // Portal membership remains pending until explicitly approved by an admin.
-      const { error } = await databaseClient().auth.admin.createUser({
+      const { data, error } = await databaseClient().auth.admin.createUser({
         email: input.email,
         password: input.password,
         user_metadata: { name: input.name },
         email_confirm: true,
       });
       if (error) throw error;
+      if (data.user) {
+        try {
+          await cloudView(data.user);
+        } catch (error) {
+          if ((error as Error).message !== pendingMembership) throw error;
+        }
+      }
       return NextResponse.json(
         {
           ok: true,

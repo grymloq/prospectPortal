@@ -64,6 +64,7 @@ export default function Events({
 }) {
   const [now] = useState(() => Date.now());
   const [online, setOnline] = useState(false);
+  const [deadlineRows, setDeadlineRows] = useState(1);
   const admin = view.me.role === "admin";
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7)),
     [mode, setMode] = useState("Calendar"),
@@ -74,6 +75,15 @@ export default function Events({
   const detail = view.events.find((e) => e.id === detailId),
     events = [
       ...view.events,
+      ...view.events.flatMap((e) =>
+        (e.deadlines || []).map((d) => ({
+          ...e,
+          id: `${e.id}:deadline:${d.id}`,
+          title: `${d.title}: ${e.title}`,
+          startsAt: d.at,
+          endsAt: d.at,
+        })),
+      ),
       ...(view.scrims || []).map((s) => ({
         ...view.events.find((e) => e.id === s.eventId)!,
         id: `${s.id}-deadline`,
@@ -98,7 +108,7 @@ export default function Events({
   }
   function openEvent(event: TeamEvent) {
     if (event.scrimId) onScrim(event.scrimId);
-    else setDetailId(event.id);
+    else setDetailId(event.id.split(":deadline:")[0]);
   }
   return (
     <>
@@ -112,6 +122,7 @@ export default function Events({
             className="primary"
             onClick={() => {
               setEdit("new");
+              setDeadlineRows(1);
               setOnline(false);
               setFormError("");
             }}
@@ -337,6 +348,7 @@ export default function Events({
                 <button
                   onClick={() => {
                     setEdit(detail);
+                    setDeadlineRows(Math.max(1, detail.deadlines?.length || 0));
                     setOnline(!!detail.online);
                     setFormError("");
                     setDetailId("");
@@ -345,6 +357,15 @@ export default function Events({
                   <Pencil size={15} />
                   Edit event
                 </button>
+              )}
+              {!!detail.deadlines?.length && (
+                <ul>
+                  {detail.deadlines.map((d) => (
+                    <li key={d.id}>
+                      {d.title}: {dateLabel(d.at)} � {timeLabel(d.at)}
+                    </li>
+                  ))}
+                </ul>
               )}
               {!detail.cancelled && Date.parse(detail.endsAt) > now && (
                 <button
@@ -447,7 +468,13 @@ export default function Events({
           onClose={() => setEdit(null)}
           draftKey={`event:${edit === "new" ? "new" : edit.id}`}
           busy={busy}
-          draft={{ value: online, restore: setOnline }}
+          draft={{
+            value: { online, deadlineRows },
+            restore: (value) => {
+              setOnline(value.online);
+              setDeadlineRows(value.deadlineRows);
+            },
+          }}
         >
           <form
             onSubmit={async (e) => {
@@ -465,6 +492,26 @@ export default function Events({
                   onlineUrl: online ? f.get("onlineUrl") || "" : "",
                   startsAt: stockholmIso(String(f.get("start"))),
                   endsAt: stockholmIso(String(f.get("end"))),
+                  deadlines: Array.from({ length: deadlineRows }, (_, i) => ({
+                    id:
+                      edit !== "new"
+                        ? edit.deadlines?.[i]?.id || `deadline-${i}`
+                        : `deadline-${i}`,
+                    title: String(f.get(`deadline-title-${i}`) || "").trim(),
+                    value: String(f.get(`deadline-at-${i}`) || ""),
+                  }))
+                    .filter((d) => d.title || d.value)
+                    .map((d) => {
+                      if (!d.title || !d.value)
+                        throw new Error(
+                          "Each deadline needs a title and time.",
+                        );
+                      return {
+                        id: d.id,
+                        title: d.title,
+                        at: stockholmIso(d.value),
+                      };
+                    }),
                   capacity: Number(f.get("capacity")),
                   description: f.get("description"),
                   cancelled: f.get("cancelled") === "on",
@@ -534,6 +581,40 @@ export default function Events({
                 />
               </Field>
             </div>
+            <details>
+              <summary>Event deadlines (Stockholm time)</summary>
+              {Array.from({ length: deadlineRows }, (_, i) => (
+                <div className="form-grid" key={i}>
+                  <Field label={`Deadline ${i + 1} name`}>
+                    <input
+                      name={`deadline-title-${i}`}
+                      maxLength={100}
+                      defaultValue={
+                        edit === "new" ? "" : edit.deadlines?.[i]?.title || ""
+                      }
+                    />
+                  </Field>
+                  <Field label={`Deadline ${i + 1} time`}>
+                    <input
+                      name={`deadline-at-${i}`}
+                      type="datetime-local"
+                      defaultValue={
+                        edit !== "new" && edit.deadlines?.[i]
+                          ? localDateTime(edit.deadlines[i].at)
+                          : ""
+                      }
+                    />
+                  </Field>
+                </div>
+              ))}
+              <button
+                type="button"
+                disabled={deadlineRows >= 20}
+                onClick={() => setDeadlineRows((n) => n + 1)}
+              >
+                Add deadline
+              </button>
+            </details>
             <Field label="Player places">
               <input
                 type="number"
