@@ -1,0 +1,55 @@
+.table th,
+.table td {
+  padding: 10px 12px;
+  vertical-align: middle;
+}
+.actionsCell {
+  white-space: nowrap;
+  width: 1%;
+}
+.actions {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  vertical-align: middle;
+}
+.actions button,
+.danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 7px;
+}
+.confirm {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  font-size: var(--text-small);
+  font-weight: 600;
+}
+.icon {
+  width: 36px;
+  background: #f0f4f8;
+  color: var(--navy);
+}
+.warning {
+  width: 36px;
+  color: #805411;
+  background: #fff6df;
+  border-color: #e6d5aa;
+}
+.danger {
+  width: 36px;
+  margin-left: 6px;
+  color: #a33140;
+  background: #fff0f1;
+  border-color: #e5bcc3;
+}
+@media (pointer: coarse) {
+  .actions button,
+  .danger {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

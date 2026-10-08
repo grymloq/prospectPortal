@@ -47,6 +47,39 @@ export default function Workspace({
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
     [journalKey, setJournalKey] = useState(0);
+  const [directoryPending, setDirectoryPending] = useState<{
+    actor: string;
+    count: number;
+  } | null>(null);
+  const previewActive = Boolean(view?.accessPreview?.active);
+  const directoryUsers = view?.users;
+  const actorId = view?.me.id;
+  const actorRole = view?.me.role;
+  useEffect(() => {
+    if (!actorId || actorRole !== "admin" || previewActive) return;
+    const controller = new AbortController();
+    fetch("/api/admin/users", { cache: "no-store", signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) return;
+        const data = await response.json();
+        setDirectoryPending({
+          actor: actorId,
+          count: data.view.users.filter(
+            (u: View["me"]) => !u.removedAt && !u.confirmedMember,
+          ).length,
+        });
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [actorId, actorRole, previewActive, directoryUsers]);
+  const pendingUsers =
+    actorRole === "admin"
+      ? !previewActive && directoryPending && directoryPending.actor === actorId
+        ? directoryPending.count
+        : (directoryUsers || []).filter(
+            (u) => !u.removedAt && !u.confirmedMember,
+          ).length
+      : 0;
   const [scrimId, setScrimId] = useState("");
   const [scrimSection, setScrimSection] = useState("Our Team");
   const [locationOwner, setLocationOwner] = useState("");
@@ -319,6 +352,14 @@ export default function Workspace({
                 >
                   <item.icon size={19} />
                   {item.name}
+                  {item.page === "Users" && pendingUsers > 0 && (
+                    <span
+                      className="feedback-unread-badge"
+                      aria-label={`${pendingUsers} users awaiting confirmation`}
+                    >
+                      {pendingUsers}
+                    </span>
+                  )}
                   {item.page === "Feedback inbox" &&
                     (view.feedback || []).some(
                       (f) => !f.readAt && !f.deletedAt,
@@ -490,6 +531,7 @@ export default function Workspace({
         <MobileNavigation
           items={nav}
           currentPage={currentPage}
+          pendingUsers={pendingUsers}
           unreadFeedback={
             (view.feedback || []).filter((f) => !f.readAt && !f.deletedAt)
               .length

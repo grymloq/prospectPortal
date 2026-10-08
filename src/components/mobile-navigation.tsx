@@ -13,11 +13,13 @@ export default function MobileNavigation({
   currentPage,
   onNavigate,
   unreadFeedback,
+  pendingUsers,
 }: {
   items: Destination[];
   currentPage: string;
   onNavigate: (page: string) => void;
   unreadFeedback: number;
+  pendingUsers: number;
 }) {
   const [open, setOpen] = useState(false);
   const remaining = items.filter((item) => !primaryPages.includes(item.page));
@@ -46,8 +48,8 @@ export default function MobileNavigation({
         <button
           type="button"
           aria-label={
-            unreadFeedback
-              ? `More, ${unreadFeedback} unread feedback messages`
+            unreadFeedback || pendingUsers
+              ? `More, ${unreadFeedback} unread feedback messages, ${pendingUsers} users awaiting confirmation`
               : "More"
           }
           aria-haspopup="dialog"
@@ -59,7 +61,9 @@ export default function MobileNavigation({
         >
           <span className={styles.moreIcon}>
             <Menu size={22} aria-hidden="true" />
-            {unreadFeedback > 0 && <span className={styles.dot} />}
+            {(unreadFeedback > 0 || pendingUsers > 0) && (
+              <span className={styles.dot} />
+            )}
           </span>
           <span>More</span>
         </button>
@@ -76,6 +80,14 @@ export default function MobileNavigation({
               >
                 <item.icon size={22} aria-hidden="true" />
                 <span>{item.name}</span>
+                {item.page === "Users" && pendingUsers > 0 && (
+                  <span
+                    className="feedback-unread-badge"
+                    aria-label={`${pendingUsers} users awaiting confirmation`}
+                  >
+                    {pendingUsers}
+                  </span>
+                )}
                 {item.page === "Feedback inbox" && unreadFeedback > 0 && (
                   <span className="feedback-unread-badge">
                     {unreadFeedback}

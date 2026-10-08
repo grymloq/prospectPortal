@@ -1,5 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
+import {
+  Check,
+  ShieldCheck,
+  ShieldMinus,
+  UserRoundX,
+  Trash2,
+  Link,
+  BadgeX,
+} from "lucide-react";
+import styles from "./user-management.module.css";
 import type { User, View } from "@/lib/types";
 import type { Mutate } from "./workspace";
 import { PageHeading, Field, Modal } from "./ui";
@@ -85,7 +95,7 @@ export default function UserManagement({
         </label>
       </div>
       <section className="panel user-table-scroll">
-        <table className="user-table">
+        <table className={`user-table ${styles.table}`}>
           <thead>
             <tr>
               <th>Name / email</th>
@@ -128,10 +138,19 @@ export default function UserManagement({
                     : shown.phases.find((p) => p.id === u.phaseId)?.name ||
                       "Not applying"}
                 </td>
-                <td>
+                <td className={styles.actionsCell}>
                   {!u.removedAt && (
-                    <div className="user-actions">
+                    <div className={styles.actions}>
                       <button
+                        className={
+                          u.confirmedMember ? styles.icon : styles.confirm
+                        }
+                        title={
+                          u.confirmedMember
+                            ? "Revoke confirmation"
+                            : "Confirm member"
+                        }
+                        aria-label={`${u.confirmedMember ? "Revoke confirmation for" : "Confirm member"} ${u.name}`}
                         disabled={u.id === view.me.id || busy}
                         onClick={async () => {
                           setBusy(true);
@@ -144,16 +163,32 @@ export default function UserManagement({
                           if (ok) setDirectory(null);
                         }}
                       >
-                        {u.confirmedMember
-                          ? "Revoke confirmation"
-                          : "Confirm member"}
+                        {u.confirmedMember ? (
+                          <BadgeX size={17} />
+                        ) : (
+                          <>
+                            <Check size={17} /> Confirm
+                          </>
+                        )}
                       </button>
                       {u.invitedAt && !u.acceptedAt && (
-                        <button onClick={() => openInvite(u)}>
-                          New invite link
+                        <button
+                          className={styles.icon}
+                          title="New invite link"
+                          aria-label={`New invite link for ${u.name}`}
+                          onClick={() => openInvite(u)}
+                        >
+                          <Link size={17} />
                         </button>
                       )}
                       <button
+                        className={styles.icon}
+                        title={
+                          u.role === "admin"
+                            ? "Make member"
+                            : "Promote to admin"
+                        }
+                        aria-label={`${u.role === "admin" ? "Make member" : "Promote to admin"}: ${u.name}`}
                         disabled={u.id === view.me.id}
                         onClick={() =>
                           setPending({
@@ -162,27 +197,35 @@ export default function UserManagement({
                           })
                         }
                       >
-                        {u.role === "admin"
-                          ? "Make member"
-                          : "Promote to admin"}
+                        {u.role === "admin" ? (
+                          <ShieldMinus size={17} />
+                        ) : (
+                          <ShieldCheck size={17} />
+                        )}
                       </button>
                       <button
+                        className={styles.warning}
+                        title="Remove access"
+                        aria-label={`Remove access for ${u.name}`}
                         disabled={u.id === view.me.id}
                         onClick={() =>
                           setPending({ user: u, action: "remove" })
                         }
                       >
-                        Remove access
+                        <UserRoundX size={17} />
                       </button>
                       {u.id === view.me.id && <small>Your account</small>}
                     </div>
                   )}
                   {!u.accountDeletedAt && (
                     <button
+                      className={styles.danger}
+                      title="Delete account permanently"
+                      aria-label={`Delete account: ${u.name}`}
                       disabled={u.id === view.me.id || busy}
                       onClick={() => setPending({ user: u, action: "delete" })}
                     >
-                      Delete account
+                      <Trash2 size={17} />
                     </button>
                   )}
                 </td>
