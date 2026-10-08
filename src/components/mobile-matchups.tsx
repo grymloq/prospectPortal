@@ -104,8 +104,12 @@ export default function MobileMatchups({
             ))}
           </select>
           <div className={styles.own}>
-            <ArmyListLink url={row.army.listUrl} name={name(row, rowNames)}>
-              {row.army.factionName}
+            <ArmyListLink
+              textOnly
+              url={row.army.listUrl}
+              name={name(row, rowNames)}
+            >
+              <span>{row.army.factionName}</span>
             </ArmyListLink>
             <Disposition name={row.army.dispositionName} />
           </div>
@@ -132,6 +136,7 @@ export default function MobileMatchups({
                   <div className={styles.heading}>
                     <div>
                       <ArmyListLink
+                        textOnly
                         url={column.army.listUrl}
                         name={name(column, columnNames)}
                         className={styles.listHeading}

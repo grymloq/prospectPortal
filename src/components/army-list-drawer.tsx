@@ -9,6 +9,7 @@ export function ArmyListLink({
   title,
   onActivate,
   pressed,
+  textOnly = false,
 }: {
   url: string;
   name?: string;
@@ -17,13 +18,14 @@ export function ArmyListLink({
   title?: string;
   onActivate?: () => void;
   pressed?: boolean;
+  textOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button
         type="button"
-        className={className}
+        className={`${className}${textOnly ? " army-list-text-trigger" : ""}`}
         title={title}
         aria-pressed={pressed}
         onClick={() => {

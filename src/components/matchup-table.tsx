@@ -210,6 +210,7 @@ export default function MatchupTable({
                     onFocus={() => setHover({ column: a.key })}
                   >
                     <ArmyListLink
+                      textOnly
                       url={a.army.listUrl}
                       name={description(a)}
                       className="matrix-list-label"
@@ -290,6 +291,7 @@ export default function MatchupTable({
                     onFocus={() => setHover({ row: row.key })}
                   >
                     <ArmyListLink
+                      textOnly
                       url={row.army.listUrl}
                       name={description(row)}
                       className="matrix-list-label"

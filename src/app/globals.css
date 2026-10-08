@@ -2801,3 +2801,20 @@ tbody .matrix-list-label span {
     flex-basis: 220px;
   }
 }
+
+/* Keep matrix list interactions on the text, not the surrounding label area. */
+.army-list-text-trigger {
+  pointer-events: none;
+}
+.army-list-text-trigger > span,
+.army-list-text-trigger > strong,
+.army-list-text-trigger > small {
+  pointer-events: auto;
+  cursor: pointer;
+  width: fit-content;
+  max-width: 100%;
+}
+thead .army-list-text-trigger > span,
+thead .army-list-text-trigger > small {
+  align-self: center;
+}
