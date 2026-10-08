@@ -1,5 +1,6 @@
 "use client";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, useId, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import type { View } from "@/lib/types";
 import {
   matrixWithManual,
@@ -15,6 +16,74 @@ import { ArmyFields, blank, type Choice } from "./journal";
 import type { Mutate } from "./workspace";
 type Filter = { factions: string[]; lists: string[] };
 const emptyFilter = (): Filter => ({ factions: [], lists: [] });
+function MatchupTooltip({
+  row,
+  column,
+  children,
+}: {
+  row: MatrixArmy;
+  column: MatrixArmy;
+  children: (id?: string) => ReactNode;
+}) {
+  const id = useId();
+  const [anchor, setAnchor] = useState<{
+    left: number;
+    top?: number;
+    bottom?: number;
+  } | null>(null);
+  function show(element: HTMLElement) {
+    const rect = element.getBoundingClientRect();
+    setAnchor({
+      left: Math.max(
+        8,
+        Math.min(
+          rect.left,
+          window.innerWidth - Math.min(360, window.innerWidth - 16) - 8,
+        ),
+      ),
+      ...(rect.top > 220
+        ? { bottom: window.innerHeight - rect.top + 8 }
+        : { top: rect.bottom + 8 }),
+    });
+  }
+  return (
+    <span
+      className="matrix-tooltip-target"
+      onMouseEnter={(e) => show(e.currentTarget)}
+      onMouseLeave={() => setAnchor(null)}
+      onFocus={(e) => show(e.currentTarget)}
+      onBlur={() => setAnchor(null)}
+      onClickCapture={() => setAnchor(null)}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") setAnchor(null);
+      }}
+    >
+      {children(anchor ? id : undefined)}
+      {anchor &&
+        createPortal(
+          <div
+            id={id}
+            role="tooltip"
+            className="matrix-matchup-tooltip"
+            style={anchor}
+          >
+            {[row, column].map((item, i) => (
+              <div className="matrix-tooltip-army" key={i}>
+                <div className="matrix-tooltip-heading">
+                  {item.army.factionName} -{" "}
+                  <Disposition name={item.army.dispositionName} />
+                </div>
+                <div>
+                  {item.army.detachmentNames.join(" + ") || "No detachments"}
+                </div>
+              </div>
+            ))}
+          </div>,
+          document.body,
+        )}
+    </span>
+  );
+}
 function description(item: MatrixArmy) {
   return [
     item.army.listName || "",
@@ -481,31 +550,35 @@ export default function MatchupMatrix({
                             setHover({ row: row.key, column: col.key })
                           }
                         >
-                          <button
-                            className="matrix-cell"
-                            aria-label={label}
-                            title={`Your detachments:\n${row.army.detachmentNames.join(" + ") || "No detachments"}\n\nOpponent's detachments:\n${col.army.detachmentNames.join(" + ") || "No detachments"}`}
-                            onClick={() => setDetail({ row, column: col })}
-                          >
-                            {layouts.map((l) => (
-                              <span
-                                className={tone(
-                                  cell?.[l].average || 0,
-                                  cell?.[l].count || 0,
-                                )}
-                                key={l}
+                          <MatchupTooltip row={row} column={col}>
+                            {(tooltipId) => (
+                              <button
+                                className="matrix-cell"
+                                aria-label={label}
+                                aria-describedby={tooltipId}
+                                onClick={() => setDetail({ row, column: col })}
                               >
-                                {cell?.[l].count
-                                  ? cell[l].average.toFixed(1) +
-                                    (data.manual.has(
-                                      cellKey(row.key, col.key) + l,
-                                    )
-                                      ? "*"
-                                      : "")
-                                  : "—"}
-                              </span>
-                            ))}
-                          </button>
+                                {layouts.map((l) => (
+                                  <span
+                                    className={tone(
+                                      cell?.[l].average || 0,
+                                      cell?.[l].count || 0,
+                                    )}
+                                    key={l}
+                                  >
+                                    {cell?.[l].count
+                                      ? cell[l].average.toFixed(1) +
+                                        (data.manual.has(
+                                          cellKey(row.key, col.key) + l,
+                                        )
+                                          ? "*"
+                                          : "")
+                                      : "—"}
+                                  </span>
+                                ))}
+                              </button>
+                            )}
+                          </MatchupTooltip>
                         </td>
                       );
                     })}
