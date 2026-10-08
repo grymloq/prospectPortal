@@ -55,6 +55,10 @@ test("team ruleset defaults and removal are admin-only and preserve history", ()
   execute(s, admin, { type: "restorePatchImport", patchId: patch.id });
   assert.equal(patch.removedAt, undefined);
   assert.deepEqual(s.games, games);
+  execute(s, admin, command);
+  execute(s, admin, { type: "removePatchImport", patchId: s.patches![0].id });
+  assert.ok(s.patches![0].removedAt);
+  assert.deepEqual(s.games, games);
 });
 test("removed imports cannot be used for new games but historical games stay editable", () => {
   const s = structuredClone(baseline);

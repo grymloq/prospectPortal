@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { Patch } from "@/lib/types";
-import { patchLabel } from "@/lib/patches";
+import { Trash2 } from "lucide-react";
 import type { Mutate } from "./workspace";
 import { Field } from "./ui";
 import styles from "./patch-settings.module.css";
@@ -65,164 +65,148 @@ export default function PatchSettings({
         Imports record ruleset versions; they do not download unit rules.
       </p>
       {notice && <p role="status">{notice}</p>}
-      <Field label="Default ruleset for new games">
-        <select
-          value={defaultPatchId || ""}
-          disabled={busy}
-          onChange={(e) =>
-            void save(
-              { type: "defaultPatch", patchId: e.target.value },
-              "Team default saved.",
-            )
-          }
-        >
-          <option value="" disabled>
-            Choose a ruleset
-          </option>
-          {patches
-            .filter((p) => !p.removedAt)
-            .map((p) => (
-              <option key={p.id} value={p.id}>
-                {patchLabel(p)}
-              </option>
-            ))}
-        </select>
-      </Field>
       <p className={styles.help}>
-        Preselected for everyone when logging a new game. Existing games keep
-        their ruleset.
+        The team default is preselected for everyone’s new games.
       </p>
-      <ul className={styles.list}>
-        {patches.map((p) => (
-          <li key={p.id} className={styles.item}>
-            <div className={styles.summary}>
-              <strong>{p.name}</strong>
-              <small>
-                {p.date}
-                {p.source &&
-                  ` · ${p.source.provider === "warmind" ? "Warmind · MFM" : `New Recruit · ${p.source.books.length} catalogues`}`}
-                {p.id === defaultPatchId && " · Team default"}
-                {p.removedAt && " · Removed"}
-              </small>
-            </div>
-            {editing === p.id ? (
-              <form
-                className={styles.editor}
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  if (
-                    await save(
-                      { type: "renamePatch", patchId: p.id, name },
-                      "Patch name saved.",
-                    )
-                  )
-                    setEditing(null);
-                }}
-              >
-                <Field label="Patch name">
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    maxLength={100}
-                    autoFocus
-                    disabled={busy}
-                  />
-                </Field>
-                <div className={styles.actions}>
-                  <button className="primary" disabled={busy || !name.trim()}>
-                    Save name
-                  </button>
-                  <button
-                    className={styles.link}
-                    type="button"
-                    disabled={busy}
-                    onClick={() => setEditing(null)}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className={styles.actions}>
-                <button
-                  className={styles.link}
-                  type="button"
-                  disabled={busy}
-                  aria-label={`Rename ${p.name}`}
-                  onClick={() => {
-                    setEditing(p.id);
-                    setName(p.name);
-                    setNotice("");
-                    setRemoving(null);
-                  }}
-                >
-                  Rename
-                </button>
-                {p.source &&
-                  (p.removedAt ? (
-                    <button
-                      className={styles.link}
-                      disabled={busy}
-                      onClick={() =>
-                        void save(
-                          { type: "restorePatchImport", patchId: p.id },
-                          "Import restored.",
-                        )
-                      }
-                    >
-                      Restore import
-                    </button>
-                  ) : (
-                    <button
-                      className={styles.link}
-                      disabled={busy || p.id === defaultPatchId}
-                      title={
-                        p.id === defaultPatchId
-                          ? "Select another default before removing this import"
-                          : undefined
-                      }
-                      onClick={() => setRemoving(p.id)}
-                    >
-                      Remove import
-                    </button>
-                  ))}
-              </div>
-            )}
-            {removing === p.id && (
-              <div className={styles.editor}>
-                <p>
-                  Remove this import from new-game choices? Historical games and
-                  matchups will keep it. You can restore it here.
-                </p>
-                <div className={styles.actions}>
-                  <button
-                    disabled={busy}
-                    onClick={async () => {
-                      if (
-                        await save(
-                          { type: "removePatchImport", patchId: p.id },
-                          "Import removed from new-game choices.",
-                        )
-                      )
-                        setRemoving(null);
-                    }}
-                  >
-                    Remove import
-                  </button>
-                  <button
-                    className={styles.link}
-                    disabled={busy}
-                    onClick={() => setRemoving(null)}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
+      <div className={styles.tableWrap}>
+        <table className={styles.table} aria-label="Rules patches">
+          <tbody>
+            {patches
+              .filter((p) => !p.removedAt)
+              .map((p) => (
+                <tr key={p.id}>
+                  <td className={styles.patchName}>
+                    <span className={styles.date}>{p.date}</span> - {p.name}
+                  </td>
+                  <td>
+                    {editing === p.id ? (
+                      <form
+                        className={styles.editor}
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          if (
+                            await save(
+                              { type: "renamePatch", patchId: p.id, name },
+                              "Patch name saved.",
+                            )
+                          )
+                            setEditing(null);
+                        }}
+                      >
+                        <Field label="Patch name">
+                          <input
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            required
+                            maxLength={100}
+                            autoFocus
+                            disabled={busy}
+                          />
+                        </Field>
+                        <div className={styles.actions}>
+                          <button
+                            className="primary"
+                            disabled={busy || !name.trim()}
+                          >
+                            Save name
+                          </button>
+                          <button
+                            className={styles.link}
+                            type="button"
+                            disabled={busy}
+                            onClick={() => setEditing(null)}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className={styles.actions}>
+                        <button
+                          className={styles.link}
+                          type="button"
+                          disabled={busy}
+                          aria-label={`Rename ${p.name}`}
+                          onClick={() => {
+                            setEditing(p.id);
+                            setName(p.name);
+                            setNotice("");
+                            setRemoving(null);
+                          }}
+                        >
+                          Rename
+                        </button>
+                        {p.id === defaultPatchId ? (
+                          <span className={styles.default}>Default</span>
+                        ) : (
+                          <button
+                            className={styles.link}
+                            disabled={busy}
+                            onClick={() =>
+                              void save(
+                                { type: "defaultPatch", patchId: p.id },
+                                "Team default saved.",
+                              )
+                            }
+                          >
+                            Make default
+                          </button>
+                        )}
+                        <button
+                          className={styles.remove}
+                          disabled={busy || p.id === defaultPatchId}
+                          title={
+                            p.id === defaultPatchId
+                              ? "Choose another default before removing this patch"
+                              : "Remove patch"
+                          }
+                          aria-label={`Remove ${p.name}`}
+                          onClick={() => {
+                            setRemoving(p.id);
+                            setEditing(null);
+                          }}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    )}
+                    {removing === p.id && (
+                      <div className={styles.editor}>
+                        <p>
+                          Remove this patch from new-game choices? Historical
+                          games and matchups will keep it.
+                        </p>
+                        <div className={styles.actions}>
+                          <button
+                            disabled={busy}
+                            onClick={async () => {
+                              if (
+                                await save(
+                                  { type: "removePatchImport", patchId: p.id },
+                                  "Patch removed from new-game choices.",
+                                )
+                              )
+                                setRemoving(null);
+                            }}
+                          >
+                            Remove patch
+                          </button>
+                          <button
+                            className={styles.link}
+                            disabled={busy}
+                            onClick={() => setRemoving(null)}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
       <h4>Add a patch manually</h4>
       <form
         className={styles.editor}

@@ -374,7 +374,7 @@ export function execute(s: State, actor: User, input: unknown) {
     case "restorePatchImport": {
       requireAdmin();
       const patch = s.patches!.find((p) => p.id === c.patchId);
-      if (!patch?.source) throw new Error("Choose an imported rules patch.");
+      if (!patch) throw new Error("Choose an available rules patch.");
       if (c.type === "removePatchImport") {
         if (patch.id === defaultPatchId(s))
           throw new Error(
