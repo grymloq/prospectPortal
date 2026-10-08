@@ -336,6 +336,7 @@ export default function Journal({
     "Player",
     "Your army",
     "Opponent",
+    "Opponent army",
     "Result",
     "Context",
   ] as const;
@@ -353,6 +354,8 @@ export default function Journal({
         return game.own.factionName;
       case "Opponent":
         return game.opponent;
+      case "Opponent army":
+        return game.enemy.factionName;
       case "Result":
         return game.score;
       case "Context":
@@ -579,8 +582,8 @@ export default function Journal({
                       <Disposition name={g.own.dispositionName} />
                     </small>
                   </td>
+                  <td>{g.opponent}</td>
                   <td>
-                    {g.opponent}
                     <small>
                       {g.enemy.listUrl ? (
                         <ArmyListLink
