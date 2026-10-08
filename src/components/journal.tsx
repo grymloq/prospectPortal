@@ -17,6 +17,7 @@ import {
   type Catalogue,
 } from "@/lib/catalogue";
 import { Disposition } from "./disposition";
+import { ArmyListLink } from "./army-list-drawer";
 import type { Mutate } from "./workspace";
 import { Badge, Field, Modal, Empty, dateLabel } from "./ui";
 export type Choice = Pick<
@@ -707,10 +708,10 @@ export default function Journal({
                   <Disposition name={army.dispositionName} />
                 </Badge>
                 {army.listUrl && (
-                  <a target="_blank" rel="noreferrer" href={army.listUrl}>
-                    Open army list
-                    <ArrowUpRight size={14} />
-                  </a>
+                  <ArmyListLink
+                    url={army.listUrl}
+                    name={army.listName || army.factionName}
+                  />
                 )}
               </section>
             ))}

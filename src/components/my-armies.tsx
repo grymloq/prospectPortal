@@ -5,6 +5,7 @@ import { catalogue } from "@/lib/catalogue";
 import { patchLabel } from "@/lib/patches";
 import { ArmyFields, blank, type Choice } from "./journal";
 import { Disposition } from "./disposition";
+import { ArmyListLink } from "./army-list-drawer";
 import { Field, Modal, Empty } from "./ui";
 import type { Mutate } from "./workspace";
 export default function MyArmies({
@@ -84,9 +85,10 @@ export default function MyArmies({
                   : "Unknown ruleset"}
               </p>
               {a.army.listUrl && (
-                <a href={a.army.listUrl} target="_blank" rel="noreferrer">
-                  Open army list
-                </a>
+                <ArmyListLink
+                  url={a.army.listUrl}
+                  name={a.army.listName || a.army.factionName}
+                />
               )}
             </div>
             <div className="saved-army-actions">
