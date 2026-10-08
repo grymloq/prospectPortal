@@ -254,7 +254,7 @@ export function executeScrim(state: State, actor: User, input: unknown) {
       Date.parse(command.startsAt) >= Date.parse(command.endsAt)
     )
       throw new Error(
-        "Use a future submission deadline, followed by the playing start and end.",
+        "Use a future submission deadline, followed by the pairing date and game end.",
       );
     if (!command.online && !command.location)
       throw new Error("Enter a location for an in-person scrim.");
@@ -532,7 +532,7 @@ export function executeScrim(state: State, actor: User, input: unknown) {
           "Only the paired players, captains, or admins may report a result.",
         );
       if (Date.now() < Date.parse(event.startsAt))
-        throw new Error("Games have not started yet.");
+        throw new Error("The pairing date has not arrived yet.");
       const localDay = (value: string) =>
         new Intl.DateTimeFormat("sv-SE", {
           timeZone: "Europe/Stockholm",

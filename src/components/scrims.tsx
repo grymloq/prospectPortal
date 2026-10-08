@@ -61,8 +61,11 @@ export default function Scrims({
               {stockholmLocal(scrim.submissionDeadline).replace("T", " ")}
             </span>
             <span>
-              <strong>Games:</strong>{" "}
-              {stockholmLocal(event.startsAt).replace("T", " ")} –{" "}
+              <strong>Pairing:</strong>{" "}
+              {stockholmLocal(event.startsAt).replace("T", " ")}
+            </span>
+            <span>
+              <strong>Games end:</strong>{" "}
               {stockholmLocal(event.endsAt).replace("T", " ")}
             </span>
             <span>Europe/Stockholm</span>
@@ -214,8 +217,8 @@ export default function Scrims({
                     <p className={styles.muted}>
                       Lists:{" "}
                       {stockholmLocal(s.submissionDeadline).replace("T", " ")} ·
-                      Games: {stockholmLocal(e.startsAt).slice(0, 10)} –{" "}
-                      {stockholmLocal(e.endsAt).slice(0, 10)}
+                      Pairing: {stockholmLocal(e.startsAt).replace("T", " ")} ·
+                      Games end: {stockholmLocal(e.endsAt).slice(0, 10)}
                     </p>
                   </div>
                   <Badge
@@ -280,9 +283,11 @@ function CreateScrim({
                 kind,
                 teamSize: Number(f.get("teamSize")),
                 patchId: f.get("patchId"),
-                submissionDeadline: stockholmIso(String(f.get("deadline"))),
-                startsAt: stockholmIso(String(f.get("start"))),
-                endsAt: stockholmIso(String(f.get("end"))),
+                submissionDeadline: stockholmIso(
+                  `${f.get("deadlineDate")}T${f.get("deadlineTime")}`,
+                ),
+                startsAt: stockholmIso(String(f.get("pairing"))),
+                endsAt: stockholmIso(`${f.get("endDate")}T${f.get("endTime")}`),
                 location: online ? "Online" : f.get("location"),
                 online,
                 onlineUrl: online ? f.get("onlineUrl") || "" : "",
@@ -345,20 +350,17 @@ function CreateScrim({
                 ))}
             </select>
           </Field>
-          <Field label="List submission deadline">
-            <input type="datetime-local" name="deadline" required />
+          <EndOfDayDate name="deadline" label="List submission deadline" />
+          <Field label="Pairing date">
+            <input type="datetime-local" name="pairing" required />
           </Field>
-          <Field label="Games start">
-            <input type="datetime-local" name="start" required />
-          </Field>
-          <Field label="Games end">
-            <input type="datetime-local" name="end" required />
-          </Field>
+          <EndOfDayDate name="end" label="Games end" />
         </div>
         <p className={styles.muted}>
           All dates and times use Europe/Stockholm. Rosters and lists lock at
           the submission deadline. Captains must finalize valid teams before
-          then.
+          then. Games can be played from the pairing date until the game-end
+          deadline. Deadline and game-end times default to 23:59.
         </p>
         <div className="form-grid">
           {[0, 1].map((index) => (
@@ -429,5 +431,18 @@ function CreateScrim({
         </button>
       </form>
     </Modal>
+  );
+}
+
+function EndOfDayDate({ name, label }: { name: string; label: string }) {
+  return (
+    <div>
+      <Field label={label}>
+        <input type="date" name={`${name}Date`} required />
+      </Field>
+      <Field label={`${label} time`}>
+        <input type="time" name={`${name}Time`} defaultValue="23:59" required />
+      </Field>
+    </div>
   );
 }

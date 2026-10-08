@@ -576,7 +576,7 @@ test("result permissions, score validation and playing span are server enforced"
         score: 10,
         date: "2026-01-01",
       }),
-    /not started/,
+    /pairing date has not arrived/,
   );
   at(f.start + 60_000, () =>
     assert.throws(
