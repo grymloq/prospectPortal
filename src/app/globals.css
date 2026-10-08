@@ -1021,10 +1021,16 @@ td small {
   line-height: 1.3;
 }
 .disposition-icon {
-  width: 1.65em;
+  display: inline-block;
+  position: relative;
+  width: calc(1.65em * var(--icon-ratio));
   height: 1.65em;
-  object-fit: contain;
+  overflow: hidden;
   flex-shrink: 0;
+}
+.disposition-icon img {
+  position: absolute;
+  max-width: none;
 }
 .disposition-picker {
   border: 0;
