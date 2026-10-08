@@ -60,6 +60,7 @@ export default function Profile({
   }
   const tabs = [
     "Overview",
+    "Preferred armies",
     "Game journal",
     "Focus goals",
     "Conversation",
@@ -116,6 +117,53 @@ export default function Profile({
           </button>
         ))}
       </div>
+      {tab === "Preferred armies" && (
+        <section className="panel padded">
+          <h3>Preferred armies</h3>
+          <form
+            key={preferredFactions.join("|")}
+            onSubmit={(e) => {
+              e.preventDefault();
+              const selected = new FormData(e.currentTarget).getAll(
+                "preferredFactions",
+              );
+              void save({
+                type: "profile",
+                name: user.name,
+                city: user.city,
+                bio: user.bio,
+                faction: selected[0] || user.faction,
+                preferredFactions: selected,
+              });
+            }}
+          >
+            <fieldset
+              className="preferred-armies-fieldset"
+              disabled={!isOwn || saving}
+            >
+              <legend>Choose preferred armies</legend>
+              <div className="preferred-armies-grid">
+                {armies.map((f) => (
+                  <label key={f.id}>
+                    <input
+                      type="checkbox"
+                      name="preferredFactions"
+                      value={f.id}
+                      defaultChecked={preferredFactions.includes(f.id)}
+                    />
+                    <span>{f.name}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            {isOwn && (
+              <button type="submit" className="primary" disabled={saving}>
+                {saving ? "Saving…" : "Save preferred armies"}
+              </button>
+            )}
+          </form>
+        </section>
+      )}
       {tab === "Overview" && (
         <div className="profile-grid">
           <div>
@@ -615,8 +663,8 @@ export default function Profile({
                   name: f.get("name"),
                   city: f.get("city"),
                   bio: f.get("bio"),
-                  faction: f.getAll("preferredFactions")[0] || user.faction,
-                  preferredFactions: f.getAll("preferredFactions"),
+                  faction: user.faction,
+                  preferredFactions,
                 });
               if (modal === "phase")
                 void save({
@@ -652,22 +700,6 @@ export default function Profile({
                 <Field label="City">
                   <input name="city" defaultValue={user.city} />
                 </Field>
-                <fieldset className="army-fields">
-                  <legend>Preferred armies</legend>
-                  <div className="detachment-options preferred-armies">
-                    {armies.map((f) => (
-                      <label key={f.id}>
-                        <input
-                          type="checkbox"
-                          name="preferredFactions"
-                          value={f.id}
-                          defaultChecked={preferredFactions.includes(f.id)}
-                        />
-                        <span>{f.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
                 <Field label="About you">
                   <textarea name="bio" defaultValue={user.bio} />
                 </Field>
