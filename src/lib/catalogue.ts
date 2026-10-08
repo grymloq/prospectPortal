@@ -2,6 +2,11 @@ import data from "@/data/catalogue.json";
 import type { Army } from "./types";
 export const catalogue = data;
 export type Catalogue = typeof data;
+export function defaultDisposition(available: { id: string; name: string }[]) {
+  return (
+    (available.find((d) => d.name !== "Disruption") || available[0])?.id || ""
+  );
+}
 export function dispositionsFor(
   factionId: string,
   selected: string[],

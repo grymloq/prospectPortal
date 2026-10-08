@@ -7,9 +7,18 @@ const scratch = mkdtempSync(path.join(process.cwd(), ".local", "qa-"));
 process.env.TEAM_DB_PATH = path.join(scratch, "test.sqlite");
 const { readState, db, transaction } = await import("../src/server/store");
 const { execute, viewState } = await import("../src/server/service");
-const { armySnapshot, catalogue, dispositionsFor } =
+const { armySnapshot, catalogue, dispositionsFor, defaultDisposition } =
   await import("../src/lib/catalogue");
 const baseline = readState();
+test("disposition defaults select the only option or prefer a non-Disruption choice", () => {
+  const disruption = { id: "d", name: "Disruption" };
+  const recon = { id: "r", name: "Reconnaissance" };
+  assert.equal(defaultDisposition([]), "");
+  assert.equal(defaultDisposition([disruption]), "d");
+  assert.equal(defaultDisposition([recon]), "r");
+  assert.equal(defaultDisposition([disruption, recon]), "r");
+  assert.equal(defaultDisposition([recon, disruption]), "r");
+});
 const { patchFromWarmind } = await import("../src/server/warmind-patch");
 test("Warmind import uses the MFM release metadata, not the app version", () => {
   const html =

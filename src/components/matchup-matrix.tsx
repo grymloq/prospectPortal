@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { View } from "@/lib/types";
 import {
   matrixWithManual,
@@ -8,6 +8,7 @@ import {
   type MatrixArmy,
 } from "@/lib/matchups";
 import { Empty, Modal, Field } from "./ui";
+import { Disposition } from "./disposition";
 import { patchLabel } from "@/lib/patches";
 
 import { ArmyFields, blank, type Choice } from "./journal";
@@ -31,7 +32,7 @@ function Picker({
   onChange,
 }: {
   label: string;
-  options: { id: string; label: string }[];
+  options: { id: string; label: ReactNode }[];
   selected: string[];
   onChange: (ids: string[]) => void;
 }) {
@@ -100,7 +101,21 @@ function AxisFilter({
       />
       <Picker
         label={axis + " army lists"}
-        options={available.map((a) => ({ id: a.key, label: description(a) }))}
+        options={available.map((a) => ({
+          id: a.key,
+          label: (
+            <>
+              {[
+                a.army.listName,
+                a.army.factionName,
+                a.army.detachmentNames.join(" + "),
+              ]
+                .filter(Boolean)
+                .join(" · ")}{" "}
+              · <Disposition name={a.army.dispositionName} />
+            </>
+          ),
+        }))}
         selected={value.lists}
         onChange={(lists) => onChange({ ...value, lists })}
       />
@@ -389,7 +404,9 @@ export default function MatchupMatrix({
                         <span>{a.army.factionName}</span>
                         <small>{a.army.listName}</small>
                         <small>{a.army.detachmentNames.join(" + ")}</small>
-                        <small>{a.army.dispositionName}</small>
+                        <small>
+                          <Disposition name={a.army.dispositionName} />
+                        </small>
                       </button>
                       {averageBadge(
                         a.key,
@@ -425,7 +442,9 @@ export default function MatchupMatrix({
                         <span>{row.army.factionName}</span>
                         <small>{row.army.listName}</small>
                         <small>{row.army.detachmentNames.join(" + ")}</small>
-                        <small>{row.army.dispositionName}</small>
+                        <small>
+                          <Disposition name={row.army.dispositionName} />
+                        </small>
                       </button>
                       {averageBadge(
                         row.key,
@@ -586,8 +605,9 @@ export default function MatchupMatrix({
             .map((c, i) => (
               <p key={i}>
                 {c.army.listName || c.army.factionName} ·{" "}
-                {c.army.detachmentNames.join(" + ")} · {c.army.dispositionName}{" "}
-                · {c.authorName} · {new Date(c.updatedAt).toLocaleString()}
+                {c.army.detachmentNames.join(" + ")} ·{" "}
+                <Disposition name={c.army.dispositionName} /> · {c.authorName} ·{" "}
+                {new Date(c.updatedAt).toLocaleString()}
               </p>
             ))}
         </details>
@@ -602,7 +622,7 @@ export default function MatchupMatrix({
           </h3>
           <p>
             {detail.row.army.detachmentNames.join(" + ") || "No detachments"} ·{" "}
-            {detail.row.army.dispositionName}
+            <Disposition name={detail.row.army.dispositionName} />
           </p>
           {detail.column && (
             <>
@@ -613,7 +633,7 @@ export default function MatchupMatrix({
               <p>
                 {detail.column.army.detachmentNames.join(" + ") ||
                   "No detachments"}{" "}
-                · {detail.column.army.dispositionName}
+                · <Disposition name={detail.column.army.dispositionName} />
               </p>
               {!patch && (
                 <p>

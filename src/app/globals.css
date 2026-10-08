@@ -1013,6 +1013,54 @@ td small {
   border-radius: 6px;
   padding: 5px;
 }
+.disposition-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  vertical-align: middle;
+  line-height: 1.3;
+}
+.disposition-icon {
+  width: 1.65em;
+  height: 1.65em;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.disposition-picker {
+  border: 0;
+  padding: 0;
+  margin: 0 0 18px;
+  min-width: 0;
+}
+.disposition-picker legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.disposition-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.disposition-options label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.disposition-options label:has(input:checked) {
+  border-color: var(--navy);
+  background: #f4f7fb;
+}
+.disposition-options input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--navy);
+}
 .preferred-armies-fieldset {
   border: 0;
   padding: 0;

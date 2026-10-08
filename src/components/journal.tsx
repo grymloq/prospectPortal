@@ -1,6 +1,6 @@
 "use client";
 import { patchLabel } from "@/lib/patches";
-import { useState } from "react";
+import { useState, useEffect, useId } from "react";
 import {
   Plus,
   Search,
@@ -10,7 +10,13 @@ import {
   Check,
 } from "lucide-react";
 import type { Army, Game, View } from "@/lib/types";
-import { catalogue, dispositionsFor, type Catalogue } from "@/lib/catalogue";
+import {
+  catalogue,
+  dispositionsFor,
+  defaultDisposition,
+  type Catalogue,
+} from "@/lib/catalogue";
+import { Disposition } from "./disposition";
 import type { Mutate } from "./workspace";
 import { Badge, Field, Modal, Empty, dateLabel } from "./ui";
 export type Choice = Pick<
@@ -35,6 +41,7 @@ export function ArmyFields({
   preferredFactions?: string[];
   maxDP?: number;
 }) {
+  const dispositionGroup = useId();
   const faction = rules.factions.find((f) => f.id === value.faction),
     available = dispositionsFor(value.faction, value.detachments, rules);
   const points =
@@ -47,6 +54,13 @@ export function ArmyFields({
   const others = rules.factions.filter(
     (f) => !preferredFactions.includes(f.id),
   );
+  useEffect(() => {
+    if (!available.some((d) => d.id === value.disposition)) {
+      const disposition = defaultDisposition(available);
+      if (disposition !== value.disposition)
+        onChange({ ...value, disposition });
+    }
+  }, [available, value, onChange]);
   return (
     <fieldset className="army-fields">
       <legend>{title}</legend>
@@ -101,13 +115,9 @@ export function ArmyFields({
                   onChange({
                     ...value,
                     detachments: selected,
-                    disposition: dispositionsFor(
-                      value.faction,
-                      selected,
-                      rules,
-                    ).some((d) => d.id === value.disposition)
-                      ? value.disposition
-                      : "",
+                    disposition: defaultDisposition(
+                      dispositionsFor(value.faction, selected, rules),
+                    ),
                   });
                 }}
               />
@@ -117,20 +127,26 @@ export function ArmyFields({
           ))}
         </div>
       </div>
-      <Field label="Force disposition">
-        <select
-          required
-          value={value.disposition}
-          onChange={(e) => onChange({ ...value, disposition: e.target.value })}
-        >
-          <option value="">Select a disposition</option>
+      <fieldset className="disposition-picker">
+        <legend>Force disposition</legend>
+        <div className="disposition-options">
           {available.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name}
-            </option>
+            <label key={d.id}>
+              <input
+                type="radio"
+                name={dispositionGroup}
+                required
+                checked={value.disposition === d.id}
+                onChange={() => onChange({ ...value, disposition: d.id })}
+              />
+              <Disposition name={d.name} />
+            </label>
           ))}
-        </select>
-      </Field>
+        </div>
+        {!available.length && (
+          <small>Select detachments to see available dispositions.</small>
+        )}
+      </fieldset>
       <Field label="Army-list name (optional)">
         <input
           maxLength={100}
@@ -325,7 +341,9 @@ export default function Journal({
                   </td>
                   <td>
                     <strong>{g.own.factionName}</strong>
-                    <small>{g.own.dispositionName}</small>
+                    <small>
+                      <Disposition name={g.own.dispositionName} />
+                    </small>
                   </td>
                   <td>
                     {g.opponent}
@@ -585,7 +603,9 @@ export default function Journal({
                 <small>{title}</small>
                 <h3>{army.factionName}</h3>
                 <p>{army.detachmentNames.join(" · ")}</p>
-                <Badge>{army.dispositionName}</Badge>
+                <Badge>
+                  <Disposition name={army.dispositionName} />
+                </Badge>
                 {army.listUrl && (
                   <a target="_blank" rel="noreferrer" href={army.listUrl}>
                     Open army list
