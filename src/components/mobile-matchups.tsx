@@ -8,6 +8,7 @@ import {
 } from "@/lib/matchups";
 import type { Layout } from "@/lib/types";
 import { Disposition } from "./disposition";
+import { ArmyListLink } from "./army-list-drawer";
 import MatrixLayoutScore from "./matrix-layout-score";
 import styles from "./mobile-matchups.module.css";
 
@@ -103,7 +104,9 @@ export default function MobileMatchups({
             ))}
           </select>
           <div className={styles.own}>
-            <span>{row.army.factionName}</span>
+            <ArmyListLink url={row.army.listUrl} name={name(row, rowNames)}>
+              {row.army.factionName}
+            </ArmyListLink>
             <Disposition name={row.army.dispositionName} />
           </div>
           <label htmlFor={`${id}-sort`}>Sort opponents</label>
@@ -128,8 +131,14 @@ export default function MobileMatchups({
                 >
                   <div className={styles.heading}>
                     <div>
-                      <strong>{name(column, columnNames)}</strong>
-                      <p>{column.army.factionName}</p>
+                      <ArmyListLink
+                        url={column.army.listUrl}
+                        name={name(column, columnNames)}
+                        className={styles.listHeading}
+                      >
+                        <strong>{name(column, columnNames)}</strong>
+                        <span>{column.army.factionName}</span>
+                      </ArmyListLink>
                       <Disposition name={column.army.dispositionName} />
                       <p>{column.army.detachmentNames.join(" + ")}</p>
                     </div>

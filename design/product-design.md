@@ -468,3 +468,5 @@ Admins have a Users directory including Supabase accounts which have not yet ope
 **Confirmed — concise interface copy:** Omit the workspace footer tagline, score threshold legends, scrim win/draw rule explanation and How to read this matrix section. Retain actual results, data counts, field labels and validation messages.
 
 **Confirmed — administrator access preview:** Only a confirmed active administrator may view the workspace as another confirmed active user, using actual access or a simulated Member/Admin role. User identity and team assignments determine private content through the existing server view filter. The preview is read-only across all API writes, shows a persistent banner and Exit preview action, and never changes account roles, profile data or sessions. Preview drafts and navigation are separate from normal use; sign-out clears the preview.
+
+**Confirmed — matrix army lists:** Clicking the player name or faction in either matrix view opens the shared army list drawer when a list link is available. Desktop row and column labels retain their existing highlighting behavior without extra controls.

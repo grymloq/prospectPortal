@@ -5,18 +5,31 @@ export function ArmyListLink({
   url,
   name = "Army list",
   children,
+  className = "text-button",
+  title,
+  onActivate,
+  pressed,
 }: {
   url: string;
   name?: string;
   children?: React.ReactNode;
+  className?: string;
+  title?: string;
+  onActivate?: () => void;
+  pressed?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button
         type="button"
-        className="text-button"
-        onClick={() => setOpen(true)}
+        className={className}
+        title={title}
+        aria-pressed={pressed}
+        onClick={() => {
+          onActivate?.();
+          if (url) setOpen(true);
+        }}
       >
         {children || "Open army list"}
       </button>

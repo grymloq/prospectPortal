@@ -10,6 +10,7 @@ import {
 import type { Layout } from "@/lib/types";
 import MatrixLayoutScore from "./matrix-layout-score";
 import { Disposition } from "./disposition";
+import { ArmyListLink } from "./army-list-drawer";
 import MobileMatchups from "./mobile-matchups";
 import mobileStyles from "./mobile-matchups.module.css";
 function MatchupTooltip({
@@ -208,11 +209,13 @@ export default function MatchupTable({
                     onMouseEnter={() => setHover({ column: a.key })}
                     onFocus={() => setHover({ column: a.key })}
                   >
-                    <button
+                    <ArmyListLink
+                      url={a.army.listUrl}
+                      name={description(a)}
                       className="matrix-list-label"
                       title={description(a)}
-                      aria-pressed={markedColumns.includes(a.key)}
-                      onClick={() =>
+                      pressed={markedColumns.includes(a.key)}
+                      onActivate={() =>
                         setMarkedColumns(toggle(markedColumns, a.key))
                       }
                     >
@@ -246,7 +249,7 @@ export default function MatchupTable({
                           <small>{a.army.listName || a.army.factionName}</small>
                         </>
                       )}
-                    </button>
+                    </ArmyListLink>
                     {showAverages &&
                       averageBadge(
                         a.key,
@@ -286,11 +289,15 @@ export default function MatchupTable({
                     onMouseEnter={() => setHover({ row: row.key })}
                     onFocus={() => setHover({ row: row.key })}
                   >
-                    <button
+                    <ArmyListLink
+                      url={row.army.listUrl}
+                      name={description(row)}
                       className="matrix-list-label"
                       title={description(row)}
-                      aria-pressed={markedRows.includes(row.key)}
-                      onClick={() => setMarkedRows(toggle(markedRows, row.key))}
+                      pressed={markedRows.includes(row.key)}
+                      onActivate={() =>
+                        setMarkedRows(toggle(markedRows, row.key))
+                      }
                     >
                       {rowNames?.[row.key] ? (
                         <>
@@ -313,7 +320,7 @@ export default function MatchupTable({
                           </small>
                         </>
                       )}
-                    </button>
+                    </ArmyListLink>
                     {showAverages &&
                       averageBadge(
                         row.key,

@@ -123,3 +123,22 @@
     opacity: 1;
   }
 }
+
+.listHeading {
+  display: grid;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  min-height: 44px;
+}
+.listHeading span {
+  font-size: var(--text-small);
+  color: #526277;
+}
+.listHeading:hover {
+  background: transparent;
+  text-decoration: underline;
+}
