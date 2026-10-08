@@ -94,7 +94,8 @@ export async function testScrimHttp({ request, check, admin, player }) {
     "scrim deadlines are on the calendar and opponent draft lists are server-hidden",
     () => {
       assert.ok(privateView.data.events.some((e) => e.scrimId === scrim.id));
-      assert.equal(privateScrim.teams[1].entries[0].army, undefined);
+      assert.equal(privateScrim.teams[1].entries.length, 0);
+      assert.equal(privateScrim.listsRevealed, false);
       assert.equal(privateScrim.teams[1].estimates.length, 0);
     },
   );

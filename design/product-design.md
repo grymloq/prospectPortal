@@ -419,7 +419,7 @@ Admins have a Users directory including Supabase accounts which have not yet ope
 
 **Confirmed:** For standard teams, every disposition in the selected patch must appear at least once, with at most two lists per disposition. Incomplete drafts may have repeated dispositions and show warnings. The final team submission must satisfy the rule. Smaller teams (fewer players than dispositions) may omit dispositions but cannot repeat any. Team sizes above twice the disposition count cannot satisfy the cap and are rejected.
 
-**Confirmed:** Captains finalize team submissions before the deadline. They may reopen them before that deadline to fix drafts. Rosters and submitted lists lock at the deadline; opposing lists become visible then. No player replacements or list changes are allowed after the deadline.
+**Confirmed:** Captains finalize team submissions before the deadline. They may reopen them before that deadline to fix drafts. Rosters and submitted lists lock at the deadline. The Our Team tab shows only the team the member plays on or captains. Opposing Team unlocks only after the deadline and when both full rosters have every list submitted and finalized; before then, the server omits opposing roster members and armies from ordinary member responses. The unlocked opposing roster is read-only. Admins retain a separate Manage teams tab for both rosters; external-scrim captains use it for the external roster. Confirmed spectators without a team can review both rosters under Opposing Team after unlock. No player replacements or list changes are allowed after the deadline.
 
 ### Planning and pairing
 

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { ArrowLeft, Plus } from "lucide-react";
 import type { View } from "@/lib/types";
-import { scrimScore } from "@/lib/scrims";
+import { onScrimTeam, scrimScore } from "@/lib/scrims";
 import { stockholmIso, stockholmLocal } from "@/lib/stockholm";
 import { patchLabel } from "@/lib/patches";
 import { Badge, Empty, Field, Modal } from "./ui";
@@ -27,10 +27,31 @@ export default function Scrims({
   const scrim = scrims.find((s) => s.id === selectedId);
   const event = view.events.find((e) => e.id === scrim?.eventId);
   const [busy, setBusy] = useState(false);
-  const [section, setSection] = useState("Teams & lists");
+  const [section, setSection] = useState("Our Team");
   const [cancel, setCancel] = useState(false);
   const admin = view.me.role === "admin";
   const score = scrim ? scrimScore(scrim) : null;
+  const ownTeam = scrim?.teams.find(
+    (team) => !team.external && onScrimTeam(team, view.me.id),
+  );
+  const opposingTeams =
+    scrim?.teams.filter((team) => !ownTeam || team.id !== ownTeam.id) || [];
+  const canManageTeams =
+    admin ||
+    (scrim?.kind === "external" && scrim.teams[0].captainId === view.me.id);
+  const opposingUnlocked = !!scrim?.listsRevealed;
+  const sections = [
+    "Our Team",
+    "Opposing Team",
+    "Matrix",
+    "Pairings & results",
+    ...(canManageTeams ? ["Manage teams"] : []),
+  ];
+  const activeSection =
+    (section === "Manage teams" && !canManageTeams) ||
+    (section === "Opposing Team" && !opposingUnlocked)
+      ? "Our Team"
+      : section;
   return (
     <div className={styles.stack}>
       <header className="page-heading">
@@ -125,31 +146,71 @@ export default function Scrims({
             role="group"
             aria-label="Scrim sections"
           >
-            {["Teams & lists", "Matrix", "Pairings & results"].map((name) => (
+            {sections.map((name) => (
               <button
                 key={name}
-                className={section === name ? "primary" : ""}
-                aria-pressed={section === name}
+                className={activeSection === name ? "primary" : ""}
+                aria-pressed={activeSection === name}
+                disabled={name === "Opposing Team" && !opposingUnlocked}
                 onClick={() => setSection(name)}
               >
                 {name}
               </button>
             ))}
           </div>
-          {section === "Teams & lists" && (
-            <div className={styles.teams}>
-              {scrim.teams.map((team) => (
+          {!opposingUnlocked && (
+            <p className={styles.muted}>
+              Opposing Team unlocks after list lock, once both teams have
+              finalized complete submissions.
+            </p>
+          )}
+          {activeSection === "Our Team" &&
+            (ownTeam ? (
+              <ScrimRoster
+                key={ownTeam.id}
+                view={view}
+                scrim={scrim}
+                team={ownTeam}
+                mutate={mutate}
+              />
+            ) : (
+              <Empty
+                title="No team assigned"
+                description="A captain can add you to their team."
+              />
+            ))}
+          {activeSection === "Opposing Team" && opposingUnlocked && (
+            <div
+              className={opposingTeams.length > 1 ? styles.teams : styles.stack}
+            >
+              {opposingTeams.map((team) => (
                 <ScrimRoster
-                  key={team.id}
+                  key={`${team.id}-opposing`}
                   view={view}
                   scrim={scrim}
                   team={team}
                   mutate={mutate}
+                  readOnly
                 />
               ))}
             </div>
           )}
-          {section === "Matrix" && (
+          {activeSection === "Manage teams" && canManageTeams && (
+            <div className={styles.teams}>
+              {scrim.teams
+                .filter((team) => admin || team.external)
+                .map((team) => (
+                  <ScrimRoster
+                    key={team.id}
+                    view={view}
+                    scrim={scrim}
+                    team={team}
+                    mutate={mutate}
+                  />
+                ))}
+            </div>
+          )}
+          {activeSection === "Matrix" && (
             <ScrimMatrix
               key={`${scrim.id}-matrix`}
               view={view}
@@ -157,7 +218,7 @@ export default function Scrims({
               mutate={mutate}
             />
           )}
-          {section === "Pairings & results" && (
+          {activeSection === "Pairings & results" && (
             <ScrimPairings
               key={`${scrim.id}-pairings`}
               view={view}

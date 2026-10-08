@@ -430,11 +430,13 @@ test("server hides opponent lists before the deadline and all private plans unti
   f.fill();
   let v = viewState(f.s, f.member(1));
   assert.ok(v.scrims![0].teams[0].entries[0].army);
-  assert.equal(v.scrims![0].teams[1].entries[0].army, undefined);
+  assert.equal(v.scrims![0].teams[1].entries.length, 0);
+  assert.equal(v.scrims![0].listsRevealed, false);
   assert.equal(v.scrims![0].teams[0].estimates.length, 0);
   at(f.deadline + 1, () => {
     v = viewState(f.s, f.member(1));
     assert.ok(v.scrims![0].teams[1].entries[0].army);
+    assert.equal(v.scrims![0].listsRevealed, true);
     assert.ok(v.scrims![0].teams[0].estimates.length);
     assert.equal(v.scrims![0].teams[1].estimates.length, 0);
     assert.ok(
@@ -444,6 +446,30 @@ test("server hides opponent lists before the deadline and all private plans unti
     );
   });
 });
+test("list lock alone does not reveal incomplete or unfinalized opposing rosters", () => {
+  const f = fixture();
+  f.fill();
+  const army = f.scrim.teams[1].entries[0].army;
+  delete f.scrim.teams[1].entries[0].army;
+  at(f.deadline + 1, () => {
+    const view = viewState(f.s, f.member(1));
+    assert.equal(view.scrims![0].listsRevealed, false);
+    assert.equal(view.scrims![0].teams[1].entries.length, 0);
+    assert.equal(view.scrims![0].teams[0].estimates.length, 0);
+    assert.equal(viewState(f.s, f.admin).scrims![0].teams[1].entries.length, 2);
+  });
+  f.scrim.teams[1].entries[0].army = army;
+  delete f.scrim.teams[1].finalizedAt;
+  at(f.deadline + 1, () => {
+    assert.equal(viewState(f.s, f.member(1)).scrims![0].listsRevealed, false);
+  });
+  f.scrim.teams[1].finalizedAt = new Date().toISOString();
+  f.scrim.teams[1].entries.pop();
+  at(f.deadline + 1, () => {
+    assert.equal(viewState(f.s, f.member(1)).scrims![0].listsRevealed, false);
+  });
+});
+
 test("team members edit only their own matrix, with comments and independent shared seeds", () => {
   const f = fixture();
   f.s.manualEstimates = [

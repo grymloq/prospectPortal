@@ -9,7 +9,12 @@ import {
   matrixWithManual,
   outcomeForScore,
 } from "@/lib/matchups";
-import { onScrimTeam, rosterWarnings, scrimScore } from "@/lib/scrims";
+import {
+  onScrimTeam,
+  rosterWarnings,
+  scrimScore,
+  scrimListsSubmitted,
+} from "@/lib/scrims";
 
 const id = z.string().min(1).max(100);
 const label = z.string().trim().min(1).max(150);
@@ -198,20 +203,16 @@ function seedEstimates(state: State, scrim: Scrim) {
 export function scrimView(state: State, scrim: Scrim, actor: User): Scrim {
   const visible = structuredClone(scrim);
   const revealed =
-    Date.now() >= Date.parse(scrim.submissionDeadline) || !!scrim.pairedAt;
+    Date.now() >= Date.parse(scrim.submissionDeadline) &&
+    scrimListsSubmitted(scrim);
+  visible.listsRevealed = revealed;
   for (const team of visible.teams) {
     const ownTeam =
       onScrimTeam(team, actor.id) ||
       (team.external && scrim.teams[0].captainId === actor.id);
     if (!scrim.completedAt && (!ownTeam || !revealed)) team.estimates = [];
     if (!revealed && !ownTeam && actor.role !== "admin") {
-      team.entries = team.entries.map(
-        ({ army: _army, savedArmyId: _saved, ...entry }) => {
-          void _army;
-          void _saved;
-          return entry;
-        },
-      );
+      team.entries = [];
     }
     // Library identifiers are private and unnecessary outside a player's own submission.
     for (const entry of team.entries)

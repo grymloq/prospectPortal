@@ -7,6 +7,15 @@ export function onScrimTeam(team: ScrimTeam, userId: string) {
   );
 }
 
+export function scrimListsSubmitted(scrim: Scrim) {
+  return scrim.teams.every(
+    (team) =>
+      !!team.finalizedAt &&
+      team.entries.length === scrim.teamSize &&
+      team.entries.every((entry) => !!entry.army),
+  );
+}
+
 export function rosterWarnings(
   scrim: Scrim,
   team: ScrimTeam,

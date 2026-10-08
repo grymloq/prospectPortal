@@ -16,18 +16,21 @@ export default function ScrimRoster({
   scrim,
   team,
   mutate,
+  readOnly = false,
 }: {
   view: View;
   scrim: Scrim;
   team: ScrimTeam;
   mutate: Mutate;
+  readOnly?: boolean;
 }) {
   const rules =
     view.patches.find((p) => p.id === scrim.patchId)?.catalogue || catalogue;
   const manage =
-    view.me.role === "admin" ||
-    team.captainId === view.me.id ||
-    (team.external && scrim.teams[0].captainId === view.me.id);
+    !readOnly &&
+    (view.me.role === "admin" ||
+      team.captainId === view.me.id ||
+      (team.external && scrim.teams[0].captainId === view.me.id));
   const now = useScrimClock();
   const locked =
     !!scrim.cancelled ||
@@ -88,7 +91,8 @@ export default function ScrimRoster({
         <div className={styles.player} key={player.id}>
           <div className={styles.heading}>
             <strong>{player.name}</strong>
-            {!locked &&
+            {!readOnly &&
+              !locked &&
               !team.finalizedAt &&
               (manage || player.userId === view.me.id) && (
                 <button onClick={() => setEntry(player)}>

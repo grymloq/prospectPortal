@@ -231,6 +231,8 @@ export type ScrimPairing = {
   comments: ScrimComment[];
 };
 export type Scrim = {
+  /** Derived by the server for the current response; never a client permission. */
+  listsRevealed?: boolean;
   id: string;
   eventId: string;
   revision: number;
