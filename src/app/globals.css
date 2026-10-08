@@ -1051,6 +1051,25 @@ td small {
   max-height: 220px;
   overflow-y: auto;
 }
+.journal-sort {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+}
+.journal-game-row {
+  cursor: pointer;
+}
+.journal-game-row:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: -2px;
+}
+.journal-game-row:hover {
+  background: #f4f7fb;
+}
 .opponent-suggestions button {
   justify-content: flex-start;
   text-align: left;

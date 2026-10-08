@@ -1,14 +1,7 @@
 "use client";
 import { patchLabel } from "@/lib/patches";
 import { useState, useEffect, useId } from "react";
-import {
-  Plus,
-  Search,
-  ArrowUpRight,
-  Pencil,
-  Trash2,
-  Check,
-} from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Check } from "lucide-react";
 import type { Army, Game, View } from "@/lib/types";
 import {
   catalogue,
@@ -338,6 +331,34 @@ export default function Journal({
     setEdit(game);
   }
   const canLog = !userId || userId === view.me.id;
+  const columns = [
+    "Date",
+    "Player",
+    "Your army",
+    "Opponent",
+    "Result",
+    "Context",
+  ] as const;
+  const [sort, setSort] = useState<{
+    column: (typeof columns)[number];
+    ascending: boolean;
+  }>({ column: "Date", ascending: false });
+  const sortValue = (game: Game): string | number => {
+    switch (sort.column) {
+      case "Date":
+        return game.date;
+      case "Player":
+        return view.users.find((u) => u.id === game.userId)?.name || "";
+      case "Your army":
+        return game.own.factionName;
+      case "Opponent":
+        return game.opponent;
+      case "Result":
+        return game.score;
+      case "Context":
+        return game.context;
+    }
+  };
   const games = view.games
     .filter(
       (g) =>
@@ -351,7 +372,20 @@ export default function Journal({
           .toLowerCase()
           .includes(query.toLowerCase()),
     )
-    .sort((a, b) => b.date.localeCompare(a.date));
+    .sort((a, b) => {
+      const left = sortValue(a),
+        right = sortValue(b);
+      const comparison =
+        typeof left === "number" && typeof right === "number"
+          ? left - right
+          : String(left).localeCompare(String(right), undefined, {
+              sensitivity: "base",
+              numeric: true,
+            });
+      return comparison
+        ? comparison * (sort.ascending ? 1 : -1)
+        : b.date.localeCompare(a.date);
+    });
   return (
     <>
       {!embedded && (
@@ -465,23 +499,68 @@ export default function Journal({
           <table>
             <thead>
               <tr>
-                <th>Date / Player</th>
-                <th>Your army</th>
-                <th>Opponent</th>
-                <th>Result</th>
-                <th>Context</th>
-                <th />
+                {columns.map((column) => (
+                  <th
+                    key={column}
+                    scope="col"
+                    aria-sort={
+                      sort.column === column
+                        ? sort.ascending
+                          ? "ascending"
+                          : "descending"
+                        : "none"
+                    }
+                  >
+                    <button
+                      type="button"
+                      className="journal-sort"
+                      onClick={() =>
+                        setSort({
+                          column,
+                          ascending:
+                            sort.column === column ? !sort.ascending : true,
+                        })
+                      }
+                    >
+                      {column}
+                      <span aria-hidden="true">
+                        {sort.column === column
+                          ? sort.ascending
+                            ? " ↑"
+                            : " ↓"
+                          : " ↕"}
+                      </span>
+                    </button>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {games.map((g) => (
-                <tr key={g.id}>
-                  <td>
-                    {dateLabel(g.date)}
-                    <small>
-                      {view.users.find((u) => u.id === g.userId)?.name}
-                    </small>
-                  </td>
+                <tr
+                  key={g.id}
+                  className="journal-game-row"
+                  tabIndex={0}
+                  aria-label={`Open game from ${g.date} against ${g.opponent}`}
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest("button, a, dialog"))
+                      return;
+                    setDetail(g);
+                    setDeleting(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (
+                      e.target === e.currentTarget &&
+                      (e.key === "Enter" || e.key === " ")
+                    ) {
+                      e.preventDefault();
+                      setDetail(g);
+                      setDeleting(false);
+                    }
+                  }}
+                >
+                  <td>{dateLabel(g.date)}</td>
+                  <td>{view.users.find((u) => u.id === g.userId)?.name}</td>
                   <td>
                     <strong>
                       {g.own.listUrl ? (
@@ -537,18 +616,6 @@ export default function Journal({
                       {view.patches.find((p) => p.id === g.patchId)?.name ||
                         "Unknown patch"}
                     </small>
-                  </td>
-                  <td>
-                    <button
-                      className="icon-button"
-                      aria-label={`View game against ${g.opponent}`}
-                      onClick={() => {
-                        setDetail(g);
-                        setDeleting(false);
-                      }}
-                    >
-                      <ArrowUpRight size={17} />
-                    </button>
                   </td>
                 </tr>
               ))}
