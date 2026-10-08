@@ -33,7 +33,19 @@ export type Army = {
   dispositionName: string;
 };
 export type Layout = "A" | "B" | "C";
-export type Patch = { id: string; name: string; date: string };
+export type Patch = {
+  id: string;
+  name: string;
+  date: string;
+  source?: {
+    provider: "newrecruit";
+    systemId: number;
+    revision: string;
+    updatedAt: string;
+    importedAt: string;
+    books: { id: number; name: string; revision: number; sha: string }[];
+  };
+};
 export type Game = {
   id: string;
   userId: string;

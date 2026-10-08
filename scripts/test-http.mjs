@@ -96,6 +96,12 @@ try {
     assert.equal(blockedDirectory.status, 403);
     assert.equal(blockedInvite.status, 403);
   });
+  const anonPatchImport = await request("/api/patch-import", {});
+  const memberPatchImport = await request("/api/patch-import", {}, player.cookie);
+  check("New Recruit rules imports require an administrator", () => {
+    assert.equal(anonPatchImport.status, 401);
+    assert.equal(memberPatchImport.status, 403);
+  });
   const inviteResult = await request(
     "/api/admin/users",
     { name: "Invited QA", email: "invited@example.com" },

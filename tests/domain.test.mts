@@ -10,6 +10,58 @@ const { execute, viewState } = await import("../src/server/service");
 const { armySnapshot, catalogue, dispositionsFor } =
   await import("../src/lib/catalogue");
 const baseline = readState();
+const { patchFromLibrary, importNewRecruitPatch } =
+  await import("../src/server/newrecruit-patch");
+const rulesLibrary = [
+  {
+    id: 827374861,
+    short: "wh40k-11e",
+    books: [
+      {
+        id: 1,
+        name: "Core",
+        bsid: "core",
+        nrversion: 3,
+        sha: "a".repeat(40),
+        last_updated: "2026-10-07T22:00:00.000Z",
+      },
+      {
+        id: 2,
+        name: "Orks",
+        bsid: "orks",
+        nrversion: 7,
+        sha: "b".repeat(40),
+        last_updated: "2026-10-06T22:00:00.000Z",
+      },
+    ],
+  },
+];
+test("New Recruit import is admin-only, idempotent, and preserves historical games", () => {
+  const s = structuredClone(baseline);
+  const patch = patchFromLibrary(rulesLibrary);
+  const games = structuredClone(s.games);
+  const member = s.users.find((u) => u.role === "member")!;
+  const admin = s.users.find((u) => u.role === "admin")!;
+  assert.equal(patch.date, "2026-10-07");
+  assert.equal(patch.source!.books.length, 2);
+  assert.throws(() => importNewRecruitPatch(s, member, patch), /Admin/);
+  assert.equal(importNewRecruitPatch(s, admin, patch), true);
+  assert.equal(importNewRecruitPatch(s, admin, patch), false);
+  assert.deepEqual(s.games, games);
+  const reversed = structuredClone(rulesLibrary);
+  reversed[0].books.reverse();
+  assert.equal(patchFromLibrary(reversed).id, patch.id);
+  reversed[0].books[0].sha = "c".repeat(40);
+  assert.notEqual(patchFromLibrary(reversed).id, patch.id);
+});
+test("New Recruit rejects missing or malformed catalogue metadata", () => {
+  assert.throws(() => patchFromLibrary([]));
+  const malformed = structuredClone(rulesLibrary);
+  malformed[0].books[0].last_updated = "not-a-date";
+  assert.throws(() => patchFromLibrary(malformed));
+  malformed[0].books = [];
+  assert.throws(() => patchFromLibrary(malformed));
+});
 after(() => {
   db.close();
   rmSync(scratch, { recursive: true, force: true });

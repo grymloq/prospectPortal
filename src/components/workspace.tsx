@@ -79,11 +79,16 @@ export default function Workspace({
     setBusy(true);
     setError("");
     try {
-      const r = await fetch("/api/state", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(command),
-      });
+      const r = await fetch(
+        (command as { type?: string }).type === "importPatch"
+          ? "/api/patch-import"
+          : "/api/state",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(command),
+        },
+      );
       const data = await r.json();
       if (!r.ok) throw new Error(data.error);
       setView(data);
@@ -188,7 +193,9 @@ export default function Workspace({
             </div>
           </div>
           <div className="local-label">
-            {localDemo ? "Local demo · sample data" : "Swedish 40k National Team"}
+            {localDemo
+              ? "Local demo · sample data"
+              : "Swedish 40k National Team"}
           </div>
           <button
             onClick={async () => {
