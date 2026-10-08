@@ -1,0 +1,125 @@
+.mobile {
+  display: none;
+}
+@media (max-width: 760px) {
+  .mobile {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+  .desktop {
+    display: none;
+  }
+  .full {
+    display: block;
+  }
+  .tabs {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+  .tabs button[aria-pressed="true"] {
+    background: var(--navy);
+    color: white;
+  }
+  .mobile select {
+    width: 100%;
+    min-width: 0;
+    font-size: 16px;
+    min-height: 44px;
+  }
+  .own {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+  .opponent {
+    padding: var(--space-4) var(--space-3);
+    border-bottom: 1px solid #cbd5e1;
+    background: #f0f4f8;
+  }
+  .opponent:first-child {
+    border-top: 1px solid #cbd5e1;
+  }
+  .opponent:nth-child(even) {
+    background: #f7f9fc;
+  }
+  .heading {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+  .heading > div:first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .heading p {
+    margin: 4px 0;
+    font-size: var(--text-small);
+    color: #526277;
+  }
+  .heading strong {
+    font-size: var(--text-body);
+  }
+  .average {
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .average strong,
+  .average small {
+    display: block;
+  }
+  .average small {
+    color: #526277;
+  }
+  .scores {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    gap: var(--space-2);
+    align-items: end;
+    margin-top: var(--space-3);
+  }
+  .scores > div {
+    min-width: 0;
+    text-align: center;
+  }
+  .scores small {
+    font-size: var(--text-caption);
+    color: #526277;
+  }
+  .scores button,
+  .scores input {
+    min-height: 44px;
+    width: 100%;
+    font-size: 16px;
+  }
+  .scores > button {
+    font-size: var(--text-small);
+    padding: 8px;
+  }
+  .scores button:global(.matrix-win) {
+    background: #e7f4eb;
+    border: 1px solid #b8d7c2;
+    color: #245c3c;
+  }
+  .scores button:global(.matrix-loss) {
+    background: #fbecec;
+    border: 1px solid #e4bcc3;
+    color: #913543;
+  }
+  .scores button:global(.matrix-draw) {
+    background: #fff6d9;
+    border: 1px solid #e4d398;
+    color: #685808;
+  }
+  .scores button:global(.matrix-unknown) {
+    background: #e6ecf2;
+    border: 1px solid #cbd5e1;
+    color: #526277;
+  }
+  .scores button:disabled {
+    opacity: 1;
+  }
+}

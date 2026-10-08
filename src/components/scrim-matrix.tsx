@@ -135,7 +135,7 @@ export default function ScrimMatrix({
   const canEdit = !!team && onScrimTeam(team, view.me.id) && !scrim.cancelled;
   return (
     <section
-      className={`matrix-compact ${styles.card} ${styles.compactMatrix}`}
+      className={`matrix-compact ${styles.card} ${styles.compactMatrix} ${styles.mobileSurface}`}
     >
       <div className={styles.heading}>
         <div>
@@ -199,6 +199,9 @@ export default function ScrimMatrix({
             logs.
           </p>
           <MatchupTable
+            preferredRow={
+              submitted.find((entry) => entry.userId === view.me.id)?.id
+            }
             rowNames={Object.fromEntries(
               submitted.map((entry) => [entry.id, entry.name]),
             )}

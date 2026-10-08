@@ -1999,7 +1999,20 @@ td small {
 .mobile-signout {
   display: none;
 }
+.mobile-matrix-filters-toggle {
+  display: none;
+}
 @media (max-width: 760px) {
+  .mobile-matrix-filters-toggle {
+    display: inline-flex;
+    margin-bottom: var(--space-3);
+  }
+  .matrix-filters:not(.mobile-filters-open) {
+    display: none;
+  }
+  .matrix-caption > span:first-child {
+    display: none;
+  }
   .mobile-signout {
     display: inline-flex;
   }

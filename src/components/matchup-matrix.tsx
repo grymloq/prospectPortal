@@ -21,6 +21,7 @@ export default function MatchupMatrix({
   view: View;
   mutate: Mutate;
 }) {
+  const [mobileFilters, setMobileFilters] = useState(false);
   const [adding, setAdding] = useState(false);
   const [editingListKey, setEditingListKey] = useState("new");
   const [choice, setChoice] = useState<Choice>(blank());
@@ -139,7 +140,19 @@ export default function MatchupMatrix({
           <span>— no games</span>
         </div>
       </div>
-      <div className="matrix-filters">
+      <button
+        type="button"
+        className="mobile-matrix-filters-toggle"
+        aria-expanded={mobileFilters}
+        aria-controls="matrix-axis-filters"
+        onClick={() => setMobileFilters(!mobileFilters)}
+      >
+        Faction and list filters
+      </button>
+      <div
+        id="matrix-axis-filters"
+        className={`matrix-filters ${mobileFilters ? "mobile-filters-open" : ""}`}
+      >
         <AxisFilter
           axis="Rows (Y)"
           armies={data.armies}
@@ -187,7 +200,7 @@ export default function MatchupMatrix({
           {data.missingLayout} games excluded: no layout recorded.
         </p>
       )}
-      <section className="panel">
+      <section className={`panel ${matrixStyles.mobileSurface}`}>
         {(rows.length > size || columns.length > size) && (
           <div className="matrix-navigation">
             {[

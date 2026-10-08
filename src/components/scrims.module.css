@@ -3,6 +3,14 @@
   gap: var(--space-5);
   min-width: 0;
 }
+@media (max-width: 760px) {
+  .mobileSurface.mobileSurface {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+  }
+}
 .teams {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
