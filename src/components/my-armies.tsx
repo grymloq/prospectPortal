@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import { ChevronDown, Globe, Lock, Pencil, Star, Trash2 } from "lucide-react";
+import styles from "./my-armies.module.css";
 import type { View } from "@/lib/types";
 import { catalogue } from "@/lib/catalogue";
 import { patchLabel } from "@/lib/patches";
@@ -41,6 +43,29 @@ export default function MyArmies({
     }
   }
   const lists = (view.savedArmies || []).filter((a) => a.userId === view.me.id);
+  const groups = Array.from(new Set(lists.map((a) => a.patchId)))
+    .map((id) => {
+      const patch = view.patches.find((p) => p.id === id);
+      const armies = lists.filter((a) => a.patchId === id);
+      const factions = Array.from(new Set(armies.map((a) => a.army.faction)))
+        .map((faction) => {
+          const entries = armies
+            .filter((a) => a.army.faction === faction)
+            .sort((a, b) =>
+              (a.army.listName || a.army.factionName).localeCompare(
+                b.army.listName || b.army.factionName,
+              ),
+            );
+          return { id: faction, name: entries[0].army.factionName, entries };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
+      return { id, patch, factions, count: armies.length };
+    })
+    .sort(
+      (a, b) =>
+        (b.patch?.date || "").localeCompare(a.patch?.date || "") ||
+        (a.patch?.name || a.id).localeCompare(b.patch?.name || b.id),
+    );
   const rules =
     view.patches.find((p) => p.id === patchId)?.catalogue || catalogue;
   function open(id: string) {
@@ -63,73 +88,151 @@ export default function MyArmies({
           Add army list
         </button>
       </PageHeading>
-      <section className="panel padded">
+      <div className={styles.library}>
         {!lists.length && (
-          <Empty
-            title="No saved armies"
-            description="Add an army list to use when logging games."
-          />
+          <section className="panel padded">
+            <Empty
+              title="No saved armies"
+              description="Add an army list to use when logging games."
+            />
+          </section>
         )}
-        {lists.map((a) => (
-          <article className="saved-army-card" key={a.id}>
-            <div>
-              <h3>{a.army.listName}</h3>
-              <p>
-                {a.army.factionName} · {a.army.detachmentNames.join(" + ")}
-              </p>
-              <p>
-                <Disposition name={a.army.dispositionName} /> ·{" "}
-                {view.patches.find((p) => p.id === a.patchId)
-                  ? patchLabel(view.patches.find((p) => p.id === a.patchId)!)
-                  : "Unknown ruleset"}
-              </p>
-              {a.army.listUrl && (
-                <ArmyListLink
-                  url={a.army.listUrl}
-                  name={a.army.listName || a.army.factionName}
-                />
+        {groups.map((group) => (
+          <details className={`panel ${styles.patch}`} key={group.id} open>
+            <summary className={styles.patchHeading}>
+              <ChevronDown
+                size={18}
+                className={styles.chevron}
+                aria-hidden="true"
+              />
+              <h2>{group.patch?.name || "Unknown ruleset"}</h2>
+              {group.patch && (
+                <span className={styles.date}>{group.patch.date}</span>
               )}
-            </div>
-            <div className="saved-army-actions">
-              <button
-                aria-pressed={view.me.defaultArmyId === a.id}
-                disabled={
-                  view.patches.find((p) => p.id === a.patchId)?.removedAt !==
-                  undefined
-                }
-                onClick={() =>
-                  void mutate({
-                    type: "defaultArmy",
-                    id: view.me.defaultArmyId === a.id ? "" : a.id,
-                  })
-                }
+              {group.patch?.removedAt && (
+                <span className={styles.tag}>Archived</span>
+              )}
+              {group.id === view.defaultPatchId && (
+                <span className={styles.tag}>Current</span>
+              )}
+              <span className={styles.total}>
+                {group.count} {group.count === 1 ? "army" : "armies"}
+              </span>
+            </summary>
+            {group.factions.map((faction) => (
+              <section
+                className={styles.faction}
+                key={faction.id}
+                aria-label={faction.name}
               >
-                {view.me.defaultArmyId === a.id
-                  ? "My default ✓"
-                  : "Make my default"}
-              </button>
-              <button onClick={() => open(a.id)}>Edit</button>
-              <button
-                aria-pressed={a.shared}
-                onClick={() =>
-                  void mutate({
-                    type: "shareArmy",
-                    id: a.id,
-                    shared: !a.shared,
-                  })
-                }
-              >
-                {a.shared ? "Make private" : "Make available for others"}
-              </button>
-              <button
-                onClick={() => void mutate({ type: "deleteArmy", id: a.id })}
-              >
-                Remove
-              </button>
-            </div>
-          </article>
+                <h3 className={styles.factionHeading}>
+                  {faction.name}
+                  <span>{faction.entries.length}</span>
+                </h3>
+                {faction.entries.map((a) => {
+                  const name = a.army.listName || a.army.factionName;
+                  const isDefault = view.me.defaultArmyId === a.id;
+                  return (
+                    <article
+                      className={styles.army}
+                      key={a.id}
+                      aria-label={name}
+                    >
+                      <div className={styles.info}>
+                        <div className={styles.nameRow}>
+                          <h4>
+                            {a.army.listUrl ? (
+                              <ArmyListLink
+                                url={a.army.listUrl}
+                                name={name}
+                                className={styles.listLink}
+                                title={`Open ${name}`}
+                              >
+                                {name}
+                              </ArmyListLink>
+                            ) : (
+                              name
+                            )}
+                          </h4>
+                          {isDefault && (
+                            <span className={styles.defaultTag}>Default</span>
+                          )}
+                          <Disposition name={a.army.dispositionName} />
+                        </div>
+                        <p className={styles.detachments}>
+                          {a.army.detachmentNames.join(" + ") ||
+                            "No detachment"}
+                        </p>
+                      </div>
+                      <div className={styles.actions}>
+                        <button
+                          className={styles.action}
+                          aria-label={`${isDefault ? "Clear default" : "Make default"}: ${name}`}
+                          title={
+                            isDefault
+                              ? "Clear default army"
+                              : "Make default army"
+                          }
+                          aria-pressed={isDefault}
+                          disabled={!!group.patch?.removedAt}
+                          onClick={() =>
+                            void mutate({
+                              type: "defaultArmy",
+                              id: isDefault ? "" : a.id,
+                            })
+                          }
+                        >
+                          <Star
+                            size={17}
+                            fill={isDefault ? "currentColor" : "none"}
+                          />
+                        </button>
+                        <button
+                          className={styles.action}
+                          aria-label={`${a.shared ? "Make private" : "Share with others"}: ${name}`}
+                          title={
+                            a.shared
+                              ? "Shared with others · Make private"
+                              : "Private · Share with others"
+                          }
+                          aria-pressed={a.shared}
+                          onClick={() =>
+                            void mutate({
+                              type: "shareArmy",
+                              id: a.id,
+                              shared: !a.shared,
+                            })
+                          }
+                        >
+                          {a.shared ? <Globe size={17} /> : <Lock size={17} />}
+                        </button>
+                        <button
+                          className={styles.action}
+                          aria-label={`Edit: ${name}`}
+                          title="Edit army"
+                          onClick={() => open(a.id)}
+                        >
+                          <Pencil size={17} />
+                        </button>
+                        <button
+                          className={`${styles.action} ${styles.remove}`}
+                          aria-label={`Remove: ${name}`}
+                          title="Remove army"
+                          onClick={() =>
+                            void mutate({ type: "deleteArmy", id: a.id })
+                          }
+                        >
+                          <Trash2 size={17} />
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </section>
+            ))}
+          </details>
         ))}
-      </section>
+      </div>
       {editing && (
         <Modal
           title={editing === "new" ? "Add army list" : "Edit army list"}
