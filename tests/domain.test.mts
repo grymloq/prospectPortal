@@ -10,6 +10,29 @@ const { execute, viewState } = await import("../src/server/service");
 const { armySnapshot, catalogue, dispositionsFor } =
   await import("../src/lib/catalogue");
 const baseline = readState();
+test("patch renaming is admin-only and preserves references and source metadata", () => {
+  const s = structuredClone(baseline);
+  const admin = s.users.find((u) => u.role === "admin")!;
+  const member = s.users.find((u) => u.role === "member")!;
+  const patch = s.patches![0];
+  const original = structuredClone(patch);
+  const games = structuredClone(s.games);
+  const command = {
+    type: "renamePatch",
+    patchId: patch.id,
+    name: "September rules",
+  };
+  assert.throws(() => execute(s, member, command), /Admin/);
+  assert.throws(() => execute(s, admin, { ...command, name: "   " }));
+  assert.throws(
+    () => execute(s, admin, { ...command, patchId: "missing" }),
+    /Patch not found/,
+  );
+  execute(s, admin, command);
+  assert.deepEqual(patch, { ...original, name: command.name });
+  assert.deepEqual(s.games, games);
+  assert.match(s.audit[0].text, /Renamed patch/);
+});
 const { patchFromLibrary, importNewRecruitPatch } =
   await import("../src/server/newrecruit-patch");
 const rulesLibrary = [

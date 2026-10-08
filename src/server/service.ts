@@ -48,6 +48,11 @@ const commands = z.discriminatedUnion("type", [
   }),
   z.object({ type: z.literal("patch"), name: text.max(100), date }),
   z.object({
+    type: z.literal("renamePatch"),
+    patchId: id,
+    name: text.max(100),
+  }),
+  z.object({
     type: z.literal("profile"),
     name: text.max(100),
     city: z.string().max(100),
@@ -351,6 +356,16 @@ export function execute(s: State, actor: User, input: unknown) {
         throw new Error("A patch already exists for this date.");
       s.patches!.push({ id: c.date, name: c.name, date: c.date });
       audit("Added patch: " + c.name + " — " + c.date);
+      break;
+    }
+    case "renamePatch": {
+      requireAdmin();
+      const patch = s.patches!.find((p) => p.id === c.patchId);
+      if (!patch) throw new Error("Patch not found.");
+      if (patch.name === c.name) break;
+      const previous = patch.name;
+      patch.name = c.name;
+      audit(`Renamed patch: ${previous} → ${c.name} — ${patch.date}`);
       break;
     }
     case "profile": {

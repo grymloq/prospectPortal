@@ -13,6 +13,8 @@ export default function PatchSettings({
 }) {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
+  const [editing, setEditing] = useState<string | null>(null);
+  const [name, setName] = useState("");
   return (
     <section>
       <h3>Rules patches</h3>
@@ -46,9 +48,68 @@ export default function PatchSettings({
       <ul className="patch-list">
         {patches.map((p) => (
           <li key={p.id}>
-            {patchLabel(p)}
-            {p.source && (
-              <small> · New Recruit · {p.source.books.length} catalogues</small>
+            {editing === p.id ? (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setBusy(true);
+                  try {
+                    if (
+                      await mutate({ type: "renamePatch", patchId: p.id, name })
+                    ) {
+                      setEditing(null);
+                      setNotice("Patch name saved.");
+                    }
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                <Field label="Patch name">
+                  <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    maxLength={100}
+                    autoFocus
+                    disabled={busy}
+                  />
+                </Field>
+                <div className="row">
+                  <button className="primary" disabled={busy || !name.trim()}>
+                    {busy ? "Saving…" : "Save name"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setEditing(null)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                {patchLabel(p)}
+                {p.source && (
+                  <small>
+                    {" "}
+                    · New Recruit · {p.source.books.length} catalogues
+                  </small>
+                )}
+                <button
+                  type="button"
+                  disabled={busy}
+                  aria-label={`Rename ${p.name}`}
+                  onClick={() => {
+                    setEditing(p.id);
+                    setName(p.name);
+                    setNotice("");
+                  }}
+                >
+                  Rename
+                </button>
+              </>
             )}
           </li>
         ))}
