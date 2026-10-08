@@ -186,6 +186,7 @@ export default function Journal({
 }) {
   const [query, setQuery] = useState(""),
     [outcome, setOutcome] = useState(""),
+    [patchFilter, setPatchFilter] = useState(""),
     [from, setFrom] = useState(""),
     [to, setTo] = useState(""),
     [player, setPlayer] = useState("");
@@ -223,6 +224,7 @@ export default function Journal({
         (!userId || g.userId === userId) &&
         (!player || g.userId === player) &&
         (!outcome || g.outcome === outcome) &&
+        (!patchFilter || g.patchId === patchFilter) &&
         (!from || g.date >= from) &&
         (!to || g.date <= to) &&
         `${g.opponent} ${g.own.factionName} ${g.enemy.factionName} ${g.context}`
@@ -291,6 +293,27 @@ export default function Journal({
             {["Win", "Draw", "Loss"].map((o) => (
               <option key={o}>{o}</option>
             ))}
+          </select>
+          <select
+            aria-label="Filter rules patch"
+            value={patchFilter}
+            onChange={(e) => setPatchFilter(e.target.value)}
+          >
+            <option value="">All rules patches</option>
+            {view.patches
+              .filter(
+                (p) =>
+                  !p.removedAt ||
+                  view.games.some(
+                    (g) =>
+                      g.patchId === p.id && (!userId || g.userId === userId),
+                  ),
+              )
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {patchLabel(p)}
+                </option>
+              ))}
           </select>
         </div>
         <div className="date-filters">
