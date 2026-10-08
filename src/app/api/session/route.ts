@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { localMode, requiredEnv } from "@/server/config";
-import { authClient } from "@/server/supabase";
+import { localMode } from "@/server/config";
+import { authClient, databaseClient } from "@/server/supabase";
 import { sameOrigin } from "@/server/session";
 import { cloudView } from "@/server/cloud-store";
 import { pendingMembership } from "@/server/membership";
@@ -21,29 +21,27 @@ export async function POST(req: NextRequest) {
   try {
     sameOrigin(req);
     const input = schema.parse(await req.json());
-    const supabase = await authClient();
     if (input.register) {
       if (!input.name) throw new Error("Please enter your name.");
-      const { data, error } = await supabase.auth.signUp({
+      // Server-only creation does not send a confirmation email or issue a session.
+      // Portal membership remains pending until explicitly approved by an admin.
+      const { error } = await databaseClient().auth.admin.createUser({
         email: input.email,
         password: input.password,
-        options: {
-          data: { name: input.name },
-          emailRedirectTo: new URL("/auth/callback", requiredEnv("SITE_URL"))
-            .href,
-        },
+        user_metadata: { name: input.name },
+        email_confirm: true,
       });
       if (error) throw error;
-      if (data.session) await supabase.auth.signOut();
       return NextResponse.json(
         {
           ok: true,
           message:
-            "Registration received. Confirm your email if requested. An administrator must confirm your membership before you can sign in.",
+            "Registration received. No email confirmation is needed. An administrator must confirm your membership before you can sign in.",
         },
         { headers: { "Cache-Control": "no-store" } },
       );
     }
+    const supabase = await authClient();
     const { data, error } = await supabase.auth.signInWithPassword({
       email: input.email,
       password: input.password,

@@ -409,7 +409,7 @@ Admins have a Users directory including Supabase accounts which have not yet ope
 
 ### Membership approval
 
-**Confirmed:** Every account has a Confirmed member flag controlled by admins in Users. All existing users are grandfathered as confirmed, including existing authentication accounts which have not opened the portal. New self-registrations remain pending and cannot sign into the portal until an admin confirms them. Email verification and membership confirmation are separate. Revoking confirmation also blocks existing portal sessions; it does not delete history. Membership is separate from administrator permissions and national-team selection status.
+**Confirmed:** Every account has a Confirmed member flag controlled by admins in Users. All existing users are grandfathered as confirmed, including existing authentication accounts which have not opened the portal. New self-registrations remain pending and cannot sign into the portal until an admin confirms them. Self-registration requires no email delivery or email verification. The server creates the password account without sending mail or issuing a session; administrator membership confirmation remains mandatory. Revoking confirmation also blocks existing portal sessions; it does not delete history. Membership is separate from administrator permissions and national-team selection status.
 
 **Implementation convention:** An administrator-created invitation also confirms membership because the administrator has explicitly invited the person. Self-revocation and removal of the last confirmed administrator are prohibited. Authorization uses the server's current membership record, never user-editable authentication metadata.
 
