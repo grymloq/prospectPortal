@@ -124,6 +124,11 @@
   perspective: 1200px;
   border-radius: var(--radius);
 }
+.flipCard:hover,
+.flipCard:active {
+  background: transparent;
+  box-shadow: none;
+}
 .flipInner {
   display: block;
   position: absolute;
@@ -139,25 +144,19 @@
   position: absolute;
   inset: 0;
   backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   border-radius: var(--radius);
   overflow: hidden;
 }
 .back {
   transform: rotateY(180deg);
 }
+.front {
+  transform: rotateY(0deg);
+}
 .front img,
 .back img {
   object-fit: contain;
-}
-.flipHint {
-  position: absolute;
-  bottom: var(--space-2);
-  right: var(--space-2);
-  background: var(--navy);
-  color: white;
-  border-radius: var(--radius);
-  padding: 2px 6px;
-  font-size: var(--text-small);
 }
 @media (hover: hover) and (pointer: fine) {
   .flipCard {

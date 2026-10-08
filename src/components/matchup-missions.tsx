@@ -51,9 +51,6 @@ function MissionCard({
           />
         </span>
       </span>
-      <span className={styles.flipHint} aria-hidden="true">
-        ↔ {flipped ? "2" : "1"}/2
-      </span>
     </button>
   );
 }
