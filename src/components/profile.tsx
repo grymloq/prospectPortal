@@ -195,6 +195,9 @@ export default function Profile({
                 <Mail size={16} />
                 {user.email}
               </div>
+              {user.discordName && (
+                <div className="rail-line">Discord: {user.discordName}</div>
+              )}
               <hr />
               <h3>Team application</h3>
               <p className="preserve">
@@ -662,6 +665,7 @@ export default function Profile({
                   type: "profile",
                   name: f.get("name"),
                   city: f.get("city"),
+                  discordName: f.get("discordName"),
                   bio: f.get("bio"),
                   faction: user.faction,
                   preferredFactions,
@@ -699,6 +703,14 @@ export default function Profile({
                 </Field>
                 <Field label="City">
                   <input name="city" defaultValue={user.city} />
+                </Field>
+                <Field label="Discord name">
+                  <input
+                    name="discordName"
+                    maxLength={100}
+                    defaultValue={user.discordName || ""}
+                    autoComplete="off"
+                  />
                 </Field>
                 <Field label="About you">
                   <textarea name="bio" defaultValue={user.bio} />

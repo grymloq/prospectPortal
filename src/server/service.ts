@@ -60,6 +60,7 @@ const commands = z.discriminatedUnion("type", [
     preferredFactions: z.array(id).max(50).optional(),
     name: text.max(100),
     city: z.string().max(100),
+    discordName: z.string().trim().max(100).optional(),
     bio: z.string().max(3000),
     faction: id,
   }),
@@ -429,6 +430,7 @@ export function execute(s: State, actor: User, input: unknown) {
       Object.assign(actor, {
         name: c.name,
         city: c.city,
+        discordName: c.discordName ?? actor.discordName,
         bio: c.bio,
         faction: c.faction,
         preferredFactions,

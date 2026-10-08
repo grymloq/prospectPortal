@@ -17,6 +17,7 @@ export type User = {
   faction: string;
   preferredFactions?: string[];
   city: string;
+  discordName?: string;
   bio: string;
   phaseId: string | null;
   rejected: boolean;
