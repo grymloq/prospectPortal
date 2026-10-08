@@ -105,7 +105,7 @@ export function armyFromNewRecruit(
   ];
   if (choices.length !== 1)
     throw new Error("The shared list must contain one force disposition.");
-  return armySnapshot(
+  const snapshot = armySnapshot(
     {
       faction: faction.id,
       detachments,
@@ -116,6 +116,16 @@ export function armyFromNewRecruit(
     rules,
     3,
   );
+  if (snapshot.listName?.trim().toLowerCase() === "unnamed list")
+    snapshot.listName = [
+      snapshot.factionName,
+      snapshot.detachmentNames.join(" + "),
+      snapshot.dispositionName,
+    ]
+      .filter(Boolean)
+      .join(" · ")
+      .slice(0, 100);
+  return snapshot;
 }
 export async function fetchNewRecruitArmy(input: string, rules: Catalogue) {
   const link = newRecruitListUrl(input);

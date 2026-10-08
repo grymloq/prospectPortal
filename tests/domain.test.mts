@@ -37,6 +37,14 @@ test("New Recruit list imports map configurations and reject incompatible source
   const url = "https://www.newrecruit.eu/app/list/OxJAH";
   const army = armyFromNewRecruit(input, url, catalogue);
   assert.equal(army.listName, "Practice");
+  assert.equal(
+    armyFromNewRecruit(
+      { ...input, army: { ...input.army, name: " Unnamed List " } },
+      url,
+      catalogue,
+    ).listName,
+    "Orks · Dread Mob · Purge the Foe",
+  );
   assert.deepEqual(army.detachmentNames, ["Dread Mob"]);
   assert.equal(army.dispositionName, "Purge the Foe");
   assert.equal(army.listUrl, url);
