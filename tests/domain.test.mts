@@ -657,3 +657,74 @@ test("imported rulesets drive army validation and preserve historical snapshots"
     historical[0].own,
   );
 });
+
+test("Warmind selectors retain alternatives, exclude previews, and never execute source code", async () => {
+  const { catalogueFromWarmind } = await import("../src/server/warmind-patch");
+  const { extractWarmindFactions } =
+    await import("../src/lib/warmind-catalogue.mjs");
+  const factions = Array.from({ length: 20 }, (_, i) => ({
+    id: "faction-" + i,
+    name: i === 0 ? "Orks" : "Faction " + i,
+    edition: "11e",
+    generatedAt: "2026-10-08T00:00:00.000Z",
+    version: "1.5",
+    detachments: [
+      {
+        name: "Current",
+        dp: 2,
+        objective: "TAKE AND HOLD",
+        objectiveAlternatives: ["TAKE AND HOLD", "DISRUPTION"],
+      },
+      {
+        name: "Preview",
+        dp: 1,
+        objective: "PURGE THE FOE",
+        codexPreview: "Future Codex",
+      },
+    ],
+  }));
+  const bundle = "const data=" + JSON.stringify(factions) + ";";
+  const rules = catalogueFromWarmind(bundle);
+  assert.equal(
+    rules.factions[0].id,
+    catalogue.factions.find((f) => f.name === "Orks")!.id,
+  );
+  assert.deepEqual(
+    rules.factions[0].detachments.map((d) => d.name),
+    ["Current"],
+  );
+  assert.equal(rules.factions[0].detachments[0].dispositions.length, 2);
+  assert.equal(rules.source, "Warmind");
+  const s = structuredClone(baseline);
+  const admin = s.users.find((u) => u.role === "admin")!;
+  const old = patchFromWarmind(
+    '<span class="ver-line">v1.0.6 · MFM v1.5 · 2 Oct 2026</span>',
+  );
+  old.name = "Team Warmind rules";
+  s.patches!.push(old);
+  const upgraded = {
+    ...old,
+    id: "warmind-catalogue-revision",
+    catalogue: rules,
+    source: {
+      ...old.source!,
+      releaseRevision: old.source!.revision,
+      revision: "catalogue-revision",
+    },
+  };
+  importNewRecruitPatch(s, admin, upgraded);
+  assert.equal(old.catalogue!.source, "Warmind");
+  assert.equal(old.name, "Team Warmind rules");
+  assert.equal(s.patches!.length, baseline.patches!.length + 1);
+  importNewRecruitPatch(s, admin, upgraded);
+  assert.equal(s.patches!.length, baseline.patches!.length + 1);
+  assert.throws(() =>
+    catalogueFromWarmind(bundle.replace("DISRUPTION", "UNKNOWN")),
+  );
+  assert.throws(() =>
+    extractWarmindFactions(
+      bundle.replace('"dp":2', '"dp":(()=>{throw new Error("executed")})()'),
+    ),
+  );
+  assert.throws(() => extractWarmindFactions("const data=[];"));
+});

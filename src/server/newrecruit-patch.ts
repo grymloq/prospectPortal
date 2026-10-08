@@ -131,10 +131,21 @@ export function requirePatchAdmin(actor: User) {
 export function importNewRecruitPatch(state: State, actor: User, patch: Patch) {
   requirePatchAdmin(actor);
   ensurePatches(state);
-  const existing = state.patches!.find((p) => p.id === patch.id);
+  const existing = state.patches!.find(
+    (p) =>
+      p.id === patch.id ||
+      (p.source?.provider === patch.source?.provider &&
+        p.source?.revision === patch.source?.revision) ||
+      (patch.source?.provider === "warmind" &&
+        p.id === `warmind-${patch.source.releaseRevision}` &&
+        p.catalogue?.source !== "Warmind"),
+  );
   const updatedCatalogue = patch.catalogue || state.catalogue || catalogue;
   if (patch.catalogue) state.catalogue = patch.catalogue;
-  if (existing && patch.catalogue) existing.catalogue = patch.catalogue;
+  if (existing && patch.catalogue) {
+    existing.catalogue = patch.catalogue;
+    existing.source = patch.source;
+  }
   if (existing && !existing.removedAt) return false;
   if (existing) {
     delete existing.removedAt;

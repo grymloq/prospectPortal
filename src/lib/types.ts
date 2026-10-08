@@ -45,6 +45,7 @@ export type Patch = {
     url?: string;
     systemId?: number;
     revision: string;
+    releaseRevision?: string;
     updatedAt: string;
     importedAt: string;
     books: { id: number; name: string; revision: number; sha: string }[];

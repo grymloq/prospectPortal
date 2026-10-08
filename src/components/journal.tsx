@@ -120,7 +120,10 @@ export function ArmyFields({
         />
       </Field>
       <small>
-        New Recruit · catalogue revision {faction?.revision ?? "unavailable"}
+        {rules.source} ·{" "}
+        {rules.source === "Warmind"
+          ? `updated ${faction?.updatedAt.slice(0, 10) || "unavailable"}`
+          : `catalogue revision ${faction?.revision ?? "unavailable"}`}
       </small>
     </fieldset>
   );

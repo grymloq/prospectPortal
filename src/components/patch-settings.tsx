@@ -60,9 +60,9 @@ export default function PatchSettings({
       </div>
       <p className={styles.help}>
         {provider === "warmind"
-          ? "Imports Warmind’s published MFM version and date."
+          ? "Imports Warmind’s current detachments, dispositions, and MFM version."
           : "Imports New Recruit’s current detachments, dispositions, and catalogue revisions."}{" "}
-        Warmind imports version metadata only.
+        Both sources update the army choices for that ruleset.
       </p>
       {notice && <p role="status">{notice}</p>}
       <p className={styles.help}>
