@@ -18,7 +18,10 @@ export default function DeploymentCarousel({
     ] as HTMLElement | undefined;
     if (element && slide)
       element.scrollTo({
-        left: slide.offsetLeft,
+        left: Math.min(
+          slide.offsetLeft,
+          element.scrollWidth - element.clientWidth,
+        ),
         behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
           ? "instant"
           : "smooth",
@@ -70,11 +73,14 @@ export default function DeploymentCarousel({
         onScroll={(event) => {
           const element = event.currentTarget;
           const slides = Array.from(element.children) as HTMLElement[];
+          const end = element.scrollWidth - element.clientWidth;
           setActive(
             slides.reduce(
               (best, slide, index) =>
-                Math.abs(slide.offsetLeft - element.scrollLeft) <
-                Math.abs(slides[best].offsetLeft - element.scrollLeft)
+                Math.abs(Math.min(slide.offsetLeft, end) - element.scrollLeft) <
+                Math.abs(
+                  Math.min(slides[best].offsetLeft, end) - element.scrollLeft,
+                )
                   ? index
                   : best,
               0,
