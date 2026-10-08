@@ -57,6 +57,7 @@ const commands = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("profile"),
+    preferredFactions: z.array(id).max(50).optional(),
     name: text.max(100),
     city: z.string().max(100),
     bio: z.string().max(3000),
@@ -412,13 +413,25 @@ export function execute(s: State, actor: User, input: unknown) {
       break;
     }
     case "profile": {
-      if (!catalogue.factions.some((f) => f.id === c.faction))
+      const factions = [
+        ...catalogue.factions,
+        ...(s.catalogue?.factions || []),
+      ];
+      const preferredFactions = [
+        ...new Set(c.preferredFactions ?? [c.faction]),
+      ];
+      if (
+        ![c.faction, ...preferredFactions].every((id) =>
+          factions.some((f) => f.id === id),
+        )
+      )
         throw new Error("Unknown faction.");
       Object.assign(actor, {
         name: c.name,
         city: c.city,
         bio: c.bio,
         faction: c.faction,
+        preferredFactions,
       });
       break;
     }
@@ -586,7 +599,7 @@ export function execute(s: State, actor: User, input: unknown) {
         ) {
           return { ...previous, ...input };
         }
-        return armySnapshot(input, gameRules);
+        return armySnapshot(input, gameRules, 3);
       };
       const game = {
         ...fields,

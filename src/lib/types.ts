@@ -15,6 +15,7 @@ export type User = {
   email: string;
   role: "admin" | "member";
   faction: string;
+  preferredFactions?: string[];
   city: string;
   bio: string;
   phaseId: string | null;

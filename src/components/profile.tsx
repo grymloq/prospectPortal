@@ -42,6 +42,15 @@ export default function Profile({
   const stat = stats(view, user.id),
     goals = view.goals.filter((g) => g.userId === user.id),
     evaluation = view.evaluations.find((e) => e.userId === user.id);
+  const armies = [
+    ...new Map(
+      [...catalogue.factions, ...(view.catalogue?.factions || [])].map((f) => [
+        f.id,
+        f,
+      ]),
+    ).values(),
+  ].sort((a, b) => a.name.localeCompare(b.name));
+  const preferredFactions = user.preferredFactions ?? [user.faction];
   async function save(c: object) {
     setSaving(true);
     const ok = await mutate(c);
@@ -75,7 +84,13 @@ export default function Profile({
         <div className="profile-identity">
           <h2>{user.name}</h2>
           <p>
-            {factionName(user.faction)} <span>·</span> <MapPin size={14} />
+            {preferredFactions
+              .map(
+                (id) =>
+                  armies.find((f) => f.id === id)?.name || factionName(id),
+              )
+              .join(", ") || "No preferred armies"}{" "}
+            <span>·</span> <MapPin size={14} />
             {user.city || "Location not set"}
           </p>
         </div>
@@ -600,7 +615,8 @@ export default function Profile({
                   name: f.get("name"),
                   city: f.get("city"),
                   bio: f.get("bio"),
-                  faction: f.get("faction"),
+                  faction: f.getAll("preferredFactions")[0] || user.faction,
+                  preferredFactions: f.getAll("preferredFactions"),
                 });
               if (modal === "phase")
                 void save({
@@ -636,15 +652,22 @@ export default function Profile({
                 <Field label="City">
                   <input name="city" defaultValue={user.city} />
                 </Field>
-                <Field label="Preferred army">
-                  <select name="faction" defaultValue={user.faction}>
-                    {catalogue.factions.map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.name}
-                      </option>
+                <fieldset className="army-fields">
+                  <legend>Preferred armies</legend>
+                  <div className="detachment-options preferred-armies">
+                    {armies.map((f) => (
+                      <label key={f.id}>
+                        <input
+                          type="checkbox"
+                          name="preferredFactions"
+                          value={f.id}
+                          defaultChecked={preferredFactions.includes(f.id)}
+                        />
+                        <span>{f.name}</span>
+                      </label>
                     ))}
-                  </select>
-                </Field>
+                  </div>
+                </fieldset>
                 <Field label="About you">
                   <textarea name="bio" defaultValue={user.bio} />
                 </Field>

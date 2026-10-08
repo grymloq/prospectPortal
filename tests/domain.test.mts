@@ -364,6 +364,77 @@ test("catalogue inheritance, disposition union, three-detachment limit and immut
   );
   assert.throws(() => armySnapshot({ ...a, disposition: "invalid" }));
 });
+test("preferred armies support multiple selections and validate faction IDs", () => {
+  const s = structuredClone(baseline);
+  const member = s.users.find((u) => u.role === "member")!;
+  const ids = catalogue.factions.slice(0, 2).map((f) => f.id);
+  const command = {
+    type: "profile",
+    name: member.name,
+    city: member.city,
+    bio: member.bio,
+    faction: ids[0],
+    preferredFactions: [...ids, ids[0]],
+  };
+  execute(s, member, command);
+  assert.deepEqual(viewState(s, member).me.preferredFactions, ids);
+  assert.throws(
+    () => execute(s, member, { ...command, preferredFactions: ["unknown"] }),
+    /Unknown faction/,
+  );
+  assert.deepEqual(member.preferredFactions, ids);
+  execute(s, member, { ...command, preferredFactions: [] });
+  assert.deepEqual(member.preferredFactions, []);
+});
+
+test("game army snapshots enforce the 3 DP budget for either army", () => {
+  const s = structuredClone(baseline);
+  const member = s.users.find((u) => u.id === "p1")!;
+  const game = s.games.find((g) => g.userId === member.id)!;
+  const rules = structuredClone(catalogue);
+  const faction = rules.factions.find((f) => f.detachments.length >= 2)!;
+  faction.detachments[0].points = 2;
+  faction.detachments[1].points = 1;
+  const detachments = faction.detachments.slice(0, 2).map((d) => d.id);
+  const army = {
+    faction: faction.id,
+    detachments,
+    disposition: dispositionsFor(faction.id, detachments, rules)[0].id,
+    listUrl: "",
+  };
+  const patch = s.patches!.find((p) => p.id === game.patchId)!;
+  patch.catalogue = rules;
+  const command = {
+    ...game,
+    id: undefined,
+    type: "game",
+    layout: "A",
+    own: army,
+    enemy: army,
+  };
+  execute(s, member, command);
+  const count = s.games.length;
+  faction.detachments[1].points = 2;
+  for (const side of ["own", "enemy"]) {
+    const valid = {
+      ...army,
+      detachments: [detachments[0]],
+      disposition: dispositionsFor(faction.id, [detachments[0]], rules)[0].id,
+    };
+    assert.throws(
+      () =>
+        execute(s, member, {
+          ...command,
+          own: valid,
+          enemy: valid,
+          [side]: army,
+        }),
+      /at most 3 DP/,
+    );
+    assert.equal(s.games.length, count);
+  }
+});
+
 test("game boundaries validate score, URL, ownership and date", () => {
   const s = structuredClone(baseline),
     u = s.users.find((u) => u.id === "p1")!,

@@ -26,12 +26,15 @@ export function armySnapshot(
     listUrl: string;
   },
   data: Catalogue = catalogue,
+  maxDP = Infinity,
 ): Army {
   const faction = data.factions.find((f) => f.id === input.faction);
   if (!faction) throw new Error("Choose a valid faction.");
   const selected = faction.detachments.filter((d) =>
     input.detachments.includes(d.id),
   );
+  if (selected.reduce((sum, d) => sum + d.points, 0) > maxDP)
+    throw new Error(`Choose detachments totalling at most ${maxDP} DP.`);
   if (
     input.detachments.length > 3 ||
     selected.length !== input.detachments.length ||

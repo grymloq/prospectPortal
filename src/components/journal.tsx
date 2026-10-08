@@ -25,14 +25,28 @@ export function ArmyFields({
   value,
   onChange,
   rules = catalogue,
+  preferredFactions = [],
+  maxDP = Infinity,
 }: {
   title: string;
   value: Choice;
   onChange: (c: Choice) => void;
   rules?: Catalogue;
+  preferredFactions?: string[];
+  maxDP?: number;
 }) {
   const faction = rules.factions.find((f) => f.id === value.faction),
     available = dispositionsFor(value.faction, value.detachments, rules);
+  const points =
+    faction?.detachments
+      .filter((d) => value.detachments.includes(d.id))
+      .reduce((sum, d) => sum + d.points, 0) || 0;
+  const preferred = rules.factions.filter((f) =>
+    preferredFactions.includes(f.id),
+  );
+  const others = rules.factions.filter(
+    (f) => !preferredFactions.includes(f.id),
+  );
   return (
     <fieldset className="army-fields">
       <legend>{title}</legend>
@@ -46,7 +60,16 @@ export function ArmyFields({
               Choose an army for this ruleset
             </option>
           )}
-          {rules.factions.map((f) => (
+          {preferred.length > 0 && (
+            <optgroup label="Preferred armies">
+              {preferred.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {others.map((f) => (
             <option key={f.id} value={f.id}>
               {f.name}
             </option>
@@ -55,7 +78,11 @@ export function ArmyFields({
       </Field>
       <div className="field">
         <span>
-          Detachments <small>({value.detachments.length}/3)</small>
+          Detachments{" "}
+          <small>
+            ({value.detachments.length}/3
+            {Number.isFinite(maxDP) ? ` · ${points}/${maxDP} DP` : ""})
+          </small>
         </span>
         <div className="detachment-options">
           {faction?.detachments.map((d) => (
@@ -65,7 +92,7 @@ export function ArmyFields({
                 checked={value.detachments.includes(d.id)}
                 disabled={
                   !value.detachments.includes(d.id) &&
-                  value.detachments.length >= 3
+                  (value.detachments.length >= 3 || points + d.points > maxDP)
                 }
                 onChange={(e) => {
                   const selected = e.target.checked
@@ -405,9 +432,17 @@ export default function Journal({
                 value={own}
                 onChange={setOwn}
                 rules={rules}
+                maxDP={3}
+                preferredFactions={
+                  view.me.preferredFactions ?? [view.me.faction]
+                }
               />
               <ArmyFields
                 rules={rules}
+                maxDP={3}
+                preferredFactions={
+                  view.me.preferredFactions ?? [view.me.faction]
+                }
                 title="Opponent's army"
                 value={enemy}
                 onChange={setEnemy}
