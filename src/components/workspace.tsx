@@ -1,6 +1,6 @@
 "use client";
 import TeamLogo from "@/components/team-logo";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   Users,
   BookOpen,
@@ -45,16 +45,95 @@ export default function Workspace({
     [busy, setBusy] = useState(false),
     [journalKey, setJournalKey] = useState(0);
   const [scrimId, setScrimId] = useState("");
+  const [scrimSection, setScrimSection] = useState("Our Team");
+  const [locationOwner, setLocationOwner] = useState("");
+  const locationKey = view
+    ? `team-sweden:location:v1:${view.me.id}:${view.me.role}`
+    : "";
+  const restoredOwner = useRef("");
+  function acceptView(view: View | null) {
+    setView(view);
+    if (!view) {
+      restoredOwner.current = "";
+      setLocationOwner("");
+      return;
+    }
+    const locationKey = `team-sweden:location:v1:${view.me.id}:${view.me.role}`;
+    if (restoredOwner.current === locationKey) return;
+    restoredOwner.current = locationKey;
+    let saved: {
+      page?: string;
+      profileId?: string;
+      scrimId?: string;
+      scrimSection?: string;
+    } = {};
+    try {
+      saved = JSON.parse(localStorage.getItem(locationKey) || "{}");
+    } catch {
+      /* Storage may be unavailable or contain an older value. */
+    }
+    const pages = [
+      "Profile",
+      "Game journal",
+      "My armies",
+      "Matchup matrix",
+      "Calendar",
+      "Scrims",
+      ...(view.me.role === "admin"
+        ? ["Prospects", "Selection", "Users", "Settings"]
+        : []),
+    ];
+    setPage(
+      saved && pages.includes(saved.page || "")
+        ? saved.page!
+        : view.me.role === "admin"
+          ? "Prospects"
+          : "Profile",
+    );
+    setProfileId(
+      view.users.some((user) => user.id === saved?.profileId)
+        ? saved.profileId!
+        : "",
+    );
+    setScrimId(
+      view.scrims?.some((scrim) => scrim.id === saved?.scrimId)
+        ? saved.scrimId!
+        : "",
+    );
+    setScrimSection(
+      [
+        "Our Team",
+        "Opposing Team",
+        "Matrix",
+        "Pairings & results",
+        "Manage teams",
+      ].includes(saved?.scrimSection || "")
+        ? saved.scrimSection!
+        : "Our Team",
+    );
+    setLocationOwner(locationKey);
+  }
+  useEffect(() => {
+    if (!locationKey || locationOwner !== locationKey) return;
+    try {
+      localStorage.setItem(
+        locationKey,
+        JSON.stringify({ page, profileId, scrimId, scrimSection }),
+      );
+    } catch {
+      /* Navigation still works if storage is blocked. */
+    }
+  }, [locationKey, locationOwner, page, profileId, scrimId, scrimSection]);
   async function reload() {
     try {
       const r = await fetch("/api/state", { cache: "no-store" });
       if (r.status === 401) {
-        setView(null);
+        acceptView(null);
         return;
       }
       const data = await r.json();
       if (!r.ok) throw new Error(data.error);
-      setView(data);
+      acceptView(data);
       setError("");
     } catch (e) {
       setError((e as Error).message);
@@ -71,7 +150,7 @@ export default function Workspace({
         return r.json();
       })
       .then((data) => {
-        setView(data);
+        acceptView(data);
         setLoading(false);
       })
       .catch((e) => {
@@ -95,10 +174,10 @@ export default function Workspace({
         fetch("/api/state", { cache: "no-store", signal: controller.signal })
           .then(async (r) => {
             if (r.status === 401) {
-              setView(null);
+              acceptView(null);
               return;
             }
-            if (r.ok) setView(await r.json());
+            if (r.ok) acceptView(await r.json());
           })
           .catch(() => {
             /* Manual refresh remains available if disconnected. */
@@ -130,7 +209,7 @@ export default function Workspace({
       );
       const data = await r.json();
       if (!r.ok) throw new Error(data.error);
-      setView(data);
+      acceptView(data);
       setNotice("Changes saved");
       window.setTimeout(() => setNotice(""), 3000);
       return true;
@@ -161,7 +240,6 @@ export default function Workspace({
       <Auth
         localDemo={localDemo}
         onLogin={async () => {
-          setPage("Prospects");
           await reload();
         }}
       />
@@ -246,7 +324,7 @@ export default function Workspace({
               onClick={async () => {
                 const r = await fetch("/api/session", { method: "DELETE" });
                 if (r.ok) {
-                  setView(null);
+                  acceptView(null);
                   setProfileId("");
                 } else setError("Could not sign out. Please retry.");
               }}
@@ -276,7 +354,7 @@ export default function Workspace({
                 aria-label="Sign out of account"
                 onClick={async () => {
                   const r = await fetch("/api/session", { method: "DELETE" });
-                  if (r.ok) setView(null);
+                  if (r.ok) acceptView(null);
                 }}
               >
                 <LogOut size={16} />
@@ -335,7 +413,7 @@ export default function Workspace({
               />
             )}{" "}
             {admin && currentPage === "Users" && (
-              <UserManagement view={view} mutate={mutate} onView={setView} />
+              <UserManagement view={view} mutate={mutate} onView={acceptView} />
             )}
             {currentPage === "Matchup matrix" && (
               <MatchupMatrix view={view} mutate={mutate} />
@@ -358,6 +436,8 @@ export default function Workspace({
                 view={view}
                 mutate={mutate}
                 selectedId={scrimId}
+                section={scrimSection}
+                onSection={setScrimSection}
                 onSelect={setScrimId}
               />
             )}

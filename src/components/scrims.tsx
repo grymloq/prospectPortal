@@ -17,17 +17,20 @@ export default function Scrims({
   mutate,
   selectedId,
   onSelect,
+  section,
+  onSection,
 }: {
   view: View;
   mutate: Mutate;
   selectedId: string;
   onSelect: (id: string) => void;
+  section: string;
+  onSection: (section: string) => void;
 }) {
   const scrims = view.scrims || [];
   const scrim = scrims.find((s) => s.id === selectedId);
   const event = view.events.find((e) => e.id === scrim?.eventId);
   const [busy, setBusy] = useState(false);
-  const [section, setSection] = useState("Our Team");
   const [cancel, setCancel] = useState(false);
   const admin = view.me.role === "admin";
   const score = scrim ? scrimScore(scrim) : null;
@@ -152,7 +155,7 @@ export default function Scrims({
                 className={activeSection === name ? "primary" : ""}
                 aria-pressed={activeSection === name}
                 disabled={name === "Opposing Team" && !opposingUnlocked}
-                onClick={() => setSection(name)}
+                onClick={() => onSection(name)}
               >
                 {name}
               </button>

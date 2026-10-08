@@ -442,3 +442,7 @@ Admins have a Users directory including Supabase accounts which have not yet ope
 **Confirmed:** Dismissing a modal after changing its form asks whether to keep editing or close. Clicking outside, the close button, Escape, and Cancel use the same protection. Closing keeps the form input and restores it when that specific form is reopened. Untouched forms close immediately.
 
 **Implementation convention:** Drafts belong to the current signed-in workspace and specific edited item. Both ordinary fields and controlled army/roster/pairing selections are restored. Successful submission consumes the draft. Drafts survive navigation within the workspace, but are cleared on sign-out, account or role changes, and page reload; they are not published or written to another user's storage. Dismissal is disabled while a form is saving/importing. Passwords, file inputs and read-only invitation links are excluded from draft capture.
+
+## 17. Remembered workspace location
+
+**Confirmed:** Reloading or returning to the application restores the last workspace section, selected scrim and scrim tab. Navigation preferences persist in this browser per signed-in account and role. Restoration validates available pages and records against the current authorized server response; unavailable records fall back to the section overview. This stores only navigation identifiers, not forms or private content.
