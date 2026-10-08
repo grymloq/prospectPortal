@@ -10,6 +10,75 @@ const { execute, viewState } = await import("../src/server/service");
 const { armySnapshot, catalogue, dispositionsFor, defaultDisposition } =
   await import("../src/lib/catalogue");
 const baseline = readState();
+
+test("feedback preserves sender identity and is visible only to admins", async () => {
+  const s = structuredClone(baseline);
+  const member = s.users.find((u) => u.role === "member")!;
+  const admin = s.users.find((u) => u.role === "admin")!;
+  const { feedbackAttachment } = await import("../src/server/feedback");
+  const data =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a4b8AAAAASUVORK5CYII=";
+  execute(s, member, {
+    type: "feedback",
+    category: "Bug",
+    text: "The matrix needs a fix",
+    page: "Matchup matrix",
+    userId: admin.id,
+    authorName: "Forged",
+    attachments: [{ name: "screen.png", data }],
+  });
+  const feedback = s.feedback![0];
+  assert.equal(feedback.userId, member.id);
+  assert.equal(feedback.authorName, member.name);
+  assert.equal(feedback.authorEmail, member.email);
+  assert.deepEqual(viewState(s, member).feedback, []);
+  const shown = viewState(s, admin).feedback![0];
+  assert.equal(shown.text, "The matrix needs a fix");
+  assert.deepEqual(shown.attachments, [{ name: "screen.png" }]);
+  assert.throws(() => feedbackAttachment(s, member, feedback.id, 0), /Admin/);
+  assert.equal(
+    feedbackAttachment(s, admin, feedback.id, 0).contentType,
+    "image/png",
+  );
+  assert.throws(
+    () => feedbackAttachment(s, admin, feedback.id, 9),
+    /not found/,
+  );
+  admin.confirmedMember = false;
+  assert.throws(() => feedbackAttachment(s, admin, feedback.id, 0));
+});
+
+test("feedback rejects empty messages, unsupported labels and invalid attachments", () => {
+  const s = structuredClone(baseline);
+  const member = s.users.find((u) => u.role === "member")!;
+  const c = {
+    type: "feedback",
+    category: "Suggestion",
+    text: "",
+    page: "Profile",
+    attachments: [],
+  };
+  assert.throws(() => execute(s, member, c), /Enter feedback/);
+  assert.throws(() =>
+    execute(s, member, { ...c, text: "hi", category: "Other" }),
+  );
+  for (const data of [
+    "data:image/svg+xml;base64,PHN2Zz4=",
+    "data:image/png;base64,YmFk",
+    `data:image/jpeg;base64,${"A".repeat(700001)}`,
+  ]) {
+    assert.throws(() =>
+      execute(s, member, { ...c, attachments: [{ name: "image", data }] }),
+    );
+  }
+  assert.equal(s.feedback?.length || 0, 0);
+  execute(s, member, {
+    ...c,
+    category: "Request",
+    text: "Please add this feature.",
+  });
+  assert.equal(s.feedback![0].category, "Request");
+});
 test("online calendar events accept a join link without a venue and keep admin authorization", () => {
   const s = structuredClone(baseline);
   const admin = s.users.find((u) => u.role === "admin")!;

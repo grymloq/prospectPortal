@@ -7,6 +7,7 @@ import { armyKey, outcomeForScore } from "@/lib/matchups";
 import { ensurePatches, defaultPatchId } from "@/lib/patches";
 import { ensureMembership, requireMember } from "./membership";
 import { executeScrim, scrimCommands, scrimView } from "./scrims";
+import { feedbackCommand, submitFeedback } from "./feedback";
 const text = z.string().trim().min(1).max(5000),
   id = z.string().min(1).max(100);
 const url = z
@@ -32,6 +33,7 @@ const army = z.object({
   listUrl: url,
 });
 const commands = z.discriminatedUnion("type", [
+  feedbackCommand,
   ...scrimCommands,
   z.object({
     type: z.literal("userConfirmation"),
@@ -192,6 +194,12 @@ export function viewState(s: State, actor: User): View {
   const admin = actor.role === "admin";
   return {
     me: publicUser(actor),
+    feedback: admin
+      ? (s.feedback || []).map((f) => ({
+          ...f,
+          attachments: f.attachments.map((a) => ({ name: a.name })),
+        }))
+      : [],
     scrims: (s.scrims || []).map((scrim) => scrimView(s, scrim, actor)),
     playerOptions: s.users
       .filter((u) => !u.removedAt && u.confirmedMember && u.id !== actor.id)
@@ -242,6 +250,10 @@ export function execute(s: State, actor: User, input: unknown) {
   requireMember(actor);
   ensurePatches(s);
   const c = commands.parse(input);
+  if (c.type === "feedback") {
+    submitFeedback(s, actor, c);
+    return;
+  }
   if (c.type.startsWith("scrim")) {
     executeScrim(s, actor, c);
     return;

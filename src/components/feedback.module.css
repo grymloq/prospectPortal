@@ -1,0 +1,116 @@
+.launcher {
+  position: fixed;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid #102b49;
+  border-radius: 24px;
+  background: #f5cf45;
+  color: #102b49;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 4px 18px #102b4930;
+}
+.attachControls,
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  position: relative;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.upload:focus-within {
+  outline: 2px solid #102b49;
+  outline-offset: 2px;
+}
+.upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+}
+.upload:has(input:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+.previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 12px 0;
+}
+.previews figure {
+  margin: 0;
+  width: min(100%, 360px);
+}
+.previews img {
+  display: block;
+  max-width: 100%;
+  max-height: 250px;
+  object-fit: contain;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
+.previews figcaption {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  margin-top: 6px;
+}
+.previews figcaption button {
+  margin-left: 8px;
+}
+.tableWrap {
+  overflow-x: auto;
+  background: white;
+  border: 1px solid #dce2e9;
+  border-radius: 8px;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table th,
+.table td {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: top;
+}
+.summary {
+  min-width: 160px;
+  overflow-wrap: anywhere;
+}
+.detail {
+  padding: 8px;
+}
+.message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.filters {
+  margin-bottom: 18px;
+  align-items: end;
+}
+@media (max-width: 600px) {
+  .launcher {
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    padding: 10px 12px;
+    font-size: 11px;
+  }
+}

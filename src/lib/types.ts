@@ -147,6 +147,7 @@ export type ManualEstimate = {
   authorName: string;
 };
 export type State = {
+  feedback?: Feedback[];
   membershipCutoverAt?: string;
   scrims?: Scrim[];
   savedArmies?: {
@@ -180,6 +181,21 @@ export type State = {
   events: TeamEvent[];
   applications: EventApplication[];
   audit: Audit[];
+};
+export type FeedbackAttachment = {
+  name: string;
+  data?: string;
+};
+export type Feedback = {
+  id: string;
+  userId: string;
+  authorName: string;
+  authorEmail: string;
+  category: "Suggestion" | "Request" | "Bug";
+  text: string;
+  page: string;
+  createdAt: string;
+  attachments: FeedbackAttachment[];
 };
 export type ScrimComment = {
   id: string;

@@ -81,6 +81,44 @@ try {
   });
   assert.equal(player.status, 200);
   const memberView = await request("/api/state", null, player.cookie);
+  const feedbackSubmission = await request(
+    "/api/state",
+    {
+      type: "feedback",
+      category: "Bug",
+      text: "HTTP feedback test",
+      page: "Profile",
+      attachments: [
+        {
+          name: "test.png",
+          data: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a4b8AAAAASUVORK5CYII=",
+        },
+      ],
+    },
+    player.cookie,
+  );
+  const feedbackAdmin = await request("/api/state", null, admin.cookie);
+  check("feedback submission is persisted and hidden from members", () => {
+    assert.equal(feedbackSubmission.status, 200);
+    assert.deepEqual(feedbackSubmission.data.feedback, []);
+    assert.equal(feedbackAdmin.data.feedback[0].text, "HTTP feedback test");
+    assert.equal(feedbackAdmin.data.feedback[0].attachments[0].data, undefined);
+  });
+  const imagePath = `/api/feedback/${feedbackAdmin.data.feedback[0].id}/0`;
+  const adminImage = await fetch(origin + imagePath, {
+    headers: { Cookie: admin.cookie },
+  });
+  const blockedImage = await fetch(origin + imagePath, {
+    headers: { Cookie: player.cookie },
+  });
+  const anonymousImage = await fetch(origin + imagePath);
+  check("feedback images require an admin session and are not cached", () => {
+    assert.equal(adminImage.status, 200);
+    assert.equal(adminImage.headers.get("content-type"), "image/png");
+    assert.match(adminImage.headers.get("cache-control"), /no-store/);
+    assert.equal(blockedImage.status, 403);
+    assert.equal(anonymousImage.status, 401);
+  });
   const importBody = {
     url: "https://www.newrecruit.eu/app/list/OxJAH",
     patchId: "2026-09-02",

@@ -47,6 +47,7 @@ export async function cloudView(
   identity: AuthUser,
   command?: unknown,
   trustedUpdate?: (state: State, actor: User) => void,
+  inspect?: (state: State, actor: User) => void,
 ): Promise<View> {
   const db = databaseClient();
   for (let attempt = 0; attempt < 12; attempt++) {
@@ -70,6 +71,7 @@ export async function cloudView(
       if (trustedUpdate) trustedUpdate(state, actor);
     }
     const view = denied ? null : viewState(state, actor);
+    if (!denied && inspect) inspect(state, actor);
     if (
       !changed &&
       !migrated &&

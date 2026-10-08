@@ -248,6 +248,18 @@ hr {
   flex-direction: column;
   gap: 5px;
 }
+@media (min-width: 761px) {
+  .sidebar nav {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .sidebar .brand,
+  .sidebar .nav-caption,
+  .sidebar-bottom {
+    flex-shrink: 0;
+  }
+}
 .admin-nav-divider {
   border-top: 1px solid #ffffff45;
   margin-top: 18px;
@@ -2712,3 +2724,4 @@ tbody .matrix-list-label span {
   overflow: visible;
   white-space: nowrap;
 }
+.page-footer { padding-bottom: 72px; }

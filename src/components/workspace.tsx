@@ -27,6 +27,7 @@ import Selection from "./selection";
 import UserManagement from "./user-management";
 import { Avatar } from "./ui";
 import { ModalDraftProvider } from "./modal-drafts";
+import BetaFeedback, { FeedbackInbox } from "./feedback";
 export type Mutate = (
   command: object,
   onError?: (message: string) => void,
@@ -80,7 +81,7 @@ export default function Workspace({
       "Calendar",
       "Scrims",
       ...(view.me.role === "admin"
-        ? ["Prospects", "Selection", "Users", "Settings"]
+        ? ["Prospects", "Selection", "Users", "Settings", "Feedback inbox"]
         : []),
     ];
     setPage(
@@ -246,7 +247,10 @@ export default function Workspace({
     );
   const admin = view.me.role === "admin";
   const currentPage =
-    !admin && ["Prospects", "Selection", "Settings", "Users"].includes(page)
+    !admin &&
+    ["Prospects", "Selection", "Settings", "Users", "Feedback inbox"].includes(
+      page,
+    )
       ? "Profile"
       : page;
   const nav = [
@@ -266,6 +270,7 @@ export default function Workspace({
           { name: "Selection", page: "Selection", icon: Trophy },
           { name: "Users", page: "Users", icon: Users },
           { name: "Settings", page: "Settings", icon: Settings },
+          { name: "Feedback inbox", page: "Feedback inbox", icon: BookOpen },
         ]
       : []),
   ];
@@ -389,6 +394,9 @@ export default function Workspace({
             </div>
           )}
           <div className="page-content" aria-busy={busy}>
+            {admin && currentPage === "Feedback inbox" && (
+              <FeedbackInbox view={view} />
+            )}
             {currentPage === "Prospects" && (
               <Prospects
                 view={view}
@@ -461,6 +469,10 @@ export default function Workspace({
           </footer>
         </main>
       </div>
+      <BetaFeedback
+        mutate={mutate}
+        page={`${currentPage}${currentPage === "Scrims" && scrimId ? ` / ${scrimId} / ${scrimSection}` : currentPage === "Profile" ? ` / ${admin ? profileId || view.me.id : view.me.id}` : ""}`}
+      />
     </ModalDraftProvider>
   );
 }
