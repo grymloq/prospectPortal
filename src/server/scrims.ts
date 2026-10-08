@@ -1,14 +1,9 @@
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { Army, Layout, Scrim, ScrimTeam, State, User } from "@/lib/types";
+import { matchupDatabase } from "@/lib/matchup-database";
 import { armySnapshot, catalogue } from "@/lib/catalogue";
-import {
-  armyKey,
-  cellKey,
-  layouts,
-  matrixWithManual,
-  outcomeForScore,
-} from "@/lib/matchups";
+import { armyKey, cellKey, layouts, outcomeForScore } from "@/lib/matchups";
 import {
   onScrimTeam,
   rosterWarnings,
@@ -159,49 +154,34 @@ function rulesFor(state: State, scrim: Scrim) {
   );
 }
 function databaseMatrix(state: State, scrim: Scrim, actor?: User) {
-  // Archive configurations are public reference data; private libraries and
-  // journals must never become visible through a team's preparation matrix.
-  const archive = [
-    ...(actor
-      ? state.games
-          .filter(
-            (game) =>
-              game.patchId === scrim.patchId &&
-              (actor.role === "admin" || game.userId === actor.id),
-          )
-          .flatMap((game) =>
-            [game.own, game.enemy].map((army, index) => ({
-              id: `journal-${game.id}-${index}`,
-              userId: actor.id,
-              patchId: scrim.patchId,
-              army,
-              authorName: "",
-              updatedAt: "",
-            })),
-          )
-      : []),
-    ...(state.matrixListHistory || []).map((entry, index) => ({
-      ...entry,
-      id: `history-${index}`,
-      userId: "",
-    })),
-    ...(state.savedArmies || [])
-      .filter(
-        (entry) =>
-          entry.shared &&
-          state.users.some(
-            (user) => user.id === entry.userId && !user.removedAt,
+  const source = {
+    ...state,
+    savedArmies: (state.savedArmies || []).filter(
+      (entry) =>
+        entry.shared &&
+        state.users.some((user) => user.id === entry.userId && !user.removedAt),
+    ),
+  };
+  const shared = matchupDatabase({ ...source, games: [] }, scrim.patchId);
+  const visible = actor
+    ? matchupDatabase(
+        {
+          ...source,
+          games: state.games.filter(
+            (game) => actor.role === "admin" || game.userId === actor.id,
           ),
+        },
+        scrim.patchId,
       )
-      .map((entry) => ({ ...entry, authorName: entry.ownerName })),
-    ...(state.matrixLists || []),
-  ];
-  return matrixWithManual(
-    [],
-    scrim.patchId,
-    archive,
-    state.manualEstimates || [],
-  );
+    : shared;
+  // Journal configurations follow the same authorized source as the main matrix.
+  // Journal scores remain personal reference data, never shared plan defaults.
+  return {
+    ...visible,
+    effective: shared.effective,
+    cells: shared.cells,
+    manual: shared.manual,
+  };
 }
 function databaseId(army: Army) {
   return `db:${createHash("sha256").update(armyKey(army)).digest("hex")}`;

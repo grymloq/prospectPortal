@@ -10,6 +10,7 @@ const { readState, db, transaction } = await import("../src/server/store");
 const { execute, viewState } = await import("../src/server/service");
 const { catalogue, armySnapshot } = await import("../src/lib/catalogue");
 const { armyKey, buildMatchups } = await import("../src/lib/matchups");
+const { matchupDatabase } = await import("../src/lib/matchup-database");
 const { scrimScore } = await import("../src/lib/scrims");
 const { ensureMembership } = await import("../src/server/membership");
 const { stockholmLocal } = await import("../src/lib/stockholm");
@@ -684,6 +685,14 @@ test("scrim preparation includes shared army archives and historical configurati
     },
   ];
   const visible = viewState(f.s, f.member(1)).scrims![0];
+  assert.deepEqual(
+    new Set(visible.databaseEntries!.map((entry) => armyKey(entry.army!))),
+    new Set(
+      matchupDatabase(viewState(f.s, f.member(1)), f.scrim.patchId).armies.map(
+        (entry) => entry.key,
+      ),
+    ),
+  );
   assert.deepEqual(
     new Set(visible.databaseEntries!.map((e) => armyKey(e.army!))),
     new Set([armyKey(publicArmy), armyKey(historicalArmy)]),

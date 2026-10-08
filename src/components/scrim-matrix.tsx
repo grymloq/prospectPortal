@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
 import type { Scrim, ScrimEstimate, ScrimTeam, View } from "@/lib/types";
-import { layouts } from "@/lib/matchups";
+import { armyKey, cellKey, layouts, type Matchup } from "@/lib/matchups";
+import { matchupDatabase } from "@/lib/matchup-database";
+import MatchupTable, { MatrixAverageBadge } from "./matchup-table";
 import { onScrimTeam } from "@/lib/scrims";
 import { Field, Modal } from "./ui";
 import type { Mutate } from "./workspace";
@@ -28,6 +30,83 @@ export default function ScrimMatrix({
     ? other?.entries.filter((entry) => entry.army) || []
     : scrim.databaseEntries || [];
   const submitted = team?.entries.filter((entry) => entry.army) || [];
+  const base = matchupDatabase(view, scrim.patchId);
+  const rows = submitted.map((entry) => ({
+    key: entry.id,
+    army: {
+      ...entry.army!,
+      listName: `${entry.name} · ${entry.army!.listName || entry.army!.factionName}`,
+    },
+  }));
+  const columns = opponents.map((entry) => ({
+    key: entry.id,
+    army: entry.army!,
+  }));
+  const effective = new Map<string, Matchup>();
+  const manual = new Set<string>();
+  for (const own of submitted)
+    for (const enemy of opponents) {
+      const cell = team!.estimates.find(
+        (c) => c.ownId === own.id && c.enemyId === enemy.id,
+      );
+      const key = cellKey(own.id, enemy.id);
+      const reference = base.effective.get(
+        cellKey(armyKey(own.army!), armyKey(enemy.army!)),
+      );
+      const scores = ready || cell?.history?.length ? cell?.scores : undefined;
+      const matchup = Object.fromEntries(
+        layouts.map((layout) => {
+          const value = scores?.[layout];
+          if (value !== undefined && value !== null) manual.add(key + layout);
+          return [
+            layout,
+            scores
+              ? {
+                  count: value === null || value === undefined ? 0 : 1,
+                  total: value || 0,
+                  average: value || 0,
+                }
+              : reference?.[layout] || { count: 0, total: 0, average: 0 },
+          ];
+        }),
+      ) as Matchup;
+      effective.set(key, matchup);
+      effective.set(
+        cellKey(enemy.id, own.id),
+        Object.fromEntries(
+          layouts.map((layout) => [
+            layout,
+            {
+              ...matchup[layout],
+              average: matchup[layout].count ? 20 - matchup[layout].average : 0,
+              total: matchup[layout].count
+                ? (20 - matchup[layout].average) * matchup[layout].count
+                : 0,
+            },
+          ]),
+        ) as Matchup,
+      );
+    }
+  const [markedRows, markRows] = useState<string[]>([]);
+  const [markedColumns, markColumns] = useState<string[]>([]);
+  const [hover, hoverChange] = useState<{ row?: string; column?: string }>({});
+  const highlight = (row?: string, column?: string) =>
+    [
+      (row && markedRows.includes(row)) ||
+      (column && markedColumns.includes(column))
+        ? "matrix-marked"
+        : "",
+      (row && hover.row === row) || (column && hover.column === column)
+        ? "matrix-hovered"
+        : "",
+    ].join(" ");
+  const averageBadge = (key: string, opponents: string[]) => (
+    <MatrixAverageBadge
+      data={{ effective }}
+      keyId={key}
+      opponents={opponents}
+    />
+  );
   const canEdit = !!team && onScrimTeam(team, view.me.id) && !scrim.cancelled;
   return (
     <section className={styles.card}>
@@ -72,76 +151,35 @@ export default function ScrimMatrix({
               ? "Shared matrix estimates provide the starting values; changes here affect only this scrim."
               : "Your submitted lists are shown against all accessible lists in the matchup database for this rules patch. Shared estimates provide starting scores; your edits and comments stay private to this team and scrim. Once opposing lists are revealed, only that team's lists will appear."}
           </p>
-          <div
-            className={styles.tableScroll}
-            tabIndex={0}
-            role="region"
-            aria-label={`${team.name} matchup matrix, scroll horizontally for all players`}
-          >
-            <table className={styles.matrix}>
-              <thead>
-                <tr>
-                  <th scope="col">
-                    {team.name} ↓<br />
-                    {ready ? other?.name : "Database lists"} →
-                  </th>
-                  {opponents.map((entry) => (
-                    <th scope="col" key={entry.id}>
-                      {entry.name}
-                      <small>{entry.army?.factionName}</small>
-                      <small>
-                        {entry.army?.listName} · {entry.army?.dispositionName}
-                      </small>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {submitted.map((entry) => (
-                  <tr key={entry.id}>
-                    <th scope="row">
-                      {entry.name}
-                      <small>{entry.army?.factionName}</small>
-                      <small>
-                        {entry.army?.listName} · {entry.army?.dispositionName}
-                      </small>
-                    </th>
-                    {opponents.map((enemy) => {
-                      const cell = team.estimates.find(
-                        (c) => c.ownId === entry.id && c.enemyId === enemy.id,
-                      );
-                      return (
-                        <td key={enemy.id}>
-                          {cell ? (
-                            <button
-                              aria-label={`${entry.name} versus ${enemy.name}, estimates and comments`}
-                              onClick={() => setEditing(cell)}
-                            >
-                              <span>
-                                {layouts
-                                  .map(
-                                    (l) =>
-                                      `${l}: ${cell.scores[l] === null ? "—" : Math.round(cell.scores[l]! * 10) / 10}`,
-                                  )
-                                  .join(" / ")}
-                              </span>
-                              <small>
-                                {cell.comments.length
-                                  ? `${cell.comments.length} comment${cell.comments.length === 1 ? "" : "s"}`
-                                  : "Estimates & comments"}
-                              </small>
-                            </button>
-                          ) : (
-                            "—"
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <MatchupTable
+            rows={rows}
+            columns={columns}
+            data={{ effective, manual }}
+            highlight={highlight}
+            hoverChange={hoverChange}
+            markedRows={markedRows}
+            markedColumns={markedColumns}
+            markRows={markRows}
+            markColumns={markColumns}
+            averageBadge={averageBadge}
+            onCell={(row, column) => {
+              const cell = team.estimates.find(
+                (c) => c.ownId === row.key && c.enemyId === column.key,
+              );
+              if (cell)
+                setEditing({
+                  ...cell,
+                  scores: Object.fromEntries(
+                    layouts.map((layout) => {
+                      const value = effective.get(
+                        cellKey(row.key, column.key),
+                      )?.[layout];
+                      return [layout, value?.count ? value.average : null];
+                    }),
+                  ) as ScrimEstimate["scores"],
+                });
+            }}
+          />
         </>
       )}
       {editing && team && (
