@@ -127,7 +127,9 @@ export default function MatchupMatrix({
   const [adding, setAdding] = useState(false);
   const [choice, setChoice] = useState<Choice>(blank());
   const [busy, setBusy] = useState(false);
-  const [patch, setPatch] = useState(view.patches[0]?.id || "");
+  const [patch, setPatch] = useState(
+    view.defaultPatchId || view.patches.find((p) => !p.removedAt)?.id || "",
+  );
   const data = useMemo(
     () =>
       matrixWithManual(

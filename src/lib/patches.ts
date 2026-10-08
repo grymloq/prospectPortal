@@ -8,6 +8,7 @@ export function patchLabel(patch: Patch) {
   return patch.name + " — " + patch.date;
 }
 export function ensurePatches(state: State) {
+  // Defaults are resolved without changing historical records.
   let changed = false;
   if (!state.patches) {
     state.patches = [{ ...initialPatch }];
@@ -21,4 +22,14 @@ export function ensurePatches(state: State) {
     changed = true;
   }
   return changed;
+}
+export function defaultPatchId(
+  state: Pick<State, "patches" | "defaultPatchId">,
+) {
+  const active = (state.patches || []).filter((p) => !p.removedAt);
+  return (
+    active.find((p) => p.id === state.defaultPatchId)?.id ||
+    [...active].sort((a, b) => b.date.localeCompare(a.date))[0]?.id ||
+    ""
+  );
 }

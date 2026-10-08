@@ -428,18 +428,26 @@ export default function Journal({
                   required
                   defaultValue={
                     edit === "new"
-                      ? view.patches[0]?.id || ""
+                      ? view.defaultPatchId ||
+                        view.patches.find((p) => !p.removedAt)?.id ||
+                        ""
                       : edit.patchId || ""
                   }
                 >
                   <option value="" disabled>
                     Choose a patch
                   </option>
-                  {view.patches.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {patchLabel(p)}
-                    </option>
-                  ))}
+                  {view.patches
+                    .filter(
+                      (p) =>
+                        !p.removedAt ||
+                        (edit !== "new" && edit.patchId === p.id),
+                    )
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {patchLabel(p)}
+                      </option>
+                    ))}
                 </select>
               </Field>
               <Field label="Context">

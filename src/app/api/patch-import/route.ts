@@ -3,6 +3,8 @@ import { localMode } from "@/server/config";
 import { sameOrigin } from "@/server/session";
 import { authClient } from "@/server/supabase";
 import { cloudView } from "@/server/cloud-store";
+import { z } from "zod";
+import { fetchWarmindPatch } from "@/server/warmind-patch";
 import {
   fetchNewRecruitPatch,
   importNewRecruitPatch,
@@ -14,6 +16,13 @@ export async function POST(req: NextRequest) {
   const headers = { "Cache-Control": "private, no-store" };
   try {
     sameOrigin(req);
+    const { provider } = z
+      .object({
+        provider: z.enum(["newrecruit", "warmind"]).default("newrecruit"),
+      })
+      .parse(await req.json());
+    const fetchPatch =
+      provider === "warmind" ? fetchWarmindPatch : fetchNewRecruitPatch;
     if (localMode()) {
       const { sessionUserId } = await import("@/server/local/session");
       const { readState, transaction } = await import("@/server/store");
@@ -26,7 +35,7 @@ export async function POST(req: NextRequest) {
           { status: 401, headers },
         );
       requirePatchAdmin(actor);
-      const patch = await fetchNewRecruitPatch();
+      const patch = await fetchPatch();
       const view = transaction((state) => {
         const current = state.users.find((u) => u.id === id);
         if (!current) throw new Error("Admin access required.");
@@ -46,7 +55,7 @@ export async function POST(req: NextRequest) {
         { status: 401, headers },
       );
     requirePatchAdmin((await cloudView(user)).me);
-    const patch = await fetchNewRecruitPatch();
+    const patch = await fetchPatch();
     return NextResponse.json(
       await cloudView(user, undefined, (state, actor) => {
         importNewRecruitPatch(state, actor, patch);
@@ -60,7 +69,7 @@ export async function POST(req: NextRequest) {
       {
         error: forbidden
           ? message
-          : "Could not import the New Recruit rules patch. Try again later.",
+          : "Could not import the rules patch from the selected source. Try again later.",
       },
       { status: forbidden ? 403 : 400, headers },
     );

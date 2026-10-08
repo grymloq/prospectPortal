@@ -97,7 +97,11 @@ try {
     assert.equal(blockedInvite.status, 403);
   });
   const anonPatchImport = await request("/api/patch-import", {});
-  const memberPatchImport = await request("/api/patch-import", {}, player.cookie);
+  const memberPatchImport = await request(
+    "/api/patch-import",
+    {},
+    player.cookie,
+  );
   check("New Recruit rules imports require an administrator", () => {
     assert.equal(anonPatchImport.status, 401);
     assert.equal(memberPatchImport.status, 403);
@@ -200,6 +204,29 @@ try {
     assert.equal(patchesForPlayer.data.patches[0].date, "2026-10-01");
     assert.ok(memberView.data.games.every((g) => g.patchId === "2026-09-02"));
   });
+  const blockedDefault = await request(
+    "/api/state",
+    { type: "defaultPatch", patchId: "2026-10-01" },
+    player.cookie,
+  );
+  const changedDefault = await request(
+    "/api/state",
+    { type: "defaultPatch", patchId: "2026-09-02" },
+    admin.cookie,
+  );
+  const defaultForPlayer = await request("/api/state", null, player.cookie);
+  check(
+    "administrators choose the shared new-game default without changing history",
+    () => {
+      assert.equal(blockedDefault.status, 400);
+      assert.equal(changedDefault.status, 200);
+      assert.equal(defaultForPlayer.data.defaultPatchId, "2026-09-02");
+      assert.deepEqual(
+        defaultForPlayer.data.games,
+        patchesForPlayer.data.games,
+      );
+    },
+  );
   check("private server response", () => {
     assert.equal(memberView.data.users.length, 1);
     assert.equal(memberView.data.evaluations.length, 0);

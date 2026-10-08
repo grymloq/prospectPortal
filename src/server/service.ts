@@ -4,7 +4,7 @@ import type { State, User, View } from "@/lib/types";
 import { armySnapshot, catalogue } from "@/lib/catalogue";
 import { publicUser } from "./public-user";
 import { armyKey, outcomeForScore } from "@/lib/matchups";
-import { ensurePatches } from "@/lib/patches";
+import { ensurePatches, defaultPatchId } from "@/lib/patches";
 const text = z.string().trim().min(1).max(5000),
   id = z.string().min(1).max(100);
 const url = z
@@ -47,6 +47,9 @@ const commands = z.discriminatedUnion("type", [
     score: z.number().min(0).max(20).nullable(),
   }),
   z.object({ type: z.literal("patch"), name: text.max(100), date }),
+  z.object({ type: z.literal("defaultPatch"), patchId: id }),
+  z.object({ type: z.literal("removePatchImport"), patchId: id }),
+  z.object({ type: z.literal("restorePatchImport"), patchId: id }),
   z.object({
     type: z.literal("renamePatch"),
     patchId: id,
@@ -165,6 +168,7 @@ export function viewState(s: State, actor: User): View {
     matrixLists: s.matrixLists || [],
     manualEstimates: s.manualEstimates || [],
     patches: [...s.patches!].sort((a, b) => b.date.localeCompare(a.date)),
+    defaultPatchId: defaultPatchId(s),
     users: s.users.filter((u) => admin || u.id === actor.id).map(publicUser),
     phases: s.phases,
     games: s.games
@@ -358,6 +362,34 @@ export function execute(s: State, actor: User, input: unknown) {
       audit("Added patch: " + c.name + " — " + c.date);
       break;
     }
+    case "defaultPatch": {
+      requireAdmin();
+      const patch = s.patches!.find((p) => p.id === c.patchId && !p.removedAt);
+      if (!patch) throw new Error("Choose an available rules patch.");
+      s.defaultPatchId = patch.id;
+      audit(`Set default rules patch: ${patch.name}`);
+      break;
+    }
+    case "removePatchImport":
+    case "restorePatchImport": {
+      requireAdmin();
+      const patch = s.patches!.find((p) => p.id === c.patchId);
+      if (!patch?.source) throw new Error("Choose an imported rules patch.");
+      if (c.type === "removePatchImport") {
+        if (patch.id === defaultPatchId(s))
+          throw new Error(
+            "Select another default rules patch before removing this import.",
+          );
+        if (!patch.removedAt) {
+          patch.removedAt = now;
+          audit(`Removed rules import: ${patch.name}`);
+        }
+      } else if (patch.removedAt) {
+        delete patch.removedAt;
+        audit(`Restored rules import: ${patch.name}`);
+      }
+      break;
+    }
     case "renamePatch": {
       requireAdmin();
       const patch = s.patches!.find((p) => p.id === c.patchId);
@@ -517,6 +549,13 @@ export function execute(s: State, actor: User, input: unknown) {
         throw new Error("Choose a valid patch.");
       if (!c.layout) throw new Error("Choose layout A, B, or C.");
       const old = c.id ? s.games.find((g) => g.id === c.id) : undefined;
+      if (
+        s.patches!.find((p) => p.id === c.patchId)?.removedAt &&
+        old?.patchId !== c.patchId
+      )
+        throw new Error(
+          "This rules import has been removed. Choose an available patch.",
+        );
       if (c.id && (!old || old.userId !== actor.id))
         throw new Error("You can edit only your own games.");
       if (c.eventId && !s.events.some((e) => e.id === c.eventId))

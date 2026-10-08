@@ -57,7 +57,11 @@ export default function Selection({
       {settings ? (
         <div className="profile-grid">
           <section className="panel padded">
-            <PatchSettings patches={view.patches} mutate={mutate} />
+            <PatchSettings
+              patches={view.patches}
+              defaultPatchId={view.defaultPatchId}
+              mutate={mutate}
+            />
             <hr />
             <h3>Selection phases</h3>
             <p>

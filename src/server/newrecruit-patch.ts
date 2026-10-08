@@ -88,7 +88,13 @@ export function requirePatchAdmin(actor: User) {
 export function importNewRecruitPatch(state: State, actor: User, patch: Patch) {
   requirePatchAdmin(actor);
   ensurePatches(state);
-  if (state.patches!.some((p) => p.id === patch.id)) return false;
+  if (state.patches!.some((p) => p.id === patch.id)) {
+    if (state.patches!.find((p) => p.id === patch.id)?.removedAt)
+      throw new Error(
+        "This import was removed. Restore it in Rules patches to use it again.",
+      );
+    return false;
+  }
   state.patches!.push(structuredClone(patch));
   state.audit.unshift({
     id: randomUUID(),

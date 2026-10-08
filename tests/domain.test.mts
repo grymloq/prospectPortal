@@ -10,6 +10,66 @@ const { execute, viewState } = await import("../src/server/service");
 const { armySnapshot, catalogue, dispositionsFor } =
   await import("../src/lib/catalogue");
 const baseline = readState();
+const { patchFromWarmind } = await import("../src/server/warmind-patch");
+test("Warmind import uses the MFM release metadata, not the app version", () => {
+  const html =
+    '<span class="ver-line">v1.0.6 &#183; MFM v1.5 &#183; 2 Oct 2026</span>';
+  const patch = patchFromWarmind(html);
+  assert.equal(patch.date, "2026-10-02");
+  assert.equal(patch.name, "Warmind · MFM v1.5");
+  assert.equal(patch.source!.provider, "warmind");
+  assert.equal(patchFromWarmind(html.replace("v1.0.6", "v1.0.7")).id, patch.id);
+  assert.notEqual(
+    patchFromWarmind(html.replace("MFM v1.5", "MFM v1.6")).id,
+    patch.id,
+  );
+  assert.throws(() => patchFromWarmind("<span>App v1.0.6</span>"));
+  assert.throws(() => patchFromWarmind(html.replace("2 Oct", "32 Oct")));
+});
+test("team ruleset defaults and removal are admin-only and preserve history", () => {
+  const s = structuredClone(baseline);
+  const admin = s.users.find((u) => u.role === "admin")!;
+  const member = s.users.find((u) => u.role === "member")!;
+  const patch = patchFromWarmind(
+    '<span class="ver-line">v1.0.6 · MFM v1.5 · 2 Oct 2026</span>',
+  );
+  s.patches!.push(patch);
+  const games = structuredClone(s.games);
+  const command = { type: "defaultPatch", patchId: patch.id };
+  assert.throws(() => execute(s, member, command), /Admin/);
+  execute(s, admin, command);
+  assert.equal(viewState(s, member).defaultPatchId, patch.id);
+  assert.throws(
+    () => execute(s, admin, { type: "removePatchImport", patchId: patch.id }),
+    /another default/,
+  );
+  execute(s, admin, { type: "defaultPatch", patchId: s.patches![0].id });
+  assert.throws(
+    () => execute(s, member, { type: "removePatchImport", patchId: patch.id }),
+    /Admin/,
+  );
+  execute(s, admin, { type: "removePatchImport", patchId: patch.id });
+  assert.ok(patch.removedAt);
+  assert.throws(() => execute(s, admin, command), /available/);
+  assert.deepEqual(s.games, games);
+  execute(s, admin, { type: "restorePatchImport", patchId: patch.id });
+  assert.equal(patch.removedAt, undefined);
+  assert.deepEqual(s.games, games);
+});
+test("removed imports cannot be used for new games but historical games stay editable", () => {
+  const s = structuredClone(baseline);
+  const historical = s.games[0];
+  const actor = s.users.find((u) => u.id === historical.userId)!;
+  const patch = s.patches!.find((p) => p.id === historical.patchId)!;
+  patch.removedAt = new Date().toISOString();
+  const command = { ...historical, type: "game", layout: "A" };
+  assert.throws(
+    () => execute(s, actor, { ...command, id: undefined }),
+    /removed/,
+  );
+  execute(s, actor, command);
+  assert.equal(s.games.find((g) => g.id === historical.id)!.patchId, patch.id);
+});
 test("patch renaming is admin-only and preserves references and source metadata", () => {
   const s = structuredClone(baseline);
   const admin = s.users.find((u) => u.role === "admin")!;

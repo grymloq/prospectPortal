@@ -37,9 +37,11 @@ export type Patch = {
   id: string;
   name: string;
   date: string;
+  removedAt?: string;
   source?: {
-    provider: "newrecruit";
-    systemId: number;
+    provider: "newrecruit" | "warmind";
+    url?: string;
+    systemId?: number;
     revision: string;
     updatedAt: string;
     importedAt: string;
@@ -142,6 +144,7 @@ export type State = {
   matrixLists?: MatrixList[];
   manualEstimates?: ManualEstimate[];
   patches?: Patch[];
+  defaultPatchId?: string;
   users: User[];
   phases: Phase[];
   games: Game[];

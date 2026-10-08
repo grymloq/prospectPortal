@@ -111,6 +111,10 @@ The living design document is in design/product-design.md. `design/` contains th
 
 ## Rules patches and compact matrix (8 September 2026)
 
+Admins can rename patches, select the team-wide default for new games, and remove or restore imported rulesets under Settings → Rules patches. Removing an import hides it from new-game choices while preserving its source metadata and all historical game/matrix references. Select another default before removing the current default. Existing games keep their selected ruleset when edited. Without an explicit team default, the newest available patch is used.
+
+The import source selector supports New Recruit catalogue snapshots and Warmind’s published MFM version/date at `https://warmind.online/`. Warmind imports points-release metadata from its public version footer, not app release notes or unit rules. Imports fail without saving if the source metadata cannot be verified. Their identities exclude app-only updates and remain stable across repeated imports.
+
 Admins add named release dates under Settings → Rules patches. Every game save requires a valid patch. Existing games are assigned to Ork release — 2026-09-02; the migration is idempotent and preserves subsequent patch selections. The matrix defaults to the newest patch, with an explicit All patches combined option.
 
 Settings → Rules patches → **Import from New Recruit** fetches the current 11th-edition catalogue metadata on the server and adds a rules snapshot. The date is New Recruit’s latest catalogue update date, not an official GW release date. Source book IDs, revisions, hashes, and import time are retained; identical snapshots are not added twice. Multiple snapshots on the same date remain distinct. Existing games and matrix entries retain their patch IDs. This imports patch metadata, not unit rules or refreshed faction/detachment selectors; `npm run catalogue:refresh` separately refreshes the selectors. Imports require an administrator, validate the request origin, and commit through the existing local transaction or cloud revision check. Failed fetches or invalid source data leave patches unchanged.
