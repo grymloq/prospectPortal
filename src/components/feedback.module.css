@@ -114,3 +114,13 @@
     font-size: 11px;
   }
 }
+.unread {
+  background: #f1f7fd;
+  font-weight: 600;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 190px;
+}

@@ -4,6 +4,8 @@ Status: Living draft v0.9, 8 September 2026. Requirements marked **Confirmed** c
 
 **Confirmed — beta feedback (8 October 2026):** Signed-in users have a fixed bottom-right BETA FEEDBACK button. Its modal accepts free text, image attachments, and an optional screenshot of the current page, labelled Suggestion, Request, or Bug. Submitted feedback goes to an admin-only Feedback inbox with a table and expandable messages containing sender, timestamp, page context, full text, and attachments. Feedback and attachment access are enforced on the server. Unsaved feedback uses the existing modal close confirmation and draft restoration.
 
+**Confirmed — inbox management:** Admins can mark feedback read or unread and delete it. A circular unread count appears beside Feedback inbox in the menu while unread active messages exist. Read status is shared across the admin inbox. Deleted feedback leaves the inbox and unread count; admins can restore it from the Deleted folder.
+
 **Current additions: 8 October 2026.** The confirmed membership and scrim decisions in section 15 supersede older open-registration access and independent-game assumptions where explicitly stated.
 
 ## 1. Purpose and scope

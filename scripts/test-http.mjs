@@ -119,6 +119,47 @@ try {
     assert.equal(blockedImage.status, 403);
     assert.equal(anonymousImage.status, 401);
   });
+  const feedbackId = feedbackAdmin.data.feedback[0].id;
+  const forbiddenRead = await request(
+    "/api/state",
+    { type: "feedbackRead", id: feedbackId, read: true },
+    player.cookie,
+  );
+  const readFeedback = await request(
+    "/api/state",
+    { type: "feedbackRead", id: feedbackId, read: true },
+    admin.cookie,
+  );
+  const deletedFeedback = await request(
+    "/api/state",
+    { type: "feedbackDelete", id: feedbackId },
+    admin.cookie,
+  );
+  const deletedImage = await fetch(origin + imagePath, {
+    headers: { Cookie: admin.cookie },
+  });
+  const restoredFeedback = await request(
+    "/api/state",
+    { type: "feedbackRestore", id: feedbackId },
+    admin.cookie,
+  );
+  const unreadFeedback = await request(
+    "/api/state",
+    { type: "feedbackRead", id: feedbackId, read: false },
+    admin.cookie,
+  );
+  check(
+    "only admins mark feedback read or unread, delete and restore it",
+    () => {
+      assert.equal(forbiddenRead.status, 400);
+      assert.equal(readFeedback.status, 200);
+      assert.ok(readFeedback.data.feedback[0].readAt);
+      assert.ok(deletedFeedback.data.feedback[0].deletedAt);
+      assert.equal(deletedImage.status, 404);
+      assert.equal(restoredFeedback.data.feedback[0].deletedAt, undefined);
+      assert.equal(unreadFeedback.data.feedback[0].readAt, undefined);
+    },
+  );
   const importBody = {
     url: "https://www.newrecruit.eu/app/list/OxJAH",
     patchId: "2026-09-02",

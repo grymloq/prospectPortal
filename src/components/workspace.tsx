@@ -308,6 +308,21 @@ export default function Workspace({
                 >
                   <item.icon size={19} />
                   {item.name}
+                  {item.page === "Feedback inbox" &&
+                    (view.feedback || []).some(
+                      (f) => !f.readAt && !f.deletedAt,
+                    ) && (
+                      <span
+                        className="feedback-unread-badge"
+                        aria-label={`${(view.feedback || []).filter((f) => !f.readAt && !f.deletedAt).length} unread feedback messages`}
+                      >
+                        {
+                          (view.feedback || []).filter(
+                            (f) => !f.readAt && !f.deletedAt,
+                          ).length
+                        }
+                      </span>
+                    )}
                 </button>
               </Fragment>
             ))}
@@ -395,7 +410,7 @@ export default function Workspace({
           )}
           <div className="page-content" aria-busy={busy}>
             {admin && currentPage === "Feedback inbox" && (
-              <FeedbackInbox view={view} />
+              <FeedbackInbox view={view} mutate={mutate} />
             )}
             {currentPage === "Prospects" && (
               <Prospects

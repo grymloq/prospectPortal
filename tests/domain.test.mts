@@ -11,6 +11,46 @@ const { armySnapshot, catalogue, dispositionsFor, defaultDisposition } =
   await import("../src/lib/catalogue");
 const baseline = readState();
 
+test("admins manage feedback read status and reversible deletion", async () => {
+  const s = structuredClone(baseline);
+  const member = s.users.find((u) => u.role === "member")!;
+  const admin = s.users.find((u) => u.role === "admin")!;
+  execute(s, member, {
+    type: "feedback",
+    category: "Bug",
+    text: "A bug",
+    page: "Profile",
+    attachments: [],
+  });
+  const f = s.feedback![0];
+  assert.equal(f.readAt, undefined);
+  for (const command of [
+    { type: "feedbackRead", id: f.id, read: true },
+    { type: "feedbackDelete", id: f.id },
+    { type: "feedbackRestore", id: f.id },
+  ])
+    assert.throws(() => execute(s, member, command), /Admin/);
+  execute(s, admin, { type: "feedbackRead", id: f.id, read: true });
+  assert.ok(f.readAt);
+  assert.equal(f.readBy, admin.id);
+  execute(s, admin, { type: "feedbackRead", id: f.id, read: false });
+  assert.equal(f.readAt, undefined);
+  assert.equal(f.readBy, undefined);
+  execute(s, admin, { type: "feedbackDelete", id: f.id });
+  assert.ok(f.deletedAt);
+  assert.throws(
+    () => execute(s, admin, { type: "feedbackRead", id: f.id, read: true }),
+    /Restore/,
+  );
+  execute(s, admin, { type: "feedbackRestore", id: f.id });
+  assert.equal(f.deletedAt, undefined);
+  assert.equal(f.text, "A bug");
+  assert.throws(
+    () => execute(s, admin, { type: "feedbackDelete", id: "missing" }),
+    /not found/,
+  );
+});
+
 test("feedback preserves sender identity and is visible only to admins", async () => {
   const s = structuredClone(baseline);
   const member = s.users.find((u) => u.role === "member")!;

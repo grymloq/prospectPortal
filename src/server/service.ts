@@ -34,6 +34,9 @@ const army = z.object({
 });
 const commands = z.discriminatedUnion("type", [
   feedbackCommand,
+  z.object({ type: z.literal("feedbackRead"), id, read: z.boolean() }),
+  z.object({ type: z.literal("feedbackDelete"), id }),
+  z.object({ type: z.literal("feedbackRestore"), id }),
   ...scrimCommands,
   z.object({
     type: z.literal("userConfirmation"),
@@ -277,6 +280,20 @@ export function execute(s: State, actor: User, input: unknown) {
       createdAt: now,
     });
   switch (c.type) {
+    case "feedbackRead":
+    case "feedbackDelete":
+    case "feedbackRestore": {
+      requireAdmin();
+      const feedback = s.feedback?.find((f) => f.id === c.id);
+      if (!feedback) throw new Error("Feedback not found.");
+      if (c.type === "feedbackRead") {
+        if (feedback.deletedAt) throw new Error("Restore this feedback first.");
+        feedback.readAt = c.read ? now : undefined;
+        feedback.readBy = c.read ? actor.id : undefined;
+      } else if (c.type === "feedbackDelete") feedback.deletedAt ||= now;
+      else delete feedback.deletedAt;
+      return;
+    }
     case "userConfirmation": {
       requireAdmin();
       const user = s.users.find((u) => u.id === c.userId && !u.removedAt);

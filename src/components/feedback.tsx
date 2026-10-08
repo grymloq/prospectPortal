@@ -256,12 +256,28 @@ function FeedbackForm({
   );
 }
 
-export function FeedbackInbox({ view }: { view: View }) {
+export function FeedbackInbox({
+  view,
+  mutate,
+}: {
+  view: View;
+  mutate: Mutate;
+}) {
   const [expanded, setExpanded] = useState("");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
+  const [deleted, setDeleted] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function update(command: object) {
+    setBusy(true);
+    setError("");
+    await mutate(command, setError);
+    setBusy(false);
+  }
   const items = (view.feedback || []).filter(
     (f) =>
+      Boolean(f.deletedAt) === deleted &&
       (category === "All" || f.category === category) &&
       `${f.authorName} ${f.authorEmail} ${f.text} ${f.page}`
         .toLowerCase()
@@ -279,6 +295,19 @@ export function FeedbackInbox({ view }: { view: View }) {
         </div>
       </header>
       <div className={styles.filters}>
+        <Field label="Folder">
+          <select
+            aria-label="Feedback folder"
+            value={deleted ? "Deleted" : "Inbox"}
+            onChange={(e) => {
+              setDeleted(e.target.value === "Deleted");
+              setExpanded("");
+            }}
+          >
+            <option>Inbox</option>
+            <option>Deleted</option>
+          </select>
+        </Field>
         <Field label="Search feedback">
           <input value={search} onChange={(e) => setSearch(e.target.value)} />
         </Field>
@@ -294,6 +323,11 @@ export function FeedbackInbox({ view }: { view: View }) {
           </select>
         </Field>
       </div>
+      {error && (
+        <p role="alert" className="alert">
+          {error}
+        </p>
+      )}
       <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
@@ -303,6 +337,7 @@ export function FeedbackInbox({ view }: { view: View }) {
               <th>Label</th>
               <th>Message</th>
               <th>Images</th>
+              <th>Status</th>
               <th>
                 <span className="sr-only">Details</span>
               </th>
@@ -311,7 +346,9 @@ export function FeedbackInbox({ view }: { view: View }) {
           <tbody>
             {items.map((f) => (
               <Fragment key={f.id}>
-                <tr>
+                <tr
+                  className={!f.readAt && !deleted ? styles.unread : undefined}
+                >
                   <td>{new Date(f.createdAt).toLocaleString("en-GB")}</td>
                   <td>{f.authorName}</td>
                   <td>{f.category}</td>
@@ -320,20 +357,54 @@ export function FeedbackInbox({ view }: { view: View }) {
                     {f.text.length > 100 ? "…" : ""}
                   </td>
                   <td>{f.attachments.length}</td>
+                  <td>{f.readAt ? "Read" : "Unread"}</td>
                   <td>
-                    <button
-                      className="small"
-                      aria-expanded={expanded === f.id}
-                      aria-controls={`feedback-${f.id}`}
-                      onClick={() => setExpanded(expanded === f.id ? "" : f.id)}
-                    >
-                      {expanded === f.id ? "Collapse" : "Expand"}
-                    </button>
+                    <div className={styles.actions}>
+                      <button
+                        className="small"
+                        aria-expanded={expanded === f.id}
+                        aria-controls={`feedback-${f.id}`}
+                        onClick={() =>
+                          setExpanded(expanded === f.id ? "" : f.id)
+                        }
+                      >
+                        {expanded === f.id ? "Collapse" : "Expand"}
+                      </button>
+                      {!deleted && (
+                        <button
+                          className="small"
+                          disabled={busy}
+                          onClick={() =>
+                            update({
+                              type: "feedbackRead",
+                              id: f.id,
+                              read: !f.readAt,
+                            })
+                          }
+                        >
+                          {f.readAt ? "Mark unread" : "Mark read"}
+                        </button>
+                      )}
+                      <button
+                        className={`small ${deleted ? "" : "danger"}`}
+                        disabled={busy}
+                        onClick={() =>
+                          update({
+                            type: deleted
+                              ? "feedbackRestore"
+                              : "feedbackDelete",
+                            id: f.id,
+                          })
+                        }
+                      >
+                        {deleted ? "Restore" : "Delete"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
                 {expanded === f.id && (
                   <tr id={`feedback-${f.id}`}>
-                    <td colSpan={6}>
+                    <td colSpan={7}>
                       <article className={styles.detail}>
                         <p>
                           <strong>{f.authorName}</strong> · {f.authorEmail}
@@ -342,25 +413,27 @@ export function FeedbackInbox({ view }: { view: View }) {
                         <p className={styles.message}>
                           {f.text || "No written message."}
                         </p>
-                        <div className={styles.previews}>
-                          {f.attachments.map((a, i) => (
-                            <figure key={i}>
-                              <a
-                                href={`/api/feedback/${f.id}/${i}`}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  loading="lazy"
-                                  src={`/api/feedback/${f.id}/${i}`}
-                                  alt={a.name}
-                                />
-                              </a>
-                              <figcaption>{a.name}</figcaption>
-                            </figure>
-                          ))}
-                        </div>
+                        {!deleted && (
+                          <div className={styles.previews}>
+                            {f.attachments.map((a, i) => (
+                              <figure key={i}>
+                                <a
+                                  href={`/api/feedback/${f.id}/${i}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    loading="lazy"
+                                    src={`/api/feedback/${f.id}/${i}`}
+                                    alt={a.name}
+                                  />
+                                </a>
+                                <figcaption>{a.name}</figcaption>
+                              </figure>
+                            ))}
+                          </div>
+                        )}
                       </article>
                     </td>
                   </tr>
@@ -369,10 +442,12 @@ export function FeedbackInbox({ view }: { view: View }) {
             ))}
             {!items.length && (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={7}>
                   {view.feedback?.length
                     ? "No matching feedback."
-                    : "No feedback yet."}
+                    : deleted
+                      ? "No deleted feedback."
+                      : "No feedback yet."}
                 </td>
               </tr>
             )}

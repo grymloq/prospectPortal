@@ -2725,3 +2725,5 @@ tbody .matrix-list-label span {
   white-space: nowrap;
 }
 .page-footer { padding-bottom: 72px; }
+.feedback-unread-badge { display: inline-flex; align-items: center; justify-content: center; margin-left: auto; min-width: 21px; height: 21px; padding: 0 5px; border-radius: 50%; background: #f5cf43; color: #102a43; font-size: 11px; font-weight: 800; flex-shrink: 0; }
+.sidebar nav button.active .feedback-unread-badge { background: #102a43; color: white; }

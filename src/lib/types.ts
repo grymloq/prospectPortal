@@ -187,6 +187,9 @@ export type FeedbackAttachment = {
   data?: string;
 };
 export type Feedback = {
+  readAt?: string;
+  readBy?: string;
+  deletedAt?: string;
   id: string;
   userId: string;
   authorName: string;

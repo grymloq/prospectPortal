@@ -67,7 +67,8 @@ export function feedbackAttachment(
 ) {
   requireMember(actor);
   if (actor.role !== "admin") throw new Error("Admin access required.");
-  const attachment = s.feedback?.find((f) => f.id === id)?.attachments[index];
+  const attachment = s.feedback?.find((f) => f.id === id && !f.deletedAt)
+    ?.attachments[index];
   if (!attachment?.data) throw new Error("Attachment not found.");
   return feedbackImage(attachment.data);
 }
