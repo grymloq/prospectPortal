@@ -380,7 +380,9 @@ export function execute(s: State, actor: User, input: unknown) {
       if (
         user.role === "admin" &&
         (c.type === "removeUser" || c.role === "member") &&
-        s.users.filter((u) => u.role === "admin" && !u.removedAt).length <= 1
+        s.users.filter(
+          (u) => u.role === "admin" && u.confirmedMember && !u.removedAt,
+        ).length <= 1
       )
         throw new Error("At least one administrator must remain.");
       if (c.type === "userRole") {

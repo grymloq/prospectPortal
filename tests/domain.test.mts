@@ -1133,3 +1133,30 @@ test("Warmind selectors retain alternatives, exclude previews, and never execute
   );
   assert.throws(() => extractWarmindFactions("const data=[];"));
 });
+
+test("account deletion revokes access before completion and clears credentials idempotently", async () => {
+  const { prepareAccountDeletion, completeAccountDeletion } =
+    await import("../src/server/account-deletion");
+  const state = structuredClone(baseline);
+  const admin = state.users.find((user) => user.role === "admin")!;
+  const member = state.users.find((user) => user.role === "member")!;
+  const games = structuredClone(state.games);
+  assert.throws(
+    () => prepareAccountDeletion(state, member, admin.id),
+    /Admin access/,
+  );
+  assert.throws(
+    () => prepareAccountDeletion(state, admin, admin.id),
+    /another administrator/,
+  );
+  prepareAccountDeletion(state, admin, member.id);
+  assert.ok(member.removedAt);
+  assert.equal(member.accountDeletedAt, undefined);
+  completeAccountDeletion(state, admin, member.id);
+  assert.ok(member.accountDeletedAt);
+  assert.equal(member.password, undefined);
+  const auditLength = state.audit.length;
+  completeAccountDeletion(state, admin, member.id);
+  assert.equal(state.audit.length, auditLength);
+  assert.deepEqual(state.games, games);
+});

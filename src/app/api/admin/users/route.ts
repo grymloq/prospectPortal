@@ -8,6 +8,10 @@ import { cloudView, ensureProfile } from "@/server/cloud-store";
 import { viewState } from "@/server/service";
 import { catalogue } from "@/lib/catalogue";
 import type { State, User } from "@/lib/types";
+import {
+  prepareAccountDeletion,
+  completeAccountDeletion,
+} from "@/server/account-deletion";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "private, no-store" };
@@ -195,3 +199,70 @@ async function handle(req: NextRequest, invite: boolean) {
 }
 export const GET = (req: NextRequest) => handle(req, false);
 export const POST = (req: NextRequest) => handle(req, true);
+
+export async function DELETE(req: NextRequest) {
+  try {
+    sameOrigin(req);
+    const { userId } = z
+      .object({ userId: z.string().min(1).max(100) })
+      .parse(await req.json());
+    if (localMode()) {
+      const { sessionUserId } = await import("@/server/local/session");
+      const { transaction, db } = await import("@/server/store");
+      const actorId = sessionUserId(req);
+      if (!actorId)
+        return NextResponse.json(
+          { error: "Sign in to continue." },
+          { status: 401, headers },
+        );
+      const view = transaction((state) => {
+        const actor = state.users.find((user) => user.id === actorId)!;
+        completeAccountDeletion(state, actor, userId);
+        db.prepare("DELETE FROM sessions WHERE user_id = ?").run(userId);
+        return viewState(state, actor);
+      });
+      return NextResponse.json({ view }, { headers });
+    }
+    const auth = await authClient();
+    const {
+      data: { user },
+      error,
+    } = await auth.auth.getUser();
+    if (error || !user)
+      return NextResponse.json(
+        { error: "Sign in to continue." },
+        { status: 401, headers },
+      );
+    let alreadyDeleted = false;
+    // Revoke portal access atomically first, including existing sessions.
+    await cloudView(user, undefined, (state, actor) => {
+      alreadyDeleted = !!prepareAccountDeletion(state, actor, userId)
+        .accountDeletedAt;
+    });
+    if (!alreadyDeleted) {
+      const deleted = await databaseClient().auth.admin.deleteUser(userId);
+      if (deleted.error && deleted.error.code !== "user_not_found")
+        throw new Error(
+          "Access was revoked, but the login account could not be deleted. Retry from removed users.",
+        );
+    }
+    const view = await cloudView(user, undefined, (state, actor) =>
+      completeAccountDeletion(state, actor, userId),
+    );
+    return NextResponse.json({ view }, { headers });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof z.ZodError
+            ? error.issues[0].message
+            : (error as Error).message,
+      },
+      {
+        status:
+          (error as Error).message === "Admin access required." ? 403 : 400,
+        headers,
+      },
+    );
+  }
+}

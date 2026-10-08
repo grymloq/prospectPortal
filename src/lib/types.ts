@@ -7,6 +7,7 @@ export type Phase = {
 export type User = {
   confirmedMember?: boolean;
   removedAt?: string;
+  accountDeletedAt?: string;
   invitedAt?: string;
   acceptedAt?: string;
   inviteTokenHash?: string;

@@ -639,6 +639,47 @@ try {
   assert.equal(logout.status, 200);
   const expired = await request("/api/state", null, registered.cookie);
   check("logout invalidates session", () => assert.equal(expired.status, 401));
+  const forbiddenDelete = await request(
+    "/api/admin/users",
+    { userId },
+    player.cookie,
+    "DELETE",
+  );
+  assert.equal(forbiddenDelete.status, 403);
+  const selfDelete = await request(
+    "/api/admin/users",
+    { userId: (await request("/api/state", null, admin.cookie)).data.me.id },
+    admin.cookie,
+    "DELETE",
+  );
+  assert.equal(selfDelete.status, 400);
+  const deleted = await request(
+    "/api/admin/users",
+    { userId },
+    admin.cookie,
+    "DELETE",
+  );
+  assert.equal(deleted.status, 200);
+  const deletedUser = deleted.data.view.users.find((u) => u.id === userId);
+  assert.ok(deletedUser.accountDeletedAt);
+  assert.ok(deletedUser.removedAt);
+  assert.ok(deleted.data.view.games.some((g) => g.id === game.id));
+  const retryDelete = await request(
+    "/api/admin/users",
+    { userId },
+    admin.cookie,
+    "DELETE",
+  );
+  assert.equal(retryDelete.status, 200);
+  check(
+    "account deletion is admin-only, protects self, retains journal history and retries safely",
+    () =>
+      assert.equal(
+        retryDelete.data.view.users.find((u) => u.id === userId)
+          .accountDeletedAt,
+        deletedUser.accountDeletedAt,
+      ),
+  );
   console.log(`${passed} HTTP integration checks passed.`);
 } finally {
   child.kill();

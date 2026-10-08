@@ -24,7 +24,7 @@ export default function UserManagement({
     [busy, setBusy] = useState(false),
     [pending, setPending] = useState<{
       user: User;
-      action: "remove" | "admin" | "member";
+      action: "remove" | "delete" | "admin" | "member";
     } | null>(null),
     [directory, setDirectory] = useState<View | null>(null);
   useEffect(() => {
@@ -105,7 +105,9 @@ export default function UserManagement({
                 <td>{u.role === "admin" ? "Administrator" : "Member"}</td>
                 <td>
                   {u.removedAt
-                    ? "Removed"
+                    ? u.accountDeletedAt
+                      ? "Account deleted"
+                      : "Removed"
                     : u.invitedAt && !u.acceptedAt
                       ? "Invited"
                       : "Active"}
@@ -175,6 +177,14 @@ export default function UserManagement({
                       {u.id === view.me.id && <small>Your account</small>}
                     </div>
                   )}
+                  {!u.accountDeletedAt && (
+                    <button
+                      disabled={u.id === view.me.id || busy}
+                      onClick={() => setPending({ user: u, action: "delete" })}
+                    >
+                      Delete account
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -207,20 +217,44 @@ export default function UserManagement({
           title={
             pending.action === "remove"
               ? "Remove user access"
-              : "Change user role"
+              : pending.action === "delete"
+                ? "Delete user account"
+                : "Change user role"
           }
           onClose={() => setPending(null)}
         >
           <p>
-            {pending.action === "remove"
-              ? `Remove ${pending.user.name}’s access to the portal? Their journal and team history will remain. Their selection place and event reservations will be released.`
-              : `${pending.action === "admin" ? "Give" : "Remove"} administrator access ${pending.action === "admin" ? "to" : "from"} ${pending.user.name}?`}
+            {pending.action === "delete"
+              ? `Permanently delete the login account for ${pending.user.name} (${pending.user.email})? They will be signed out and cannot sign in again with this account. This cannot be undone. Journals and team history will remain. Their selection place and event reservations will be released.`
+              : pending.action === "remove"
+                ? `Remove ${pending.user.name}’s access to the portal? Their journal and team history will remain. Their selection place and event reservations will be released.`
+                : `${pending.action === "admin" ? "Give" : "Remove"} administrator access ${pending.action === "admin" ? "to" : "from"} ${pending.user.name}?`}
           </p>
           <button
             disabled={busy}
             className="primary"
             onClick={async () => {
               setBusy(true);
+              if (pending.action === "delete") {
+                setError("");
+                try {
+                  const response = await fetch("/api/admin/users", {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ userId: pending.user.id }),
+                  });
+                  const data = await response.json();
+                  if (!response.ok) throw new Error(data.error);
+                  onView(data.view);
+                  setDirectory(null);
+                  setPending(null);
+                } catch (e) {
+                  setError((e as Error).message);
+                } finally {
+                  setBusy(false);
+                }
+                return;
+              }
               const ok = await mutate(
                 pending.action === "remove"
                   ? { type: "removeUser", userId: pending.user.id }
@@ -237,8 +271,11 @@ export default function UserManagement({
               }
             }}
           >
-            Confirm {pending.action === "remove" ? "removal" : "role change"}
+            {pending.action === "delete"
+              ? "Delete account permanently"
+              : `Confirm ${pending.action === "remove" ? "removal" : "role change"}`}
           </button>
+          {error && <p role="alert">{error}</p>}
         </Modal>
       )}
       {invite && (
