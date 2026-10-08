@@ -191,13 +191,6 @@ export default function ScrimMatrix({
         </p>
       ) : (
         <>
-          <p className={styles.muted}>
-            A / B / C · {team.name}’s scores ·{" "}
-            {ready ? "Opposing lists" : "All patch lists"} · Edits stay in this
-            scrim. Click a layout to edit; Enter or click away saves. Clear a
-            score to mark it unknown. Differences compare with your available
-            logs.
-          </p>
           <MatchupTable
             preferredRow={
               submitted.find((entry) => entry.userId === view.me.id)?.id

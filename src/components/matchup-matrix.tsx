@@ -97,8 +97,7 @@ export default function MatchupMatrix({
         title="Matchup matrix"
         description={
           <>
-            {data.included} games · {data.armies.length} lists · Scores from the
-            row army’s perspective
+            {data.included} games · {data.armies.length} lists
           </>
         }
       >
@@ -133,12 +132,6 @@ export default function MatchupMatrix({
             <option value="">All patches combined</option>
           </select>
         </label>
-        <div className="matrix-legend">
-          <span className="matrix-win">Above 10</span>
-          <span className="matrix-draw">10 draw</span>
-          <span className="matrix-loss">Below 10</span>
-          <span>— no games</span>
-        </div>
       </div>
       <button
         type="button"
@@ -172,19 +165,7 @@ export default function MatchupMatrix({
           }}
         />
       </div>
-      <div className="matrix-caption">
-        <span>
-          Each cell: <b>A · B · C</b> layout scores. Click a layout to edit;
-          Enter or click away to save, Escape to cancel. Clear a score to use
-          logs. Differences such as (+2) compare manual scores with logs. Hover
-          to trace axes; click list labels to pin highlights.
-        </span>
-        <span>
-          {view.me.role === "admin"
-            ? "All logs + shared team estimates"
-            : "Your logs + shared team estimates"}
-        </span>
-      </div>
+
       <button
         className="text-button"
         disabled={!markedRows.length && !markedColumns.length}
@@ -283,25 +264,7 @@ export default function MatchupMatrix({
           />
         )}
       </section>
-      <details className="matrix-method">
-        <summary>How to read this matrix</summary>
-        <p>
-          Army configurations group faction + unordered detachments +
-          disposition. List URLs do not split groups. Scores are observed
-          averages, not predictions for unplayed games. Opponent perspective
-          uses 20 minus the recorded score. Identical-list mirrors pool both
-          sides at 10 and count each game once. Counts represent journal
-          entries, including demo games. Patch filtering keeps rules versions
-          separate. Row and column averages show that army’s own score, weighted
-          equally across available layout matchups and opponents matching the
-          opposite axis filter (including other pages). Manual estimates replace
-          logged averages. Signed differences compare with logs; * marks
-          estimates without a difference to show. Unplayed matchups without
-          manual estimates are excluded. Clearing a manual estimate restores the
-          logs. All-patches mode uses logs only. Click a marked label again to
-          unpin it; multiple axes can stay marked.
-        </p>
-      </details>
+
       {adding && (
         <MatrixListEditor
           view={view}
@@ -384,13 +347,7 @@ export default function MatchupMatrix({
                   Select a single rules patch to view or edit manual estimates.
                 </p>
               )}
-              {patch && (
-                <p>
-                  Manual estimates override logs for the team. The reverse
-                  matchup automatically uses 20 minus your estimate. Edit each
-                  layout directly in the matrix.
-                </p>
-              )}
+
               <table className="matrix-detail">
                 <thead>
                   <tr>

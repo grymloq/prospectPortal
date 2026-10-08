@@ -857,7 +857,6 @@ export default function Journal({
                         ? "Win"
                         : "Loss"}
                 </output>
-                <small>0–9 loss · 10 draw · 11–20 win</small>
               </Field>
               <Field label="Table layout">
                 <select

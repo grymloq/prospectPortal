@@ -475,14 +475,6 @@ export default function Workspace({
               />
             )}
           </div>
-          <footer className="page-footer">
-            <span>
-              TEAM SWEDEN <span className="muted">/</span> Better together.
-            </span>
-            <span>
-              {localDemo ? "Local workspace" : "Team workspace"} · English
-            </span>
-          </footer>
         </main>
         <MobileNavigation
           items={nav}

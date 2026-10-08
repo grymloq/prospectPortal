@@ -3,7 +3,6 @@ import { X } from "lucide-react";
 import {
   Children,
   useEffect,
-  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -62,10 +61,6 @@ export function Modal<T>({
   const initialized = useRef(false);
   const restored = useRef(false);
   const [ready, setReady] = useState(false);
-  const [confirmClose, setConfirmClose] = useState(false);
-  const keepEditing = useRef<HTMLButtonElement>(null);
-  const previousFocus = useRef<HTMLElement | null>(null);
-  const confirmationId = useId();
   useLayoutEffect(() => {
     if (initialized.current || !dialog.current) return;
     initialized.current = true;
@@ -88,10 +83,6 @@ export function Modal<T>({
     if (initial.current?.fields.length)
       restoreDraftFields(dialog.current, initial.current.fields);
   }, [ready]);
-  useEffect(() => {
-    if (confirmClose) keepEditing.current?.focus();
-    else previousFocus.current?.focus();
-  }, [confirmClose]);
   useEffect(() => {
     dialog.current?.showModal();
     const el = dialog.current;
@@ -120,11 +111,7 @@ export function Modal<T>({
   }
   function requestClose() {
     if (busy) return;
-    if (changed()) {
-      if (!confirmClose)
-        previousFocus.current = document.activeElement as HTMLElement;
-      setConfirmClose(true);
-    } else closeWithDraft();
+    closeWithDraft();
   }
   return (
     <dialog
@@ -134,8 +121,7 @@ export function Modal<T>({
       onCancel={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (confirmClose) setConfirmClose(false);
-        else requestClose();
+        requestClose();
       }}
       onClickCapture={(e) => {
         if ((e.target as HTMLElement).closest("[data-modal-close]")) {
@@ -167,34 +153,7 @@ export function Modal<T>({
           <X size={20} />
         </button>
       </div>
-      {confirmClose && (
-        <section
-          className="modal-close-confirmation"
-          role="alertdialog"
-          aria-modal="true"
-          aria-labelledby={confirmationId}
-        >
-          <h3 id={confirmationId}>Close this form?</h3>
-          <p>
-            Your unsaved input will be kept as a draft for the next time you
-            open this form.
-          </p>
-          <div className="form-footer">
-            <button
-              ref={keepEditing}
-              type="button"
-              className="primary"
-              onClick={() => setConfirmClose(false)}
-            >
-              Keep editing
-            </button>
-            <button type="button" onClick={closeWithDraft}>
-              Close and keep draft
-            </button>
-          </div>
-        </section>
-      )}
-      <div inert={confirmClose}>{children}</div>
+      <div>{children}</div>
     </dialog>
   );
 }

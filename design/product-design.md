@@ -449,7 +449,7 @@ Admins have a Users directory including Supabase accounts which have not yet ope
 
 ## 16. Modal form drafts
 
-**Confirmed:** Dismissing a modal after changing its form asks whether to keep editing or close. Clicking outside, the close button, Escape, and Cancel use the same protection. Closing keeps the form input and restores it when that specific form is reopened. Untouched forms close immediately.
+**Confirmed:** Dismissing a modal closes immediately without a confirmation prompt. Clicking outside, the close button, Escape, and Cancel all silently retain the form draft. Closing keeps the form input and restores it when that specific form is reopened. Untouched forms close immediately.
 
 **Implementation convention:** Drafts belong to the current signed-in workspace and specific edited item. Both ordinary fields and controlled army/roster/pairing selections are restored. Successful submission consumes the draft. Drafts survive navigation within the workspace, but are cleared on sign-out, account or role changes, and page reload; they are not published or written to another user's storage. Dismissal is disabled while a form is saving/importing. Passwords, file inputs and read-only invitation links are excluded from draft capture.
 
@@ -464,3 +464,5 @@ Admins have a Users directory including Supabase accounts which have not yet ope
 **Confirmed — scrim captains and coaches:** Admins can replace a team's lead captain, add or remove additional captains, and add or remove non-playing coaches. Captains retain team management permissions; coaches can view and contribute to their own team's private preparation plan but cannot manage rosters, finalize submissions or report other players' results. Coaches never occupy player slots and cannot be assigned as players while coaching. Staff cannot belong to opposing teams. Staff changes use revision checks and audit history and may occur after list lock without changing player entries, armies or pairings; completed and cancelled scrims remain unchanged. Re-created user accounts must be explicitly assigned because account IDs change.
 
 **Confirmed — mobile matrix opponent list:** Mobile defaults to one selected army/player against compact opponent rows with shared disposition labels, A/B/C score editors, matchup averages and existing details. Users can sort by name, strongest or weakest matchup and switch to the full matrix. Existing faction/list filters apply. Scrims default to the signed-in player when that player has submitted a list; captains and coaches can choose another authorized team entry. Unknown scores stay unknown, all-patches remains read-only, and scrim edits retain the same private plan and revision rules.
+
+**Confirmed — concise interface copy:** Omit the workspace footer tagline, score threshold legends, scrim win/draw rule explanation and How to read this matrix section. Retain actual results, data counts, field labels and validation messages.

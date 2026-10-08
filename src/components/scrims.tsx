@@ -132,7 +132,7 @@ export default function Scrims({
                 {score.complete && score.winner !== "Draw"
                   ? `${score.winner} wins`
                   : score.complete
-                    ? "Within the five-point draw band"
+                    ? ""
                     : "games reported"}
               </small>
             </div>
@@ -142,10 +142,7 @@ export default function Scrims({
               <strong>{score.b}</strong>
             </div>
           </div>
-          <p className={styles.muted}>
-            A team wins with a lead of more than five points. The final result
-            is determined when every game is reported.
-          </p>
+
           <div
             className={styles.actions}
             role="group"
