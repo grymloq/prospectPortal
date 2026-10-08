@@ -157,7 +157,9 @@ const commands = z.discriminatedUnion("type", [
     type: z.literal("event"),
     id: z.string().optional(),
     title: text.max(150),
-    location: text.max(300),
+    location: z.string().trim().max(300),
+    online: z.boolean().optional(),
+    onlineUrl: url.optional(),
     startsAt: z.iso.datetime(),
     endsAt: z.iso.datetime(),
     capacity: z.number().int().min(1).max(1000),
@@ -713,6 +715,8 @@ export function execute(s: State, actor: User, input: unknown) {
       break;
     }
     case "event": {
+      if (!c.online && !c.location)
+        throw new Error("Enter a location for an in-person event.");
       requireAdmin();
       if (Date.parse(c.endsAt) <= Date.parse(c.startsAt))
         throw new Error("End time must follow start time.");

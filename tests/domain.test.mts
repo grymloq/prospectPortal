@@ -10,6 +10,37 @@ const { execute, viewState } = await import("../src/server/service");
 const { armySnapshot, catalogue, dispositionsFor, defaultDisposition } =
   await import("../src/lib/catalogue");
 const baseline = readState();
+test("online calendar events accept a join link without a venue and keep admin authorization", () => {
+  const s = structuredClone(baseline);
+  const admin = s.users.find((u) => u.role === "admin")!;
+  const member = s.users.find((u) => u.role === "member")!;
+  const command = {
+    type: "event",
+    title: "Internal online scrim",
+    location: "",
+    online: true,
+    onlineUrl: "https://discord.gg/example",
+    startsAt: "2026-11-01T17:00:00Z",
+    endsAt: "2026-11-01T20:00:00Z",
+    capacity: 8,
+    description: "Team practice",
+    cancelled: false,
+  };
+  assert.throws(() => execute(s, member, command), /Admin/);
+  execute(s, admin, command);
+  const event = s.events.at(-1)!;
+  assert.equal(event.online, true);
+  assert.equal(event.onlineUrl, command.onlineUrl);
+  assert.throws(() =>
+    execute(s, admin, { ...command, onlineUrl: "javascript:alert(1)" }),
+  );
+  assert.throws(
+    () => execute(s, admin, { ...command, online: false }),
+    /location/,
+  );
+  execute(s, admin, { ...command, id: event.id, onlineUrl: "" });
+  assert.equal(s.events.at(-1)!.online, true);
+});
 const { armyFromNewRecruit, newRecruitListUrl } =
   await import("../src/server/newrecruit-army");
 test("New Recruit list imports map configurations and reject incompatible sources", () => {

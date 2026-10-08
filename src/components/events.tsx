@@ -60,6 +60,7 @@ export default function Events({
   mutate: Mutate;
 }) {
   const [now] = useState(() => Date.now());
+  const [online, setOnline] = useState(false);
   const admin = view.me.role === "admin";
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7)),
     [mode, setMode] = useState("Calendar"),
@@ -96,6 +97,7 @@ export default function Events({
             className="primary"
             onClick={() => {
               setEdit("new");
+              setOnline(false);
               setFormError("");
             }}
           >
@@ -207,7 +209,8 @@ export default function Events({
                     <span>
                       <strong>{e.title}</strong>
                       <small>
-                        {e.location} · {timeLabel(e.startsAt)}
+                        {e.online ? "Online" : e.location} ·{" "}
+                        {timeLabel(e.startsAt)}
                       </small>
                     </span>
                     <Badge tone={e.cancelled ? "red" : "blue"}>
@@ -258,7 +261,7 @@ export default function Events({
                 <h3>{e.title}</h3>
                 <p>
                   <MapPin size={15} />
-                  {e.location}
+                  {e.online ? "Online" : e.location}
                 </p>
                 <p>
                   <Users size={15} />
@@ -278,7 +281,7 @@ export default function Events({
           <div className="event-detail-meta">
             <span>
               <MapPin size={17} />
-              {detail.location}
+              {detail.online ? "Online" : detail.location}
             </span>
             <span>
               <CalendarDays size={17} />
@@ -290,6 +293,13 @@ export default function Events({
               {view.occupancy[detail.id] || 0} / {detail.capacity} approved
             </span>
           </div>
+          {detail.online && detail.onlineUrl && (
+            <p>
+              <a href={detail.onlineUrl} target="_blank" rel="noreferrer">
+                Join online event
+              </a>
+            </p>
+          )}
           <p className="preserve">{detail.description}</p>
           <div className="section-heading">
             <Badge tone={detail.cancelled ? "red" : "blue"}>
@@ -302,6 +312,7 @@ export default function Events({
                 <button
                   onClick={() => {
                     setEdit(detail);
+                    setOnline(!!detail.online);
                     setFormError("");
                     setDetailId("");
                   }}
@@ -421,7 +432,9 @@ export default function Events({
                   type: "event",
                   ...(edit !== "new" ? { id: edit.id } : {}),
                   title: f.get("title"),
-                  location: f.get("location"),
+                  location: online ? "Online" : f.get("location"),
+                  online,
+                  onlineUrl: online ? f.get("onlineUrl") || "" : "",
                   startsAt: stockholmIso(String(f.get("start"))),
                   endsAt: stockholmIso(String(f.get("end"))),
                   capacity: Number(f.get("capacity")),
@@ -443,14 +456,34 @@ export default function Events({
                 defaultValue={edit === "new" ? "" : edit.title}
               />
             </Field>
-            <Field label="Where">
-              <input
-                name="location"
-                required
-                placeholder="Venue, city, address"
-                defaultValue={edit === "new" ? "" : edit.location}
-              />
+            <Field label="Event format">
+              <select
+                value={online ? "online" : "in-person"}
+                onChange={(e) => setOnline(e.target.value === "online")}
+              >
+                <option value="in-person">In person</option>
+                <option value="online">Online</option>
+              </select>
             </Field>
+            {online ? (
+              <Field label="Online event link (optional)">
+                <input
+                  type="url"
+                  name="onlineUrl"
+                  placeholder="Discord, Tabletop Simulator, or meeting link"
+                  defaultValue={edit === "new" ? "" : edit.onlineUrl || ""}
+                />
+              </Field>
+            ) : (
+              <Field label="Where">
+                <input
+                  name="location"
+                  required
+                  placeholder="Venue, city, address"
+                  defaultValue={edit === "new" ? "" : edit.location}
+                />
+              </Field>
+            )}
             <div className="form-grid">
               <Field label="Starts (Stockholm time)">
                 <input

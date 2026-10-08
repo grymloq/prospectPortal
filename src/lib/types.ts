@@ -103,6 +103,8 @@ export type TeamEvent = {
   id: string;
   title: string;
   location: string;
+  online?: boolean;
+  onlineUrl?: string;
   startsAt: string;
   endsAt: string;
   capacity: number;
