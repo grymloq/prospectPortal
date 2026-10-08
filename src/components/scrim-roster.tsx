@@ -121,7 +121,7 @@ export default function ScrimRoster({
       )}
       {team.entries.map((player) => (
         <div className={styles.player} key={player.id}>
-          <div className={styles.heading}>
+          <div className={styles.playerDetails}>
             <strong>
               {player.name}
               {player.army && (
@@ -131,31 +131,31 @@ export default function ScrimRoster({
                 </>
               )}
             </strong>
-            {!readOnly &&
-              !locked &&
-              !team.finalizedAt &&
-              (manage || player.userId === view.me.id) && (
-                <button onClick={() => setEntry(player)}>
-                  {player.army ? "Change list" : "Submit list"}
-                </button>
-              )}
+            {player.army ? (
+              player.army.listUrl ? (
+                <div>
+                  <ArmyListLink
+                    url={player.army.listUrl}
+                    name={`${player.name}'s army list`}
+                  >
+                    View list
+                  </ArmyListLink>
+                </div>
+              ) : (
+                <small>List link not provided</small>
+              )
+            ) : canSeeLists ? (
+              <small>List not submitted</small>
+            ) : null}
           </div>
-          {player.army ? (
-            player.army.listUrl ? (
-              <div>
-                <ArmyListLink
-                  url={player.army.listUrl}
-                  name={`${player.name}'s army list`}
-                >
-                  View list
-                </ArmyListLink>
-              </div>
-            ) : (
-              <small>List link not provided</small>
-            )
-          ) : canSeeLists ? (
-            <small>List not submitted</small>
-          ) : null}
+          {!readOnly &&
+            !locked &&
+            !team.finalizedAt &&
+            (manage || player.userId === view.me.id) && (
+              <button onClick={() => setEntry(player)}>
+                {player.army ? "Change list" : "Submit list"}
+              </button>
+            )}
         </div>
       ))}
       {!team.entries.length && (

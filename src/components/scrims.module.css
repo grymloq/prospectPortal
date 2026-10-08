@@ -89,7 +89,18 @@
   padding: 8px 0;
   border-top: 1px solid #e8edf1;
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+.playerDetails {
+  min-width: 0;
+  display: grid;
   gap: 3px;
+  overflow-wrap: anywhere;
+}
+.player > button {
+  white-space: nowrap;
 }
 .compactMatrix {
   padding: 12px;
