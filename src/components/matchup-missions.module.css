@@ -1,0 +1,114 @@
+.reference {
+  margin: var(--space-6) 0;
+  min-width: 0;
+}
+.heading {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: baseline;
+}
+.heading h3 {
+  margin-bottom: var(--space-3);
+}
+.controls {
+  composes: action-row from global;
+  margin-bottom: var(--space-4);
+}
+.controls button {
+  font-size: var(--text-small);
+}
+.controls button[aria-pressed="true"] {
+  background: var(--yellow);
+  border-color: var(--yellow);
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+  row-gap: 0;
+}
+.cards figure {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 2;
+  margin: 0;
+  min-width: 0;
+}
+.cards figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+  overflow-wrap: anywhere;
+}
+.cards figcaption span {
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+.single {
+  width: min(100%, 420px);
+  margin: 0 auto;
+  grid-template-columns: 1fr;
+}
+.image {
+  display: block;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 7 / 12;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--background);
+}
+.image img {
+  object-fit: contain;
+}
+.image > span {
+  display: block;
+  padding: var(--space-5);
+  color: var(--muted);
+}
+.layouts {
+  position: relative;
+  display: flex;
+  gap: var(--space-5);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: var(--space-3);
+  cursor: grab;
+  user-select: none;
+  scrollbar-width: none;
+}
+.layouts::-webkit-scrollbar {
+  display: none;
+}
+.layouts[data-dragging] {
+  cursor: grabbing;
+}
+.layouts[data-desktop] {
+  scroll-snap-type: none;
+}
+.carouselControls {
+  composes: action-row from global;
+  justify-content: center;
+  margin-bottom: var(--space-3);
+}
+.layouts figure {
+  flex: 0 0 min(85%, 420px);
+  min-width: 0;
+  margin: 0;
+  scroll-snap-align: start;
+}
+.layouts figcaption {
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+}
+.layouts figure:last-child {
+  margin-right: max(0px, calc(100% - min(85%, 420px)));
+}
+@media (max-width: 760px) {
+  .cards {
+    gap: var(--space-2);
+  }
+}

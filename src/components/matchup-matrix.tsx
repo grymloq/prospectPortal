@@ -2,9 +2,10 @@
 import { useMemo, useState } from "react";
 import type { View } from "@/lib/types";
 import { cellKey, layouts, type MatrixArmy } from "@/lib/matchups";
-import { PageHeading, Empty, Modal, Field } from "./ui";
+import { PageHeading, Empty, Modal } from "./ui";
 import { matchupDatabase } from "@/lib/matchup-database";
 import MatchupTable, { MatrixAverageBadge } from "./matchup-table";
+import MatchupMissions from "./matchup-missions";
 import { Disposition } from "./disposition";
 import { patchLabel } from "@/lib/patches";
 
@@ -23,7 +24,6 @@ export default function MatchupMatrix({
   const [adding, setAdding] = useState(false);
   const [editingListKey, setEditingListKey] = useState("new");
   const [choice, setChoice] = useState<Choice>(blank());
-  const [busy, setBusy] = useState(false);
   const [patch, setPatch] = useState(
     view.defaultPatchId || view.patches.find((p) => !p.removedAt)?.id || "",
   );
@@ -161,9 +161,10 @@ export default function MatchupMatrix({
       </div>
       <div className="matrix-caption">
         <span>
-          Each cell: <b>A · B · C</b> layout averages. Click a cell for counts
-          and differences. Hover to trace axes; click list labels to pin
-          highlights.
+          Each cell: <b>A · B · C</b> layout scores. Click a layout to edit;
+          Enter or click away to save, Escape to cancel. Clear a score to use
+          logs. Differences such as (+2) compare manual scores with logs. Hover
+          to trace axes; click list labels to pin highlights.
         </span>
         <span>
           {view.me.role === "admin"
@@ -243,6 +244,28 @@ export default function MatchupMatrix({
             markRows={setMarkedRows}
             markColumns={setMarkedColumns}
             averageBadge={averageBadge}
+            onScore={
+              patch
+                ? async (row, column, layout, score) => {
+                    let error = "Unable to save the estimate.";
+                    const ok = await mutate(
+                      {
+                        type: "manualEstimate",
+                        patchId: patch,
+                        own: row.army,
+                        enemy: column.army,
+                        layout,
+                        score,
+                      },
+                      (message) => {
+                        error = message;
+                      },
+                    );
+                    if (!ok) throw new Error(error);
+                  }
+                : undefined
+            }
+            key={patch}
             onCell={(row, column) => setDetail({ row, column })}
           />
         )}
@@ -259,10 +282,11 @@ export default function MatchupMatrix({
           separate. Row and column averages show that army’s own score, weighted
           equally across available layout matchups and opponents matching the
           opposite axis filter (including other pages). Manual estimates replace
-          logged averages and are marked *. Unplayed matchups without manual
-          estimates are excluded. Clearing a manual estimate restores the logs.
-          All-patches mode uses logs only. Click a marked label again to unpin
-          it; multiple axes can stay marked.
+          logged averages. Signed differences compare with logs; * marks
+          estimates without a difference to show. Unplayed matchups without
+          manual estimates are excluded. Clearing a manual estimate restores the
+          logs. All-patches mode uses logs only. Click a marked label again to
+          unpin it; multiple axes can stay marked.
         </p>
       </details>
       {adding && (
@@ -317,29 +341,31 @@ export default function MatchupMatrix({
       )}
       {detail && (
         <Modal
+          wide
           title={detail.column ? "Matchup detail" : "Army configuration"}
           onClose={() => setDetail(null)}
           draftKey={`matrix:${patch}:${detail.row.key}:${detail.column?.key || ""}`}
-          busy={busy}
         >
-          <h3>
-            #{codes.get(detail.row.key)} · {detail.row.army.factionName}
-          </h3>
-          <p>
-            {detail.row.army.detachmentNames.join(" + ") || "No detachments"} ·{" "}
-            <Disposition name={detail.row.army.dispositionName} />
-          </p>
-          {detail.column && (
+          {!detail.column && (
             <>
               <h3>
-                vs #{codes.get(detail.column.key)} ·{" "}
-                {detail.column.army.factionName}
+                #{codes.get(detail.row.key)} · {detail.row.army.factionName}
               </h3>
               <p>
-                {detail.column.army.detachmentNames.join(" + ") ||
+                {detail.row.army.detachmentNames.join(" + ") ||
                   "No detachments"}{" "}
-                · <Disposition name={detail.column.army.dispositionName} />
+                · <Disposition name={detail.row.army.dispositionName} />
               </p>
+            </>
+          )}
+          {detail.column && (
+            <>
+              <MatchupMissions
+                ownDisposition={detail.row.army.dispositionName}
+                enemyDisposition={detail.column.army.dispositionName}
+                ownLabel={`Row army · ${detail.row.army.factionName}`}
+                enemyLabel={`Opponent · ${detail.column.army.factionName}`}
+              />
               {!patch && (
                 <p>
                   Select a single rules patch to view or edit manual estimates.
@@ -348,8 +374,8 @@ export default function MatchupMatrix({
               {patch && (
                 <p>
                   Manual estimates override logs for the team. The reverse
-                  matchup automatically uses 20 minus your estimate. * marks
-                  manual scores.
+                  matchup automatically uses 20 minus your estimate. Edit each
+                  layout directly in the matrix.
                 </p>
               )}
               <table className="matrix-detail">
@@ -370,115 +396,46 @@ export default function MatchupMatrix({
                       </td>
                       <td>{cell?.[l].count || 0}</td>
                       <td>
-                        {patch && (
-                          <form
-                            key={
-                              patch +
-                              detail.row.key +
-                              detail.column!.key +
-                              l +
-                              JSON.stringify(view.manualEstimates)
-                            }
-                            onSubmit={async (e) => {
-                              e.preventDefault();
-                              const raw = new FormData(e.currentTarget).get(
-                                "score",
-                              ) as string;
-                              setBusy(true);
-                              await mutate({
-                                type: "manualEstimate",
-                                patchId: patch,
-                                own: detail.row.army,
-                                enemy: detail.column!.army,
-                                layout: l,
-                                score: raw === "" ? null : Number(raw),
-                              });
-                              setBusy(false);
-                            }}
-                          >
-                            <Field label={"Manual layout " + l}>
-                              <input
-                                name="score"
-                                type="number"
-                                min={0}
-                                max={20}
-                                step="0.1"
-                                placeholder="Use logs"
-                                defaultValue={
-                                  data.manual.has(
-                                    cellKey(
-                                      detail.row.key,
-                                      detail.column!.key,
-                                    ) + l,
-                                  )
-                                    ? data.effective.get(
-                                        cellKey(
-                                          detail.row.key,
-                                          detail.column!.key,
-                                        ),
-                                      )?.[l].average
-                                    : ""
-                                }
-                              />
-                            </Field>
-                            <button disabled={busy}>Save {l}</button>
-                            <button
-                              type="button"
-                              disabled={
-                                busy ||
-                                !data.manual.has(
-                                  cellKey(detail.row.key, detail.column!.key) +
-                                    l,
-                                )
-                              }
-                              onClick={async () => {
-                                setBusy(true);
-                                await mutate({
-                                  type: "manualEstimate",
-                                  patchId: patch,
-                                  own: detail.row.army,
-                                  enemy: detail.column!.army,
-                                  layout: l,
-                                  score: null,
-                                });
-                                setBusy(false);
-                              }}
-                            >
-                              Use logs {l}
-                            </button>
-                            {(() => {
-                              const change = (view.matrixChanges || [])
-                                .filter(
-                                  (c) =>
-                                    c.patchId === patch &&
-                                    c.layout === l &&
-                                    ((c.row === detail.row.key &&
-                                      c.column === detail.column!.key) ||
-                                      (c.column === detail.row.key &&
-                                        c.row === detail.column!.key)),
-                                )
-                                .at(-1);
-                              return (
-                                change && (
-                                  <small className="matrix-attribution">
-                                    {change.authorName} ·{" "}
-                                    {new Date(
-                                      change.updatedAt,
-                                    ).toLocaleString()}
-                                  </small>
-                                )
-                              );
-                            })()}
-                          </form>
-                        )}
+                        {patch &&
+                        data.manual.has(
+                          cellKey(detail.row.key, detail.column!.key) + l,
+                        )
+                          ? data.effective
+                              .get(cellKey(detail.row.key, detail.column!.key))
+                              ?.[l].average.toFixed(1)
+                          : "—"}
+                        {(() => {
+                          const change = (view.matrixChanges || [])
+                            .filter(
+                              (c) =>
+                                c.patchId === patch &&
+                                c.layout === l &&
+                                ((c.row === detail.row.key &&
+                                  c.column === detail.column!.key) ||
+                                  (c.column === detail.row.key &&
+                                    c.row === detail.column!.key)),
+                            )
+                            .at(-1);
+                          return (
+                            change && (
+                              <small>
+                                {change.authorName} ·{" "}
+                                {new Date(change.updatedAt).toLocaleString(
+                                  "en-GB",
+                                  { timeZone: "Europe/Stockholm" },
+                                )}
+                              </small>
+                            )
+                          );
+                        })()}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               <p>
-                Leave a manual value blank and save to restore the logged
-                average.
+                Clear a layout score directly in the matrix to restore its
+                logged average.
               </p>
               <details>
                 <summary>Estimate change history</summary>

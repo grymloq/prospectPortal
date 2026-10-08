@@ -1,0 +1,43 @@
+.score {
+  min-height: 28px;
+  min-width: 0;
+  padding: 3px 1px;
+  border: 0;
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  font-size: 10px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.score:hover {
+  outline: 2px solid #8faec8;
+}
+.score:global(.matrix-win):hover {
+  background: #e7f4eb;
+}
+.score:global(.matrix-loss):hover {
+  background: #fbecec;
+}
+.score:global(.matrix-draw):hover {
+  background: #fff6d9;
+}
+.score:global(.matrix-unknown):hover {
+  background: #f4f6f8;
+}
+.delta {
+  color: inherit;
+  font-size: 9px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.input {
+  width: 100%;
+  min-width: 0;
+  min-height: 28px;
+  padding: 3px 1px;
+  font-size: 11px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}

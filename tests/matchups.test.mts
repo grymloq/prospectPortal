@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { Army, Game } from "../src/lib/types";
 import {
+  matchupMissions,
+  missionDispositions,
+} from "../src/lib/matchup-missions";
+import {
   armyKey,
   armyAverage,
   matrixWithManual,
@@ -192,4 +196,57 @@ test("manual estimates replace layout scores, reverse perspective and preserve l
   );
   assert.equal(added.armies.length, 1);
   assert.equal(added.included, 0);
+});
+
+test("mission references select each player's directional primary and shared deployments", () => {
+  const forward = matchupMissions("Take and Hold", "Purge the Foe")!;
+  const reverse = matchupMissions("Purge the Foe", "Take and Hold")!;
+  assert.equal(forward.own.name, "Immovable Object");
+  assert.equal(forward.enemy.name, "Unstoppable Force");
+  assert.deepEqual(forward.own, reverse.enemy);
+  assert.deepEqual(forward.layouts, reverse.layouts);
+  assert.equal(
+    forward.layouts[0].image,
+    "https://gdmissions.app/assets/11th/layouts/no-measurements/take-and-hold-vs-purge-the-foe-1-portrait.png",
+  );
+});
+
+test("mission references support all 25 pairings, mirrors and portrait measurement variants", () => {
+  const primaryImages = new Set<string>(),
+    deployments = new Set<string>();
+  for (const own of missionDispositions)
+    for (const enemy of missionDispositions) {
+      const reference = matchupMissions(own, enemy)!;
+      assert.ok(reference);
+      assert.equal(reference.mirror, own === enemy);
+      assert.equal(reference.layouts.length, 3);
+      assert.equal(
+        reference.layouts.filter((layout) =>
+          layout.image.endsWith("-portrait.png"),
+        ).length,
+        1,
+      );
+      for (const layout of reference.layouts) {
+        assert.equal(
+          layout.image.replace("no-measurements", "with-measurements"),
+          layout.measurementsImage,
+        );
+        deployments.add(layout.image);
+      }
+      primaryImages.add(reference.own.image);
+    }
+  assert.equal(primaryImages.size, 25);
+  assert.equal(deployments.size, 45);
+  const mirror = matchupMissions("Take and Hold", "Take and Hold")!;
+  assert.equal(mirror.own.name, "Battlefield Dominance");
+  assert.deepEqual(mirror.own, mirror.enemy);
+});
+
+test("unmapped historical dispositions do not invent a mission card", () => {
+  assert.equal(matchupMissions("Unknown", "Take and Hold"), null);
+  assert.equal(matchupMissions("Take and Hold", "Old disposition"), null);
+  assert.equal(
+    matchupMissions(" take and hold ", "PURGE THE FOE")?.own.name,
+    "Immovable Object",
+  );
 });

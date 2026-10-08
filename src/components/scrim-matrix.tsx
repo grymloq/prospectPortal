@@ -4,6 +4,7 @@ import type { Scrim, ScrimEstimate, ScrimTeam, View } from "@/lib/types";
 import { armyKey, cellKey, layouts, type Matchup } from "@/lib/matchups";
 import { matchupDatabase } from "@/lib/matchup-database";
 import MatchupTable, { MatrixAverageBadge } from "./matchup-table";
+import MatchupMissions from "./matchup-missions";
 import { onScrimTeam } from "@/lib/scrims";
 import { Field, Modal } from "./ui";
 import type { Mutate } from "./workspace";
@@ -55,6 +56,7 @@ export default function ScrimMatrix({
       (!activeFilter.lists.length || activeFilter.lists.includes(column.key)),
   );
   const effective = new Map<string, Matchup>();
+  const cells = new Map<string, Matchup>();
   const manual = new Set<string>();
   for (const own of submitted)
     for (const enemy of opponents) {
@@ -65,7 +67,13 @@ export default function ScrimMatrix({
       const reference = base.effective.get(
         cellKey(armyKey(own.army!), armyKey(enemy.army!)),
       );
-      const scores = ready || cell?.history?.length ? cell?.scores : undefined;
+      const logged = base.cells.get(
+        cellKey(armyKey(own.army!), armyKey(enemy.army!)),
+      );
+      if (logged) cells.set(key, logged);
+      // The server supplies shared plan defaults. Private logs are comparison
+      // data only and must not silently become scores for other layouts.
+      const scores = cell?.scores;
       const matchup = Object.fromEntries(
         layouts.map((layout) => {
           const value = scores?.[layout];
@@ -78,7 +86,11 @@ export default function ScrimMatrix({
                   total: value || 0,
                   average: value || 0,
                 }
-              : reference?.[layout] || { count: 0, total: 0, average: 0 },
+              : base.manual.has(
+                    cellKey(armyKey(own.army!), armyKey(enemy.army!)) + layout,
+                  ) && reference?.[layout]
+                ? reference[layout]
+                : { count: 0, total: 0, average: 0 },
           ];
         }),
       ) as Matchup;
@@ -182,7 +194,9 @@ export default function ScrimMatrix({
           <p className={styles.muted}>
             A / B / C · {team.name}’s scores ·{" "}
             {ready ? "Opposing lists" : "All patch lists"} · Edits stay in this
-            scrim.
+            scrim. Click a layout to edit; Enter or click away saves. Clear a
+            score to mark it unknown. Differences compare with your available
+            logs.
           </p>
           <MatchupTable
             rowNames={Object.fromEntries(
@@ -200,7 +214,7 @@ export default function ScrimMatrix({
             opponentDetails
             rows={rows}
             columns={columns}
-            data={{ effective, manual }}
+            data={{ effective, manual, cells }}
             highlight={highlight}
             hoverChange={hoverChange}
             markedRows={markedRows}
@@ -208,6 +222,44 @@ export default function ScrimMatrix({
             markRows={markRows}
             markColumns={markColumns}
             averageBadge={averageBadge}
+            key={`${team.id}:${ready}`}
+            onScore={
+              canEdit
+                ? async (row, column, layout, score) => {
+                    const scores = Object.fromEntries(
+                      layouts.map((l) => {
+                        const value = effective.get(
+                          cellKey(row.key, column.key),
+                        )?.[l];
+                        return [
+                          l,
+                          l === layout
+                            ? score
+                            : value?.count
+                              ? value.average
+                              : null,
+                        ];
+                      }),
+                    );
+                    let error = "Unable to save the estimate.";
+                    const ok = await mutate(
+                      {
+                        type: "scrimEstimate",
+                        scrimId: scrim.id,
+                        revision: scrim.revision,
+                        teamId: team.id,
+                        ownId: row.key,
+                        enemyId: column.key,
+                        scores,
+                      },
+                      (message) => {
+                        error = message;
+                      },
+                    );
+                    if (!ok) throw new Error(error);
+                  }
+                : undefined
+            }
             onCell={(row, column) => {
               const cell = team.estimates.find(
                 (c) => c.ownId === row.key && c.enemyId === column.key,
@@ -292,6 +344,7 @@ function EstimateEditor({
   };
   return (
     <Modal
+      wide
       title={`${own.name} vs ${enemy.name}`}
       onClose={onClose}
       draftKey={`scrim:${scrim.id}:matrix:${team.id}:${own.id}:${enemy.id}`}
@@ -304,14 +357,17 @@ function EstimateEditor({
         },
       }}
     >
-      <p>
-        {own.army?.listName} vs {enemy.army?.listName}
-      </p>
       <p className={styles.muted}>
         {scrim.completedAt
           ? "Team plan · visible to all confirmed members"
           : `Private to ${team.name} until the scrim is complete`}
       </p>
+      <MatchupMissions
+        ownDisposition={own.army!.dispositionName}
+        enemyDisposition={enemy.army!.dispositionName}
+        ownLabel={own.name}
+        enemyLabel={enemy.name}
+      />
       <form
         onSubmit={async (e) => {
           e.preventDefault();

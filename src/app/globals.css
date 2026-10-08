@@ -2428,6 +2428,22 @@ tbody .matrix-list-label span {
 .matrix-cell:hover {
   outline: 2px solid #8faec8;
 }
+.matrix-cell-details {
+  display: block;
+  width: 100%;
+  min-height: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: 1;
+  opacity: 0;
+}
+.matrix-cell-group:hover .matrix-cell-details,
+.matrix-cell-group:focus-within .matrix-cell-details {
+  opacity: 1;
+}
 .matrix-method {
   font-size: var(--text-small);
   color: #61788a;
