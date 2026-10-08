@@ -197,6 +197,7 @@ export default function ScrimMatrix({
             }
             showAverages={false}
             averageAxes
+            opponentDetails
             rows={rows}
             columns={columns}
             data={{ effective, manual }}

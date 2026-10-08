@@ -97,6 +97,17 @@
 .compactMatrix {
   padding: 12px;
 }
+:global(.matrix-compact).compactMatrix :global(.matchup-table) {
+  width: 100%;
+}
+:global(.matrix-compact).compactMatrix :global(thead .matrix-list-label) {
+  align-items: center;
+  text-align: center;
+}
+:global(.matrix-compact).compactMatrix :global(thead .matrix-army-heading),
+:global(.matrix-compact).compactMatrix :global(thead .disposition-label) {
+  justify-content: center;
+}
 :global(.matrix-compact).compactMatrix :global(.matrix-list-label) span,
 :global(.matrix-compact).compactMatrix :global(.matrix-list-label) small {
   overflow: visible !important;
@@ -122,8 +133,8 @@
 :global(.matrix-compact).compactMatrix :global(.matchup-table) th,
 :global(.matrix-compact).compactMatrix :global(.matchup-table) td {
   min-width: 84px;
-  max-width: 84px;
-  width: 84px;
+  max-width: none;
+  width: auto;
   padding: 2px;
 }
 :global(.matrix-compact).compactMatrix :global(.matchup-table) th:first-child {

@@ -115,11 +115,13 @@ export default function MatchupTable({
   columnNames,
   showAverages = true,
   averageAxes = false,
+  opponentDetails = false,
 }: {
   rowNames?: Record<string, string>;
   columnNames?: Record<string, string>;
   showAverages?: boolean;
   averageAxes?: boolean;
+  opponentDetails?: boolean;
   rows: MatrixArmy[];
   columns: MatrixArmy[];
   visibleRows?: MatrixArmy[];
@@ -173,7 +175,17 @@ export default function MatchupTable({
                   aria-pressed={markedColumns.includes(a.key)}
                   onClick={() => setMarkedColumns(toggle(markedColumns, a.key))}
                 >
-                  {columnNames?.[a.key] ? (
+                  {opponentDetails ? (
+                    <>
+                      <span>{a.army.factionName}</span>
+                      <span>
+                        {a.army.detachmentNames.join(" + ") || "No detachments"}
+                      </span>
+                      <span className="matrix-army-heading">
+                        <Disposition name={a.army.dispositionName} />
+                      </span>
+                    </>
+                  ) : columnNames?.[a.key] ? (
                     <>
                       <span className="matrix-team-name">
                         {columnNames[a.key]} - {a.army.factionName}
