@@ -7,8 +7,6 @@ export function ArmyListLink({
   children,
   className = "text-button",
   title,
-  onActivate,
-  pressed,
   textOnly = false,
 }: {
   url: string;
@@ -16,8 +14,6 @@ export function ArmyListLink({
   children?: React.ReactNode;
   className?: string;
   title?: string;
-  onActivate?: () => void;
-  pressed?: boolean;
   textOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -27,9 +23,7 @@ export function ArmyListLink({
         type="button"
         className={`${className}${textOnly ? " army-list-text-trigger" : ""}`}
         title={title}
-        aria-pressed={pressed}
         onClick={() => {
-          onActivate?.();
           if (url) setOpen(true);
         }}
       >

@@ -205,20 +205,25 @@ export default function MatchupTable({
                   <th
                     scope="col"
                     key={a.key}
-                    className={highlight(undefined, a.key)}
+                    className={`matrix-markable-heading ${highlight(undefined, a.key)}`}
                     onMouseEnter={() => setHover({ column: a.key })}
                     onFocus={() => setHover({ column: a.key })}
                   >
+                    <button
+                      type="button"
+                      className="matrix-heading-highlight"
+                      aria-label={`Highlight column ${description(a)}`}
+                      aria-pressed={markedColumns.includes(a.key)}
+                      onClick={() =>
+                        setMarkedColumns(toggle(markedColumns, a.key))
+                      }
+                    />
                     <ArmyListLink
                       textOnly
                       url={a.army.listUrl}
                       name={description(a)}
                       className="matrix-list-label"
                       title={description(a)}
-                      pressed={markedColumns.includes(a.key)}
-                      onActivate={() =>
-                        setMarkedColumns(toggle(markedColumns, a.key))
-                      }
                     >
                       {opponentDetails ? (
                         <>
@@ -286,20 +291,23 @@ export default function MatchupTable({
                 <tr key={row.key}>
                   <th
                     scope="row"
-                    className={highlight(row.key)}
+                    className={`matrix-markable-heading ${highlight(row.key)}`}
                     onMouseEnter={() => setHover({ row: row.key })}
                     onFocus={() => setHover({ row: row.key })}
                   >
+                    <button
+                      type="button"
+                      className="matrix-heading-highlight"
+                      aria-label={`Highlight row ${description(row)}`}
+                      aria-pressed={markedRows.includes(row.key)}
+                      onClick={() => setMarkedRows(toggle(markedRows, row.key))}
+                    />
                     <ArmyListLink
                       textOnly
                       url={row.army.listUrl}
                       name={description(row)}
                       className="matrix-list-label"
                       title={description(row)}
-                      pressed={markedRows.includes(row.key)}
-                      onActivate={() =>
-                        setMarkedRows(toggle(markedRows, row.key))
-                      }
                     >
                       {rowNames?.[row.key] ? (
                         <>

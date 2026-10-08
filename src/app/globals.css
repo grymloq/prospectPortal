@@ -2818,3 +2818,30 @@ thead .army-list-text-trigger > span,
 thead .army-list-text-trigger > small {
   align-self: center;
 }
+
+.matrix-markable-heading {
+  position: relative;
+}
+.matrix-markable-heading > :not(.matrix-heading-highlight) {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+.matrix-heading-highlight {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.matrix-heading-highlight:hover {
+  background: transparent;
+}
+.matrix-heading-highlight:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: -3px;
+}
