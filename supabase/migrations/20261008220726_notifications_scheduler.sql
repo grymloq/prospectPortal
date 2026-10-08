@@ -2,7 +2,7 @@
 -- Enable the project-local scheduler and HTTP transport. No new public tables or grants.
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
-revoke usage on schema cron, net from public, anon, authenticated;
+-- Supabase owns pg_net grants; keep net outside Data API exposed schemas.
 
 -- Store the dispatch bearer in Vault as team_sweden_notifications_cron before enabling
 -- this job. The deployed app must have the same CRON_SECRET. No secret in cron.job.
