@@ -63,6 +63,10 @@ export async function POST(req: NextRequest) {
       { headers },
     );
   } catch (e) {
+    console.error(
+      "Rules import failed:",
+      e instanceof z.ZodError ? e.issues : (e as Error).message,
+    );
     const message = (e as Error).message;
     const forbidden = message === "Admin access required.";
     return NextResponse.json(

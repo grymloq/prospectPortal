@@ -134,6 +134,13 @@ test("New Recruit import is admin-only, idempotent, and preserves historical gam
   assert.throws(() => importNewRecruitPatch(s, member, patch), /Admin/);
   assert.equal(importNewRecruitPatch(s, admin, patch), true);
   assert.equal(importNewRecruitPatch(s, admin, patch), false);
+  const imported = s.patches!.find((p) => p.id === patch.id)!;
+  imported.name = "Team rules";
+  imported.removedAt = new Date().toISOString();
+  assert.equal(importNewRecruitPatch(s, admin, patch), true);
+  assert.equal(imported.removedAt, undefined);
+  assert.equal(imported.name, "Team rules");
+  assert.equal(s.patches!.filter((p) => p.id === patch.id).length, 1);
   assert.deepEqual(s.games, games);
   const reversed = structuredClone(rulesLibrary);
   reversed[0].books.reverse();
