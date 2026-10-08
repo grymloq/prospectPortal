@@ -28,6 +28,7 @@ import UserManagement from "./user-management";
 import { Avatar } from "./ui";
 import { ModalDraftProvider } from "./modal-drafts";
 import BetaFeedback, { FeedbackInbox } from "./feedback";
+import MobileNavigation from "./mobile-navigation";
 export type Mutate = (
   command: object,
   onError?: (message: string) => void,
@@ -483,6 +484,19 @@ export default function Workspace({
             </span>
           </footer>
         </main>
+        <MobileNavigation
+          items={nav}
+          currentPage={currentPage}
+          unreadFeedback={
+            (view.feedback || []).filter((f) => !f.readAt && !f.deletedAt)
+              .length
+          }
+          onNavigate={(page) => {
+            setPage(page);
+            setJournalKey(0);
+            if (page === "Profile") setProfileId(view.me.id);
+          }}
+        />
       </div>
       <BetaFeedback
         mutate={mutate}

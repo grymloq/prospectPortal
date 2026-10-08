@@ -15,6 +15,11 @@
   font-weight: 800;
   box-shadow: 0 4px 18px #102b4930;
 }
+@media (max-width: 760px) {
+  .launcher {
+    bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+}
 .attachControls,
 .filters {
   display: flex;
@@ -115,7 +120,7 @@
 @media (max-width: 600px) {
   .launcher {
     right: 12px;
-    bottom: max(12px, env(safe-area-inset-bottom));
+    bottom: calc(80px + env(safe-area-inset-bottom));
     padding: 10px 12px;
     font-size: var(--text-caption);
   }

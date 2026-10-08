@@ -1748,14 +1748,7 @@ td small {
     font-size: 29px;
   }
   .sidebar {
-    width: 100%;
-    position: sticky;
-    top: 0;
-    height: auto;
-    padding: 12px 16px;
-    flex-direction: row;
-    align-items: center;
-    gap: var(--space-4);
+    display: none;
   }
   .app-shell {
     display: block;
@@ -1802,6 +1795,9 @@ td small {
   }
   .page-content {
     padding: 24px 17px;
+  }
+  .page-footer {
+    padding-bottom: calc(156px + env(safe-area-inset-bottom));
   }
   .page-heading {
     align-items: flex-start;

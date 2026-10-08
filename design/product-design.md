@@ -61,6 +61,8 @@ This allows an admin to keep a journal and preserves accounts and history after 
 
 ## 3. Main experience and navigation
 
+**Confirmed — mobile navigation (8 October 2026):** Replace the horizontally scrolling top menu with a fixed bottom app bar. The local draft uses Profile, Journal, Matrix, Scrims and More; More exposes the remaining authorized destinations. Preserve the desktop sidebar, account permissions, navigation restoration and navy/white/yellow identity. Reserve space for the bar and device safe areas, and place beta feedback above it.
+
 **Confirmed:** The application interface is in English. The original Swedish evaluation labels below are retained as source wording; English display labels will preserve their meaning, with ambiguous terms reviewed before implementation.
 
 **Proposed:** A restrained, Swedish national team identity: deep blue, yellow accents, readable typography, and accessible contrast. Design for recording games on a phone and comparing prospects on a desktop. No visual concept or implementation has been approved yet.
