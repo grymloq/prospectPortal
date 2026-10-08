@@ -665,6 +665,7 @@ test("stale writes cannot overwrite results and linked journals cannot be detach
 test("external teams need no accounts and only portal players receive journals", () => {
   const f = fixture(2, "external");
   f.fill();
+  assert.equal(f.scrim.teams[1].estimates.length, 0);
   f.pair();
   f.report(0, 14, f.member(1));
   const games = f.s.games.filter((g) => g.scrimId === f.scrim.id);

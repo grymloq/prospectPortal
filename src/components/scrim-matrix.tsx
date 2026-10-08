@@ -18,7 +18,7 @@ export default function ScrimMatrix({
   mutate: Mutate;
 }) {
   const visible = scrim.teams.filter(
-    (t) => scrim.completedAt || onScrimTeam(t, view.me.id),
+    (t) => !t.external && (scrim.completedAt || onScrimTeam(t, view.me.id)),
   );
   const [selectedTeam, setSelectedTeam] = useState(visible[0]?.id || "");
   const team = visible.find((t) => t.id === selectedTeam) || visible[0];
@@ -36,7 +36,7 @@ export default function ScrimMatrix({
           <h2>Team matchup matrix</h2>
           <p className={styles.muted}>
             {scrim.completedAt
-              ? "Both team plans are now visible for review."
+              ? "Team plans are now visible for review."
               : "Estimates and planning comments stay inside your team until all games are completed."}
           </p>
         </div>

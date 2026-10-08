@@ -10,6 +10,8 @@ Production data rollout: `scripts/confirm-existing-members.sql` was run against 
 
 The screen preview uses fictional data from `.local/scrim-qa/browser.sqlite`; it is separate from both the normal local database and production.
 
+Security advisor observations: the existing deny-all `portal_state` design produces an informational “RLS enabled, no policy” notice. The existing `rls_auto_enable()` event-trigger function produces [anon](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable) and [authenticated](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable) execution-grant notices; no new function or grants were introduced. The actual `portal_commit` function uses invoker permissions and is not executable by anon/authenticated roles. [Leaked-password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) is currently disabled. These pre-existing settings were left outside the scrim change.
+
 - Live site: https://prospect-portal-one.vercel.app
 - Repository: https://github.com/grymloq/prospectPortal
 - Vercel project: prospect-portal, team emil-soderholms-projects.

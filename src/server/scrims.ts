@@ -156,6 +156,10 @@ function seedEstimates(state: State, scrim: Scrim) {
     state.manualEstimates || [],
   );
   for (const team of scrim.teams) {
+    if (team.external) {
+      team.estimates = [];
+      continue;
+    }
     const enemy = scrim.teams.find((t) => t.id !== team.id)!;
     team.estimates = team.entries.flatMap((own) =>
       enemy.entries.map((opponent) => {
