@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import type { User, View } from "@/lib/types";
 import type { Mutate } from "./workspace";
-import { Field, Modal } from "./ui";
+import { PageHeading, Field, Modal } from "./ui";
 export default function UserManagement({
   view,
   mutate,
@@ -58,15 +58,14 @@ export default function UserManagement({
   }
   return (
     <div>
-      <header className="page-heading">
-        <div>
-          <h1>Users</h1>
-          <p>Manage team access, invitations and administrator roles.</p>
-        </div>
+      <PageHeading
+        title="Users"
+        description="Manage team access, invitations and administrator roles."
+      >
         <button className="primary" onClick={() => openInvite()}>
           Invite user
         </button>
-      </header>
+      </PageHeading>
       {error && <p role="alert">{error}</p>}
       <div className="user-toolbar">
         <Field label="Search users">

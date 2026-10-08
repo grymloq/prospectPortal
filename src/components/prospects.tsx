@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import type { View, User } from "@/lib/types";
 import { catalogue } from "@/lib/catalogue";
-import { Avatar, Badge, Empty, Progress, dateLabel } from "./ui";
+import { PageHeading, Avatar, Badge, Empty, Progress, dateLabel } from "./ui";
 export function phaseName(view: View, user: User) {
   return user.rejected
     ? "Not selected"
@@ -83,16 +83,15 @@ export default function Prospects({
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0];
   return (
     <>
-      <header className="page-heading">
-        <div>
-          <h1>Prospects</h1>
-          <p>Review player applications, evaluations, and training progress.</p>
-        </div>
+      <PageHeading
+        title="Prospects"
+        description="Review player applications, evaluations, and training progress."
+      >
         <button className="primary" onClick={() => setPhase(view.phases[0].id)}>
           Review applications
           <ArrowRight size={17} />
         </button>
-      </header>
+      </PageHeading>
       <div className="dashboard-grid">
         <div>
           <div className="metrics">

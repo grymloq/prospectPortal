@@ -6,7 +6,7 @@ import { patchLabel } from "@/lib/patches";
 import { ArmyFields, blank, type Choice } from "./journal";
 import { Disposition } from "./disposition";
 import { ArmyListLink } from "./army-list-drawer";
-import { Field, Modal, Empty } from "./ui";
+import { PageHeading, Field, Modal, Empty } from "./ui";
 import type { Mutate } from "./workspace";
 export default function MyArmies({
   view,
@@ -55,15 +55,14 @@ export default function MyArmies({
   }
   return (
     <>
-      <header className="page-heading">
-        <div>
-          <h1>My armies</h1>
-          <p>Save army lists for a ruleset and reuse them in game logs.</p>
-        </div>
+      <PageHeading
+        title="My armies"
+        description="Save army lists for a ruleset and reuse them in game logs."
+      >
         <button className="primary" onClick={() => open("new")}>
           Add army list
         </button>
-      </header>
+      </PageHeading>
       <section className="panel padded">
         {!lists.length && (
           <Empty

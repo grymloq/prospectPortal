@@ -14,7 +14,15 @@ import type { View } from "@/lib/types";
 import { criteria, originalCriteria } from "@/lib/types";
 import { catalogue } from "@/lib/catalogue";
 import type { Mutate } from "./workspace";
-import { Avatar, Badge, Field, Modal, Empty, dateLabel } from "./ui";
+import {
+  PageHeading,
+  Avatar,
+  Badge,
+  Field,
+  Modal,
+  Empty,
+  dateLabel,
+} from "./ui";
 import { factionName, phaseName, phaseTone, stats } from "./prospects";
 import Journal from "./journal";
 export default function Profile({
@@ -68,18 +76,17 @@ export default function Profile({
   ];
   return (
     <>
-      <header className="page-heading">
-        <div>
-          <h1>Player profile</h1>
-          <p>Practice with purpose. Make progress visible.</p>
-        </div>
+      <PageHeading
+        title="Player profile"
+        description="Practice with purpose. Make progress visible."
+      >
         {isOwn && (
           <button onClick={() => setModal("edit")}>
             <Pencil size={16} />
             Edit profile
           </button>
         )}
-      </header>
+      </PageHeading>
       <section className="panel profile-header">
         <Avatar name={user.name} />
         <div className="profile-identity">

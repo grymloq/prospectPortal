@@ -3,7 +3,7 @@ import { Fragment, useState } from "react";
 import { Camera, MessageSquare, Paperclip } from "lucide-react";
 import type { FeedbackAttachment, Feedback, View } from "@/lib/types";
 import type { Mutate } from "./workspace";
-import { Field, Modal } from "./ui";
+import { PageHeading, Field, Modal } from "./ui";
 import styles from "./feedback.module.css";
 
 async function imageAttachment(
@@ -240,7 +240,7 @@ function FeedbackForm({
             {error}
           </p>
         )}
-        <div className="modal-actions">
+        <div className="form-footer">
           <button type="button" data-modal-close disabled={busy}>
             Cancel
           </button>
@@ -285,15 +285,10 @@ export function FeedbackInbox({
   );
   return (
     <div>
-      <header className="page-heading">
-        <div>
-          <h1>Feedback inbox</h1>
-          <p>
-            Beta feedback from the team. Expand a message to see its details and
-            images.
-          </p>
-        </div>
-      </header>
+      <PageHeading
+        title="Feedback inbox"
+        description="Beta feedback from the team. Expand a message to see its details and images."
+      ></PageHeading>
       <div className={styles.filters}>
         <Field label="Folder">
           <select

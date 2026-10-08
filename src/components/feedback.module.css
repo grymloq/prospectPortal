@@ -5,13 +5,13 @@
   z-index: 30;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   padding: 12px 16px;
   border: 1px solid #102b49;
   border-radius: 24px;
   background: #f5cf45;
   color: #102b49;
-  font-size: 12px;
+  font-size: var(--text-small);
   font-weight: 800;
   box-shadow: 0 4px 18px #102b4930;
 }
@@ -19,7 +19,7 @@
 .filters {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 .upload {
@@ -51,7 +51,7 @@
 .previews {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: var(--space-4);
   margin: 12px 0;
 }
 .previews figure {
@@ -67,7 +67,7 @@
   border-radius: 6px;
 }
 .previews figcaption {
-  font-size: 12px;
+  font-size: var(--text-small);
   overflow-wrap: anywhere;
   margin-top: 6px;
 }
@@ -75,6 +75,7 @@
   margin-left: 8px;
 }
 .tableWrap {
+  position: relative;
   overflow-x: auto;
   background: white;
   border: 1px solid #dce2e9;
@@ -106,12 +107,17 @@
   margin-bottom: 18px;
   align-items: end;
 }
+.filters > label {
+  margin-bottom: 0;
+  min-width: 0;
+  max-width: 100%;
+}
 @media (max-width: 600px) {
   .launcher {
     right: 12px;
     bottom: max(12px, env(safe-area-inset-bottom));
     padding: 10px 12px;
-    font-size: 11px;
+    font-size: var(--text-caption);
   }
 }
 .unread {
@@ -119,8 +125,6 @@
   font-weight: 600;
 }
 .actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  composes: actionRow from "./ui.module.css";
   min-width: 190px;
 }

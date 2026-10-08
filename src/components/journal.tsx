@@ -12,7 +12,7 @@ import {
 import { Disposition } from "./disposition";
 import { ArmyListLink } from "./army-list-drawer";
 import type { Mutate } from "./workspace";
-import { Badge, Field, Modal, Empty, dateLabel } from "./ui";
+import { PageHeading, Badge, Field, Modal, Empty, dateLabel } from "./ui";
 import ScrimReport from "./scrim-report";
 export type Choice = Pick<
   Army,
@@ -411,18 +411,17 @@ export default function Journal({
   return (
     <>
       {!embedded && (
-        <header className="page-heading">
-          <div>
-            <h1>Game journal</h1>
-            <p>Record games and review results for team training.</p>
-          </div>
+        <PageHeading
+          title="Game journal"
+          description="Record games and review results for team training."
+        >
           {canLog && (
             <button className="primary" onClick={() => open("new")}>
               <Plus size={17} />
               Log a game
             </button>
           )}
-        </header>
+        </PageHeading>
       )}
       <section className="panel padded">
         {embedded && (

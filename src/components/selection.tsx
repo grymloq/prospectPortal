@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import type { View, Phase } from "@/lib/types";
 import { catalogue } from "@/lib/catalogue";
-import { Avatar, Badge, dateLabel } from "./ui";
+import { PageHeading, Avatar, Badge, dateLabel } from "./ui";
 import type { Mutate } from "./workspace";
 import { factionName } from "./prospects";
 import PatchSettings from "./patch-settings";
@@ -41,19 +41,18 @@ export default function Selection({
   );
   return (
     <>
-      <header className="page-heading">
-        <div>
-          <h1>{settings ? "Workspace settings" : "Selection"}</h1>
-          <p>
-            {settings
-              ? "Manage selection phases and game rules versions."
-              : "Review applications and manage the eight-player squad."}
-          </p>
-        </div>
+      <PageHeading
+        title={settings ? "Workspace settings" : "Selection"}
+        description={
+          settings
+            ? "Manage selection phases and game rules versions."
+            : "Review applications and manage the eight-player squad."
+        }
+      >
         {!settings && (
           <Badge tone="green">{selected.length} / 8 players selected</Badge>
         )}
-      </header>
+      </PageHeading>
       {settings ? (
         <div className="profile-grid">
           <section className="panel padded">

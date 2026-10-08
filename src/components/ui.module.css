@@ -1,0 +1,3 @@
+.actionRow {
+  composes: action-row from global;
+}

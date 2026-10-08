@@ -1,12 +1,12 @@
 .stack {
   display: grid;
-  gap: 20px;
+  gap: var(--space-5);
   min-width: 0;
 }
 .teams {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  gap: var(--space-5);
 }
 .card {
   padding: 22px;
@@ -20,17 +20,14 @@
   align-items: flex-start;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--space-3);
 }
 .heading h2,
 .heading h3 {
   margin: 0 0 8px;
 }
 .actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
+  composes: actionRow from "./ui.module.css";
 }
 .renameLink {
   display: block;
@@ -40,7 +37,7 @@
   border-radius: 0;
   background: transparent;
   color: #526277;
-  font-size: 12px;
+  font-size: var(--text-small);
   font-weight: 400;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -54,12 +51,12 @@
   flex-wrap: wrap;
   gap: 10px 24px;
   color: #526277;
-  font-size: 13px;
+  font-size: var(--text-body-small);
 }
 .scoreboard {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: 16px;
+  gap: var(--space-4);
   align-items: center;
   text-align: center;
   padding: 24px;
@@ -82,7 +79,7 @@
   border: 1px solid #ecdb98;
   border-radius: 8px;
   color: #655013;
-  font-size: 13px;
+  font-size: var(--text-body-small);
 }
 .warning ul {
   margin: 6px 0;
@@ -96,6 +93,10 @@
 }
 .compactMatrix {
   padding: 12px;
+}
+/* A full page uses the workspace gutter; embedded matrices keep panel padding. */
+.compactMatrix.matrixPage {
+  padding: 0;
 }
 :global(.matrix-compact).compactMatrix :global(.matchup-table) {
   width: 100%;
@@ -148,15 +149,15 @@
   gap: 1px;
   min-height: 0;
   padding: 2px;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 :global(.matrix-compact).compactMatrix :global(.matrix-team-name) {
   max-width: none;
   white-space: normal;
-  font-size: 12px;
+  font-size: var(--text-small);
 }
 :global(.matrix-compact).compactMatrix :global(.matrix-list-label) small {
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 :global(.matrix-compact).compactMatrix :global(.matrix-cell) {
   min-height: 28px;
@@ -166,7 +167,7 @@
 }
 .player p {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--text-body-small);
 }
 .player small {
   display: block;
@@ -174,7 +175,7 @@
 }
 .choices {
   display: grid;
-  gap: 8px;
+  gap: var(--space-2);
   max-height: 380px;
   overflow-y: auto;
   margin: 12px 0;
@@ -199,7 +200,7 @@
 .matrix {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--text-body-small);
 }
 .matrix th,
 .matrix td {
@@ -233,7 +234,7 @@
 .scoreInputs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--space-3);
 }
 .comment {
   border-left: 3px solid #f0d43a;
@@ -252,7 +253,7 @@
 .pairing {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 100px;
-  gap: 12px;
+  gap: var(--space-3);
   align-items: end;
   padding: 12px 0;
   border-bottom: 1px solid #e4eaf0;
@@ -263,7 +264,7 @@
 .lists {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--space-3);
 }
 .lists section {
   padding: 16px;
@@ -277,7 +278,7 @@
 }
 .muted {
   color: #526277;
-  font-size: 13px;
+  font-size: var(--text-body-small);
 }
 @media (max-width: 760px) {
   .teams,
@@ -288,7 +289,7 @@
     padding: 16px;
   }
   .scoreboard {
-    gap: 8px;
+    gap: var(--space-2);
     padding: 18px 12px;
   }
   .scoreboard strong {
@@ -301,4 +302,9 @@
   .heading button {
     max-width: 100%;
   }
+}
+
+/* The parent gap already provides part of the shared page-heading spacing. */
+.stack > :global(.page-heading) {
+  margin-bottom: calc(var(--page-heading-gap) - var(--space-5));
 }

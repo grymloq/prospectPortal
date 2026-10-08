@@ -15,6 +15,7 @@ import {
 import type { TeamEvent, View } from "@/lib/types";
 import type { Mutate } from "./workspace";
 import {
+  PageHeading,
   Modal,
   Field,
   Badge,
@@ -101,11 +102,10 @@ export default function Events({
   }
   return (
     <>
-      <header className="page-heading">
-        <div>
-          <h1>Team calendar</h1>
-          <p>Manage training sessions, tournaments, and attendance.</p>
-        </div>
+      <PageHeading
+        title="Team calendar"
+        description="Manage training sessions, tournaments, and attendance."
+      >
         {admin && <button onClick={() => onScrim("new")}>Create scrim</button>}
         {admin && (
           <button
@@ -120,7 +120,7 @@ export default function Events({
             Create event
           </button>
         )}
-      </header>
+      </PageHeading>
       <div className="calendar-layout">
         <section className="panel padded">
           <div className="section-heading">

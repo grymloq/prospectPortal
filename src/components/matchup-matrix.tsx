@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import type { View } from "@/lib/types";
 import { cellKey, layouts, type MatrixArmy } from "@/lib/matchups";
-import { Empty, Modal, Field } from "./ui";
+import { PageHeading, Empty, Modal, Field } from "./ui";
 import { matchupDatabase } from "@/lib/matchup-database";
 import MatchupTable, { MatrixAverageBadge } from "./matchup-table";
 import { Disposition } from "./disposition";
@@ -89,29 +89,30 @@ export default function MatchupMatrix({
     ? data.cells.get(cellKey(detail.row.key, detail.column.key))
     : undefined;
   return (
-    <div className={`matrix-compact ${matrixStyles.compactMatrix}`}>
-      <header className="page-heading">
-        <div>
-          <h1>Matchup matrix</h1>
-          <p>
+    <div
+      className={`matrix-compact ${matrixStyles.compactMatrix} ${matrixStyles.matrixPage}`}
+    >
+      <PageHeading
+        title="Matchup matrix"
+        description={
+          <>
             {data.included} games · {data.armies.length} lists · Scores from the
             row army’s perspective
-          </p>
-        </div>
-        <div>
-          <button
-            disabled={!patch}
-            onClick={() => {
-              setChoice(blank());
-              setEditingListKey("new");
-              setAdding(true);
-            }}
-          >
-            Add army list
-          </button>{" "}
-          <button onClick={reset}>Reset filters</button>
-        </div>
-      </header>
+          </>
+        }
+      >
+        <button
+          disabled={!patch}
+          onClick={() => {
+            setChoice(blank());
+            setEditingListKey("new");
+            setAdding(true);
+          }}
+        >
+          Add army list
+        </button>
+        <button onClick={reset}>Reset filters</button>
+      </PageHeading>
       <div className="matrix-toolbar">
         <label className="matrix-patch">
           Rules patch

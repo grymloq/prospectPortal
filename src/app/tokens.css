@@ -1,0 +1,27 @@
+/* Existing visual scale. Reuse these values across global and module styles. */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --text-caption: 11px;
+  --text-small: 12px;
+  --text-body-small: 13px;
+  --text-body: 14px;
+  --text-subheading: 17px;
+  --text-heading: 23px;
+  --text-title: 36px;
+  --page-heading-gap: 27px;
+  --section-gap: 22px;
+  --panel-padding: 26px;
+  --control-radius: 6px;
+  --control-border: #dbe3ec;
+}
+
+@media (max-width: 760px) {
+  :root {
+    --panel-padding: 20px;
+  }
+}

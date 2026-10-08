@@ -5,7 +5,7 @@ import type { View } from "@/lib/types";
 import { onScrimTeam, scrimScore } from "@/lib/scrims";
 import { stockholmIso, stockholmLocal } from "@/lib/stockholm";
 import { patchLabel } from "@/lib/patches";
-import { Badge, Empty, Field, Modal } from "./ui";
+import { PageHeading, Badge, Empty, Field, Modal } from "./ui";
 import ScrimRoster from "./scrim-roster";
 import ScrimMatrix from "./scrim-matrix";
 import ScrimPairings from "./scrim-pairings";
@@ -57,26 +57,27 @@ export default function Scrims({
       : section;
   return (
     <div className={styles.stack}>
-      <header className="page-heading">
-        <div>
-          {scrim && (
+      <PageHeading
+        title={event?.title || "Team scrims"}
+        description={
+          scrim
+            ? `${scrim.kind === "internal" ? "Internal" : "External"} scrim · ${scrim.teamSize} vs ${scrim.teamSize} · one round`
+            : "Build teams, prepare matchups, and play together."
+        }
+        eyebrow={
+          scrim && (
             <button className="text-button" onClick={() => onSelect("")}>
               <ArrowLeft size={15} /> All scrims
             </button>
-          )}
-          <h1>{event?.title || "Team scrims"}</h1>
-          <p>
-            {scrim
-              ? `${scrim.kind === "internal" ? "Internal" : "External"} scrim · ${scrim.teamSize} vs ${scrim.teamSize} · one round`
-              : "Build teams, prepare matchups, and play together."}
-          </p>
-        </div>
+          )
+        }
+      >
         {admin && !scrim && (
           <button className="primary" onClick={() => onSelect("new")}>
             <Plus size={17} /> Create scrim
           </button>
         )}
-      </header>
+      </PageHeading>
       {scrim && event && score ? (
         <>
           <div className={styles.meta}>

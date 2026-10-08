@@ -1,12 +1,44 @@
 "use client";
 import { X } from "lucide-react";
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import {
+  Children,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   captureDraftFields,
   restoreDraftFields,
   useModalDrafts,
   type ModalDraft,
 } from "./modal-drafts";
+/** Shared page title and action placement; compact screens override spacing in CSS. */
+export function PageHeading({
+  title,
+  description,
+  eyebrow,
+  children,
+}: {
+  title: React.ReactNode;
+  description: React.ReactNode;
+  eyebrow?: React.ReactNode;
+  children?: React.ReactNode;
+}) {
+  return (
+    <header className="page-heading">
+      <div className="page-heading-copy">
+        {eyebrow}
+        <h1>{title}</h1>
+        <p>{description}</p>
+      </div>
+      {Children.toArray(children).length > 0 && (
+        <div className="action-row page-heading-actions">{children}</div>
+      )}
+    </header>
+  );
+}
 export function Modal<T>({
   title,
   children,

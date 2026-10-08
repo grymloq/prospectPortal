@@ -9,7 +9,7 @@
 .settings .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--text-body-small);
 }
 .settings .table td {
   padding: 5px 0;
@@ -29,12 +29,12 @@
 }
 .table .actions {
   flex-wrap: nowrap;
-  gap: 12px;
+  gap: var(--space-3);
   margin: 0;
   white-space: nowrap;
 }
 .default {
-  font-size: 12px;
+  font-size: var(--text-small);
   color: #64748b;
 }
 .settings .remove {
@@ -56,7 +56,7 @@
 .import {
   display: flex;
   align-items: end;
-  gap: 12px;
+  gap: var(--space-3);
   margin-top: 16px;
   flex-wrap: wrap;
 }
@@ -65,7 +65,7 @@
   margin: 0;
 }
 .help {
-  font-size: 12px;
+  font-size: var(--text-small);
   color: var(--muted, #64748b);
   margin: 10px 0 22px;
 }
@@ -82,18 +82,15 @@
 .summary {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
   overflow-wrap: anywhere;
 }
 .summary small {
   color: var(--muted, #64748b);
-  font-size: 12px;
+  font-size: var(--text-small);
 }
 .actions {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  flex-wrap: wrap;
+  composes: actionRow from "./ui.module.css";
   margin-top: 10px;
 }
 .settings .link {
@@ -104,7 +101,7 @@
   color: var(--navy, #173d63);
   text-decoration: underline;
   text-underline-offset: 3px;
-  font-size: 13px;
+  font-size: var(--text-body-small);
   min-height: 32px;
 }
 .settings .link:disabled {
