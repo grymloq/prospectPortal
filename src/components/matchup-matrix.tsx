@@ -11,6 +11,7 @@ import { patchLabel } from "@/lib/patches";
 import { blank, type Choice } from "./journal";
 import { AxisFilter, emptyFilter, type Filter } from "./matrix-axis-filter";
 import MatrixListEditor from "./matrix-list-editor";
+import matrixStyles from "./scrims.module.css";
 import type { Mutate } from "./workspace";
 export default function MatchupMatrix({
   view,
@@ -74,14 +75,21 @@ export default function MatchupMatrix({
     setXPage(0);
   }
   function averageBadge(key: string, opponents: string[]) {
-    return <MatrixAverageBadge data={data} keyId={key} opponents={opponents} />;
+    return (
+      <MatrixAverageBadge
+        numberOnly
+        data={data}
+        keyId={key}
+        opponents={opponents}
+      />
+    );
   }
 
   const cell = detail?.column
     ? data.cells.get(cellKey(detail.row.key, detail.column.key))
     : undefined;
   return (
-    <div className="matrix-compact">
+    <div className={`matrix-compact ${matrixStyles.compactMatrix}`}>
       <header className="page-heading">
         <div>
           <h1>Matchup matrix</h1>
@@ -219,6 +227,9 @@ export default function MatchupMatrix({
           />
         ) : (
           <MatchupTable
+            opponentDetails
+            averageAxes
+            showAverages={false}
             rows={rows}
             columns={columns}
             visibleRows={visibleRows}
