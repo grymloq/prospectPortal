@@ -543,6 +543,7 @@ export default function MatchupMatrix({
               and disposition update the existing configuration’s name and link.
             </p>
             <ArmyFields
+              rules={view.patches.find((p) => p.id === patch)?.catalogue}
               title="Matrix army"
               value={choice}
               onChange={setChoice}

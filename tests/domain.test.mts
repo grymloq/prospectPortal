@@ -593,3 +593,67 @@ test("administrators manage access, protect themselves and retain removed player
   member.inviteExpiresAt = 123;
   assert.equal(JSON.stringify(viewState(s, admin)).includes("secret"), false);
 });
+
+test("imported rulesets drive army validation and preserve historical snapshots", () => {
+  const s = structuredClone(baseline);
+  const game = s.games[0];
+  const actor = s.users.find((u) => u.id === game.userId)!;
+  const admin = s.users.find((u) => u.role === "admin")!;
+  const updated = structuredClone(catalogue);
+  const faction = updated.factions.find((f) => f.id === game.own.faction)!;
+  faction.revision += 1;
+  const disposition = { id: "qa-new-disposition", name: "New disposition" };
+  updated.dispositions.push(disposition);
+  const detachment = {
+    ...faction.detachments[0],
+    id: "qa-new-detachment",
+    name: "New detachment",
+    dispositions: [disposition.id],
+  };
+  faction.detachments.push(detachment);
+  const patch = { ...patchFromLibrary(rulesLibrary), catalogue: updated };
+  const historical = structuredClone(s.games);
+  importNewRecruitPatch(s, admin, patch);
+  assert.deepEqual(s.games, historical);
+  assert.equal(
+    viewState(s, actor).catalogue!.factions.find((f) => f.id === faction.id)!
+      .revision,
+    faction.revision,
+  );
+  const own = {
+    ...game.own,
+    detachments: [detachment.id],
+    disposition: disposition.id,
+  };
+  execute(s, actor, {
+    ...game,
+    type: "game",
+    id: undefined,
+    patchId: patch.id,
+    layout: "A",
+    own,
+  });
+  const created = s.games.at(-1)!;
+  assert.equal(created.own.revision, faction.revision);
+  assert.deepEqual(created.own.detachmentNames, ["New detachment"]);
+  assert.equal(created.own.dispositionName, "New disposition");
+  assert.throws(() =>
+    execute(s, actor, {
+      ...game,
+      type: "game",
+      id: undefined,
+      layout: "A",
+      own,
+    }),
+  );
+  execute(s, actor, {
+    ...game,
+    type: "game",
+    layout: "A",
+    context: "Updated note",
+  });
+  assert.deepEqual(
+    s.games.find((g) => g.id === game.id)!.own,
+    historical[0].own,
+  );
+});

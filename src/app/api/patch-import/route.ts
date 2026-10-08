@@ -12,6 +12,7 @@ import {
 } from "@/server/newrecruit-patch";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 export async function POST(req: NextRequest) {
   const headers = { "Cache-Control": "private, no-store" };
   try {

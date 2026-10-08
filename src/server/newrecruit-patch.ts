@@ -2,6 +2,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { Patch, State, User } from "@/lib/types";
 import { ensurePatches } from "@/lib/patches";
+import { buildCatalogue } from "@/lib/build-catalogue.mjs";
+import { catalogue } from "@/lib/catalogue";
 
 export const newRecruitLibraryUrl =
   "https://www.newrecruit.eu/api/rpc?p0=get_library";
@@ -77,7 +79,48 @@ export async function fetchNewRecruitPatch(): Promise<Patch> {
     throw new Error(
       "Could not fetch the New Recruit rules update. Try again later.",
     );
-  return patchFromLibrary(await response.json());
+  const library = await response.json();
+  const patch = patchFromLibrary(library);
+  const system = library.find((s: { id: number }) => s.id === systemId);
+  const books = system.books.filter(
+    (b: { deleted?: boolean; bsid?: string }) => !b.deleted && b.bsid,
+  );
+  const rows: unknown[] = [];
+  for (let i = 0; i < books.length; i += 6) {
+    rows.push(
+      ...(await Promise.all(
+        books
+          .slice(i, i + 6)
+          .map(async (book: { id: number; nrversion: number; sha: string }) => {
+            const r = await fetch(
+              `https://www.newrecruit.eu/api/rpc?p0=books_get_book_row&p1=${systemId}&p2=${book.id}`,
+              {
+                cache: "no-store",
+                signal: AbortSignal.timeout(20000),
+              },
+            );
+            if (!r.ok)
+              throw new Error("Could not fetch New Recruit catalogue data.");
+            const row = await r.json();
+            if (
+              row.id !== book.id ||
+              row.nrversion !== book.nrversion ||
+              row.sha !== book.sha
+            )
+              throw new Error(
+                "New Recruit changed during import. Please retry.",
+              );
+            const content = JSON.parse(row.content);
+            const rules = content.catalogue || content.gameSystem;
+            if (!rules)
+              throw new Error("New Recruit returned invalid rules data.");
+            return { book, catalogue: rules };
+          }),
+      )),
+    );
+  }
+  patch.catalogue = buildCatalogue(rows);
+  return patch;
 }
 
 export function requirePatchAdmin(actor: User) {
@@ -89,6 +132,9 @@ export function importNewRecruitPatch(state: State, actor: User, patch: Patch) {
   requirePatchAdmin(actor);
   ensurePatches(state);
   const existing = state.patches!.find((p) => p.id === patch.id);
+  const updatedCatalogue = patch.catalogue || state.catalogue || catalogue;
+  if (patch.catalogue) state.catalogue = patch.catalogue;
+  if (existing && patch.catalogue) existing.catalogue = patch.catalogue;
   if (existing && !existing.removedAt) return false;
   if (existing) {
     delete existing.removedAt;
@@ -100,7 +146,9 @@ export function importNewRecruitPatch(state: State, actor: User, patch: Patch) {
     });
     return true;
   }
-  state.patches!.push(structuredClone(patch));
+  state.patches!.push(
+    structuredClone({ ...patch, catalogue: updatedCatalogue }),
+  );
   state.audit.unshift({
     id: randomUUID(),
     actor: actor.name,

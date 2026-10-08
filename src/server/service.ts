@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import type { State, User, View } from "@/lib/types";
+import type { State, User, View, Army } from "@/lib/types";
 import { armySnapshot, catalogue } from "@/lib/catalogue";
 import { publicUser } from "./public-user";
 import { armyKey, outcomeForScore } from "@/lib/matchups";
@@ -169,6 +169,7 @@ export function viewState(s: State, actor: User): View {
     manualEstimates: s.manualEstimates || [],
     patches: [...s.patches!].sort((a, b) => b.date.localeCompare(a.date)),
     defaultPatchId: defaultPatchId(s),
+    catalogue: s.catalogue || catalogue,
     users: s.users.filter((u) => admin || u.id === actor.id).map(publicUser),
     phases: s.phases,
     games: s.games
@@ -258,7 +259,10 @@ export function execute(s: State, actor: User, input: unknown) {
     case "matrixList": {
       if (!s.patches!.some((p) => p.id === c.patchId))
         throw new Error("Choose a rules patch.");
-      const snapshot = armySnapshot(c.army);
+      const snapshot = armySnapshot(
+        c.army,
+        s.patches!.find((p) => p.id === c.patchId)?.catalogue || catalogue,
+      );
       (s.matrixListHistory ||= []).push({
         authorName: actor.name,
         updatedAt: now,
@@ -290,8 +294,10 @@ export function execute(s: State, actor: User, input: unknown) {
     case "manualEstimate": {
       if (!s.patches!.some((p) => p.id === c.patchId))
         throw new Error("Choose a rules patch.");
-      let row = armyKey(armySnapshot(c.own)),
-        column = armyKey(armySnapshot(c.enemy));
+      const rules =
+        s.patches!.find((p) => p.id === c.patchId)?.catalogue || catalogue;
+      let row = armyKey(armySnapshot(c.own, rules)),
+        column = armyKey(armySnapshot(c.enemy, rules));
       let score = c.score;
       if (row === column && score !== null && score !== 10)
         throw new Error(
@@ -324,7 +330,7 @@ export function execute(s: State, actor: User, input: unknown) {
         // Publishing a team estimate also makes its configurations available to teammates without those logs.
         s.matrixLists ||= [];
         for (const input of [c.own, c.enemy]) {
-          const snapshot = armySnapshot(input);
+          const snapshot = armySnapshot(input, rules);
           if (
             !s.matrixLists.some(
               (v) =>
@@ -358,7 +364,12 @@ export function execute(s: State, actor: User, input: unknown) {
       requireAdmin();
       if (s.patches!.some((p) => p.date === c.date))
         throw new Error("A patch already exists for this date.");
-      s.patches!.push({ id: c.date, name: c.name, date: c.date });
+      s.patches!.push({
+        id: c.date,
+        name: c.name,
+        date: c.date,
+        catalogue: s.catalogue || catalogue,
+      });
       audit("Added patch: " + c.name + " — " + c.date);
       break;
     }
@@ -562,13 +573,28 @@ export function execute(s: State, actor: User, input: unknown) {
         throw new Error("Event not found.");
       const { type: _, ...fields } = c;
       void _;
+      const gameRules =
+        s.patches!.find((p) => p.id === c.patchId)?.catalogue || catalogue;
+      const snapshot = (input: typeof c.own, previous?: Army) => {
+        if (
+          previous &&
+          old?.patchId === c.patchId &&
+          input.faction === previous.faction &&
+          input.disposition === previous.disposition &&
+          [...input.detachments].sort().join("|") ===
+            [...previous.detachments].sort().join("|")
+        ) {
+          return { ...previous, ...input };
+        }
+        return armySnapshot(input, gameRules);
+      };
       const game = {
         ...fields,
         outcome: outcomeForScore(c.score),
         id: old?.id || randomUUID(),
         userId: actor.id,
-        own: armySnapshot(c.own),
-        enemy: armySnapshot(c.enemy),
+        own: snapshot(c.own, old?.own),
+        enemy: snapshot(c.enemy, old?.enemy),
         updatedAt: now,
       };
       s.games = s.games.filter((g) => g.id !== game.id);

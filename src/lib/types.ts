@@ -1,3 +1,4 @@
+import type { Catalogue } from "./catalogue";
 export type Phase = {
   id: string;
   name: string;
@@ -34,6 +35,7 @@ export type Army = {
 };
 export type Layout = "A" | "B" | "C";
 export type Patch = {
+  catalogue?: Catalogue;
   id: string;
   name: string;
   date: string;
@@ -145,6 +147,7 @@ export type State = {
   manualEstimates?: ManualEstimate[];
   patches?: Patch[];
   defaultPatchId?: string;
+  catalogue?: Catalogue;
   users: User[];
   phases: Phase[];
   games: Game[];

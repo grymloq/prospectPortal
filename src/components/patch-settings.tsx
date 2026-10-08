@@ -61,8 +61,8 @@ export default function PatchSettings({
       <p className={styles.help}>
         {provider === "warmind"
           ? "Imports Warmind’s published MFM version and date."
-          : "Imports New Recruit’s current catalogue revisions and update date."}{" "}
-        Imports record ruleset versions; they do not download unit rules.
+          : "Imports New Recruit’s current detachments, dispositions, and catalogue revisions."}{" "}
+        Warmind imports version metadata only.
       </p>
       {notice && <p role="status">{notice}</p>}
       <p className={styles.help}>

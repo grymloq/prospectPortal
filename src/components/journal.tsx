@@ -10,7 +10,7 @@ import {
   Check,
 } from "lucide-react";
 import type { Army, Game, View } from "@/lib/types";
-import { catalogue, dispositionsFor } from "@/lib/catalogue";
+import { catalogue, dispositionsFor, type Catalogue } from "@/lib/catalogue";
 import type { Mutate } from "./workspace";
 import { Badge, Field, Modal, Empty, dateLabel } from "./ui";
 export type Choice = Pick<
@@ -24,13 +24,15 @@ export function ArmyFields({
   title,
   value,
   onChange,
+  rules = catalogue,
 }: {
   title: string;
   value: Choice;
   onChange: (c: Choice) => void;
+  rules?: Catalogue;
 }) {
-  const faction = catalogue.factions.find((f) => f.id === value.faction)!,
-    available = dispositionsFor(value.faction, value.detachments);
+  const faction = rules.factions.find((f) => f.id === value.faction),
+    available = dispositionsFor(value.faction, value.detachments, rules);
   return (
     <fieldset className="army-fields">
       <legend>{title}</legend>
@@ -39,7 +41,12 @@ export function ArmyFields({
           value={value.faction}
           onChange={(e) => onChange(blank(e.target.value))}
         >
-          {catalogue.factions.map((f) => (
+          {!faction && (
+            <option value={value.faction}>
+              Choose an army for this ruleset
+            </option>
+          )}
+          {rules.factions.map((f) => (
             <option key={f.id} value={f.id}>
               {f.name}
             </option>
@@ -51,7 +58,7 @@ export function ArmyFields({
           Detachments <small>({value.detachments.length}/3)</small>
         </span>
         <div className="detachment-options">
-          {faction.detachments.map((d) => (
+          {faction?.detachments.map((d) => (
             <label key={d.id}>
               <input
                 type="checkbox"
@@ -67,9 +74,11 @@ export function ArmyFields({
                   onChange({
                     ...value,
                     detachments: selected,
-                    disposition: dispositionsFor(value.faction, selected).some(
-                      (d) => d.id === value.disposition,
-                    )
+                    disposition: dispositionsFor(
+                      value.faction,
+                      selected,
+                      rules,
+                    ).some((d) => d.id === value.disposition)
                       ? value.disposition
                       : "",
                   });
@@ -110,7 +119,9 @@ export function ArmyFields({
           onChange={(e) => onChange({ ...value, listUrl: e.target.value })}
         />
       </Field>
-      <small>New Recruit · catalogue revision {faction.revision}</small>
+      <small>
+        New Recruit · catalogue revision {faction?.revision ?? "unavailable"}
+      </small>
     </fieldset>
   );
 }
@@ -141,7 +152,19 @@ export default function Journal({
     [saving, setSaving] = useState(false),
     [deleting, setDeleting] = useState(false);
   const [score, setScore] = useState("10");
+  const [rulesPatch, setRulesPatch] = useState(
+    view.defaultPatchId || view.patches.find((p) => !p.removedAt)?.id || "",
+  );
+  const rules =
+    view.patches.find((p) => p.id === rulesPatch)?.catalogue || catalogue;
   function open(game: Game | "new") {
+    setRulesPatch(
+      game === "new"
+        ? view.defaultPatchId ||
+            view.patches.find((p) => !p.removedAt)?.id ||
+            ""
+        : game.patchId || "",
+    );
     setScore(String(game === "new" ? 10 : game.score));
     setOwn(game === "new" ? blank(view.me.faction) : game.own);
     setEnemy(game === "new" ? blank() : game.enemy);
@@ -374,8 +397,14 @@ export default function Journal({
               </Field>
             </div>
             <div className="form-grid armies">
-              <ArmyFields title="Your army" value={own} onChange={setOwn} />
               <ArmyFields
+                title="Your army"
+                value={own}
+                onChange={setOwn}
+                rules={rules}
+              />
+              <ArmyFields
+                rules={rules}
                 title="Opponent's army"
                 value={enemy}
                 onChange={setEnemy}
@@ -426,13 +455,12 @@ export default function Journal({
                 <select
                   name="patchId"
                   required
-                  defaultValue={
-                    edit === "new"
-                      ? view.defaultPatchId ||
-                        view.patches.find((p) => !p.removedAt)?.id ||
-                        ""
-                      : edit.patchId || ""
-                  }
+                  value={rulesPatch}
+                  onChange={(e) => {
+                    setRulesPatch(e.target.value);
+                    setOwn(blank(own.faction));
+                    setEnemy(blank(enemy.faction));
+                  }}
                 >
                   <option value="" disabled>
                     Choose a patch
