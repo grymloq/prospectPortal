@@ -46,8 +46,8 @@ export default function Selection({
           <h1>{settings ? "Workspace settings" : "Selection"}</h1>
           <p>
             {settings
-              ? "A clear structure for a thoughtful selection process."
-              : "An open beginning. Eight places to earn."}
+              ? "Manage selection phases and game rules versions."
+              : "Review applications and manage the eight-player squad."}
           </p>
         </div>
         {!settings && (
@@ -191,10 +191,6 @@ export default function Selection({
             <section className="panel padded">
               <ShieldCheck size={24} />
               <h3>Private workspace</h3>
-              <p>
-                Your workspace keeps selection decisions and player progress
-                together.
-              </p>
               <p>
                 Profiles are private. Evaluations and internal discussions are
                 restricted to admins.

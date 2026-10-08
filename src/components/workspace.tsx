@@ -148,8 +148,8 @@ export default function Workspace({
       <aside className="sidebar">
         <div className="brand">
           <TeamLogo />
-          <strong>TEAM SWEDEN</strong>
-          <span>40K NATIONAL TEAM</span>
+          <strong>SWEDISH 40K</strong>
+          <span>NATIONAL TEAM</span>
         </div>
         <div className="nav-caption">TEAM WORKSPACE</div>
         <nav>
@@ -184,11 +184,11 @@ export default function Workspace({
             <Avatar name={view.me.name} />
             <div>
               <strong>{view.me.name}</strong>
-              <small>{admin ? "Administrator" : "Player workspace"}</small>
+              <small>{admin ? "Coach · administrator" : "Player"}</small>
             </div>
           </div>
           <div className="local-label">
-            {localDemo ? "Local demo · sample data" : "Swedish national team"}
+            {localDemo ? "Local demo · sample data" : "Swedish 40k National Team"}
           </div>
           <button
             onClick={async () => {
@@ -207,7 +207,7 @@ export default function Workspace({
       <main className="main">
         <div className="topbar">
           <span>
-            <span className="status-dot" /> Sweden /{" "}
+            <span className="status-dot" /> Swedish 40k /{" "}
             {currentPage === "Profile" ? "Player profile" : currentPage}
           </span>
           <div className="row">

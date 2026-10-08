@@ -86,7 +86,7 @@ export default function Prospects({
       <header className="page-heading">
         <div>
           <h1>Prospects</h1>
-          <p>Build the next eight.</p>
+          <p>Review player applications, evaluations, and training progress.</p>
         </div>
         <button className="primary" onClick={() => setPhase(view.phases[0].id)}>
           Review applications
@@ -337,12 +337,6 @@ export default function Prospects({
                 </div>
               );
             })}
-          </div>
-          <div className="quiet-note">
-            Eight players.
-            <br />A team built through practice,
-            <br />
-            progress, and shared ambition.
           </div>
         </aside>
       </div>

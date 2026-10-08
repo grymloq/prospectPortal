@@ -247,7 +247,7 @@ export default function Profile({
             )}
           </div>
           <aside className="panel padded">
-            <h3>Your selection journey</h3>
+            <h3>Your selection status</h3>
             <div className="journey">
               {view.phases.map((p, i) => (
                 <div

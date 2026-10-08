@@ -42,30 +42,25 @@ export default function Auth({
       <section className="auth-story">
         <TeamLogo />
         <h2>
-          TEAM SWEDEN<span>40K NATIONAL TEAM</span>
+          SWEDISH 40K<span>NATIONAL TEAM</span>
         </h2>
         <div>
           <h1>
-            Great players.
-            <br />
-            One team.
+            Swedish 40k National Team
           </h1>
           <p>
-            A shared space to improve your game,
-            <br />
-            show your progress, and earn your place.
+            Coaches and players
           </p>
         </div>
-        <small>Eight players. A collective ambition.</small>
       </section>
       <section className="auth-form">
         <div className="auth-inner">
           <ShieldCheck size={30} />
-          <h1>{register ? "Join the journey." : "Welcome back."}</h1>
+          <h1>{register ? "Create account" : "Sign in"}</h1>
           <p>
             {register
-              ? "Create an account and apply to represent Sweden."
-              : "Sign in to your team workspace."}
+              ? "Create your account to access team training and selection."
+              : "Access your game journal, training goals, and team calendar."}
           </p>
           <form
             onSubmit={(e) => {
@@ -115,7 +110,7 @@ export default function Auth({
           >
             {register
               ? "Already have an account? Sign in"
-              : "New here? Create an account"}
+              : "Create an account"}
           </button>
           {!localDemo && !register && (
             <p>

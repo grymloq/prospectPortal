@@ -89,7 +89,7 @@ export default function Events({
       <header className="page-heading">
         <div>
           <h1>Team calendar</h1>
-          <p>Show up. Put in the work. Grow together.</p>
+          <p>Manage training sessions, tournaments, and attendance.</p>
         </div>
         {admin && (
           <button

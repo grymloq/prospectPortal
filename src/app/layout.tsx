@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 export const metadata: Metadata = {
-  title: "Team Sweden · National team selection",
+  title: "Swedish 40k National Team",
   description:
-    "The development and selection workspace for Sweden’s Warhammer 40,000 team.",
+    "Game journals, training goals, matchups, and selection for the Swedish 40k National Team’s coaches and players.",
 };
 export default function RootLayout({
   children,

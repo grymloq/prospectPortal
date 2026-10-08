@@ -10,7 +10,7 @@ export default function AcceptInvite({ token }: { token: string }) {
       className="panel"
       style={{ maxWidth: 480, margin: "60px auto", padding: 24 }}
     >
-      <h1>Join Team Sweden</h1>
+      <h1>Swedish 40k National Team</h1>
       {done ? (
         <p>
           Your account is ready. <Link href="/">Sign in</Link>

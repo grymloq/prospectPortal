@@ -167,7 +167,7 @@ export default function Journal({
         <header className="page-heading">
           <div>
             <h1>Game journal</h1>
-            <p>Every game is something to learn from.</p>
+            <p>Record games and review results for team training.</p>
           </div>
           {canLog && (
             <button className="primary" onClick={() => open("new")}>
