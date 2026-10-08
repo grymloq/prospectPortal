@@ -454,3 +454,5 @@ Admins have a Users directory including Supabase accounts which have not yet ope
 ## 17. Remembered workspace location
 
 **Confirmed:** Reloading or returning to the application restores the last workspace section, selected scrim and scrim tab. Navigation preferences persist in this browser per signed-in account and role. Restoration validates available pages and records against the current authorized server response; unavailable records fall back to the section overview. This stores only navigation identifiers, not forms or private content.
+
+**Confirmed — double-sided primary cards (8 October 2026):** The 11 source-verified primary cards with reverse sides flip on click or keyboard activation. A desktop flip cursor and 1/2 or 2/2 indicator identify them. Use a short CSS 3D transition for pointer activation; reduced motion and keyboard activation switch sides immediately. Single-sided primaries remain static.

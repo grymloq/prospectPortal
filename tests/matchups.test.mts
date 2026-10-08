@@ -250,3 +250,23 @@ test("unmapped historical dispositions do not invent a mission card", () => {
     "Immovable Object",
   );
 });
+
+test("only source-verified two-sided primaries expose a reverse image", () => {
+  const backs = missionDispositions
+    .flatMap((own) =>
+      missionDispositions.map((enemy) => matchupMissions(own, enemy)!.own),
+    )
+    .filter((card) => card.backImage);
+  assert.equal(backs.length, 11);
+  assert.equal(
+    matchupMissions("Take and Hold", "Take and Hold")!.own.backImage,
+    undefined,
+  );
+  const asset = matchupMissions("Priority Assets", "Take and Hold")!.own;
+  assert.equal(asset.backImage, asset.image.replace(".png", "-back.png"));
+  assert.equal(
+    matchupMissions("Disruption", "Take and Hold")!.own.name,
+    "Death Trap",
+  );
+  assert.ok(matchupMissions("Disruption", "Take and Hold")!.own.backImage);
+});

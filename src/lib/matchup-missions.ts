@@ -74,6 +74,20 @@ const portraitLayouts: Record<string, number> = {
 };
 const slug = (name: string) =>
   name.toLowerCase().replaceAll("'", "").replaceAll(" ", "-");
+// Reverse sides explicitly present on the source card pages.
+const doubleSided = new Set([
+  "Death Trap",
+  "Smoke and Mirrors",
+  "Locate and Deny",
+  "Triangulation",
+  "Surveil the Foe",
+  "Gather Intel",
+  "Secure Asset",
+  "Vital Link",
+  "Extract Relic",
+  "Vanguard Operation",
+  "Sabotage",
+]);
 function disposition(name: string) {
   return missionDispositions.find(
     (value) => value.toLowerCase() === name.trim().toLowerCase(),
@@ -91,6 +105,9 @@ export function matchupMissions(ownName: string, enemyName: string) {
       disposition: side,
       page: `${origin}/${path}`,
       image: `${origin}/assets/${path}.png`,
+      backImage: doubleSided.has(name)
+        ? `${origin}/assets/${path}-back.png`
+        : undefined,
     };
   }
   const [first, second] = [slug(own), slug(enemy)].sort(

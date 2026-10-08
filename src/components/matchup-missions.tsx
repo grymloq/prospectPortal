@@ -6,6 +6,58 @@ import { useState } from "react";
 import { matchupMissions } from "@/lib/matchup-missions";
 import styles from "./matchup-missions.module.css";
 
+function MissionCard({
+  front,
+  back,
+  name,
+}: {
+  front: string;
+  back?: string;
+  name: string;
+}) {
+  const [flipped, setFlipped] = useState(false);
+  const [keyboard, setKeyboard] = useState(false);
+  if (!back)
+    return <ReferenceImage src={front} alt={`${name} primary mission card`} />;
+  return (
+    <button
+      type="button"
+      className={styles.flipCard}
+      aria-label={`${name}: ${flipped ? "back" : "front"} side. Flip card`}
+      aria-pressed={flipped}
+      data-flipped={flipped}
+      data-keyboard={keyboard}
+      onKeyDown={() => setKeyboard(true)}
+      onPointerDown={() => setKeyboard(false)}
+      onClick={() => setFlipped(!flipped)}
+    >
+      <span className={styles.flipInner}>
+        <span className={styles.front} aria-hidden={flipped}>
+          <Image
+            src={front}
+            alt={`${name} front`}
+            fill
+            quality={90}
+            sizes="(max-width: 760px) 45vw, 420px"
+          />
+        </span>
+        <span className={styles.back} aria-hidden={!flipped}>
+          <Image
+            src={back}
+            alt={`${name} back`}
+            fill
+            quality={90}
+            sizes="(max-width: 760px) 45vw, 420px"
+          />
+        </span>
+      </span>
+      <span className={styles.flipHint} aria-hidden="true">
+        ↔ {flipped ? "2" : "1"}/2
+      </span>
+    </button>
+  );
+}
+
 function ReferenceImage({ src, alt }: { src: string; alt: string }) {
   const [failed, setFailed] = useState(false);
   return (
@@ -92,9 +144,10 @@ export default function MatchupMissions({
                   {card.disposition} · {card.name}
                 </span>
               </figcaption>
-              <ReferenceImage
-                src={card.image}
-                alt={`${card.name} primary mission card`}
+              <MissionCard
+                front={card.image}
+                back={card.backImage}
+                name={card.name}
               />
             </figure>
           ))}
