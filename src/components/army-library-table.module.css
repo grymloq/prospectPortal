@@ -9,12 +9,15 @@
   outline-offset: 2px;
 }
 .table {
-  min-width: 1240px;
+  min-width: 1380px;
   table-layout: fixed;
 }
 .table th,
 .table td {
   padding: 12px 10px;
+}
+.table th {
+  white-space: normal;
 }
 .table td {
   overflow-wrap: anywhere;
@@ -24,26 +27,36 @@
 .table td:first-child {
   position: sticky;
   left: 0;
-  width: 180px;
+  width: 240px;
   z-index: 1;
   box-shadow: 1px 0 0 var(--border);
 }
 .table td:first-child {
   background: white;
 }
+.table th:last-child {
+  width: 130px;
+}
 .row {
   cursor: pointer;
 }
+.table .faction td {
+  background: #edf3f8;
+}
+.table .archetype td {
+  background: #f8fafc;
+}
 .row:hover td,
 .row:focus-within td {
-  background: #fafcfe;
+  background: #f1f6fb;
 }
 .row:focus-visible {
   outline: 2px solid var(--navy);
   outline-offset: -2px;
 }
 .name,
-.sort {
+.sort,
+.details {
   min-height: 0;
   border: 0;
   padding: 0;
@@ -59,25 +72,43 @@
   font-weight: 650;
   white-space: normal;
   overflow-wrap: anywhere;
+  justify-content: flex-start;
 }
 .name svg {
   flex: none;
   margin-top: 2px;
 }
+.name > span {
+  min-width: 0;
+}
+.archetypeLabel {
+  padding-left: 12px;
+}
+.listLabel {
+  padding-left: 24px;
+}
+.details {
+  margin: 4px 0 0 19px;
+  font-size: var(--text-caption);
+  text-decoration: underline;
+}
+.archetypeLabel > small,
+.listLabel > small,
+.faction td:first-child > small {
+  margin-left: 19px;
+  color: var(--muted);
+}
 .table td.expanded {
   position: static;
   width: auto;
   box-shadow: none;
-  padding: 16px;
+  padding: 12px;
   background: #fafcfe;
-}
-.table tr[hidden] {
-  display: none;
 }
 .expanded > div {
   position: sticky;
-  left: 16px;
-  width: calc(100cqw - 32px);
+  left: 12px;
+  width: calc(100cqw - 24px);
 }
 .sort {
   gap: 5px;
@@ -88,12 +119,10 @@
 .sort svg {
   flex: none;
 }
-.line,
-.patch {
+.line {
   display: block;
 }
-.line + .line,
-.patch + .patch {
+.line + .line {
   margin-top: 4px;
 }
 .table :global(.disposition-label) {
@@ -101,10 +130,6 @@
 }
 .number {
   font-variant-numeric: tabular-nums;
-}
-.number,
-.trend {
-  min-width: 70px;
 }
 .muted {
   color: var(--muted);
@@ -116,9 +141,15 @@
 @media (max-width: 600px) {
   .table th:first-child,
   .table td:first-child {
-    width: clamp(90px, 45cqw, 130px);
+    width: 130px;
   }
   .table th:last-child {
     width: 100px;
+  }
+  .archetypeLabel {
+    padding-left: 7px;
+  }
+  .listLabel {
+    padding-left: 14px;
   }
 }

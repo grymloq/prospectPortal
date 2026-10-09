@@ -1,5 +1,4 @@
 .hierarchy,
-.children,
 .preview {
   min-width: 0;
 }
@@ -7,37 +6,6 @@
   margin: 0 0 12px;
   color: var(--muted);
   font-size: var(--text-small);
-}
-.faction + .faction {
-  border-top: 1px solid var(--border);
-}
-.heading {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  width: 100%;
-  min-height: 56px;
-  padding: 12px 0;
-  text-align: left;
-  justify-content: flex-start;
-  color: var(--navy);
-  gap: 10px;
-  white-space: normal;
-}
-.heading > svg {
-  flex: none;
-}
-.heading strong {
-  min-width: 0;
-  font-size: var(--text-body);
-}
-.counts {
-  margin-left: auto;
-  font-size: var(--text-small);
-  color: var(--muted);
-}
-.children {
-  padding: 0 0 16px;
 }
 .actions,
 .configuration,
@@ -60,7 +28,6 @@
   white-space: normal;
 }
 .pages {
-  margin-top: 12px;
   font-size: var(--text-small);
 }
 .pages > span {
@@ -73,13 +40,4 @@
 }
 .preview h4 {
   margin: 16px 0 8px;
-}
-@media (max-width: 600px) {
-  .heading {
-    flex-wrap: wrap;
-  }
-  .counts {
-    width: 100%;
-    margin-left: 27px;
-  }
 }

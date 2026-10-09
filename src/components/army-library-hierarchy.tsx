@@ -1,6 +1,5 @@
 "use client";
-import { useEffect, useId, useState, type ReactNode } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import type {
   ArmyLibraryDTO,
   LibraryArchetypeRow,
@@ -9,7 +8,12 @@ import type {
   LibraryTarget,
   RosterSelection,
 } from "@/lib/types";
-import { ArmyLibraryTable } from "./army-library-table";
+import {
+  ArmyLibraryTable,
+  ArmyLibraryDataRow,
+  ArmyLibraryFactionRow,
+  ArmyLibraryInlineRow,
+} from "./army-library-table";
 import { FactionName } from "./faction-avatar";
 import { ArmyListLink } from "./army-list-drawer";
 import { Disposition } from "./disposition";
@@ -227,56 +231,58 @@ function ArchetypeLists({
     navigation.revision,
   );
   const detail = data?.detail;
-  if (!data || !detail) return <Pending error={error} retry={retry} />;
-  const key = (list: LibraryListRow) =>
-    `list:${row.id}:${list.id}:${list.versionId || "current"}`;
+  if (!data || !detail)
+    return (
+      <ArmyLibraryInlineRow>
+        <Pending error={error} retry={retry} />
+      </ArmyLibraryInlineRow>
+    );
+  const total = detail.relatedPagination?.lists ?? detail.lists.length;
+  const pageSize = detail.relatedPagination?.pageSize || 20;
   return (
-    <section aria-label={`Lists in ${row.name}`}>
-      <div className={styles.actions}>
-        <strong>Army lists</strong>
-        <button
-          className="small"
-          onClick={() => navigation.onOpen({ kind: "archetype", id: row.id })}
-        >
-          View archetype details
-        </button>
-      </div>
-      <ArmyLibraryTable
-        library={{ ...data, tab: "lists", lists: detail.lists }}
-        showNote={false}
-        sort={navigation.query.sort}
-        segmented={navigation.query.patchId === "all"}
-        onSort={navigation.onSort}
-        onOpen={navigation.onOpen}
-        expansion={{
-          isOpen: (entry) =>
-            navigation.expanded[key(entry as LibraryListRow)] || false,
-          toggle: (entry) => navigation.onToggle(key(entry as LibraryListRow)),
-          content: (entry) => (
-            <ListPreview
-              row={entry as LibraryListRow}
-              navigation={navigation}
+    <>
+      {detail.lists.map((list) => {
+        const key = `list:${row.id}:${list.id}:${list.versionId || "current"}`;
+        const open = navigation.expanded[key] || false;
+        return (
+          <Fragment key={list.id}>
+            <ArmyLibraryDataRow
+              row={list}
+              patches={data.patches}
+              segmented={navigation.query.patchId === "all"}
+              expanded={open}
+              onToggle={() => navigation.onToggle(key)}
+              onDetails={() =>
+                navigation.onOpen({ kind: "list", id: list.id }, list.versionId)
+              }
             />
-          ),
-        }}
-      />
-      <Pages
-        page={detail.relatedPagination?.page || 1}
-        total={detail.relatedPagination?.lists ?? detail.lists.length}
-        pageSize={detail.relatedPagination?.pageSize || 20}
-        name="lists"
-        onPage={setPage}
-      />
-    </section>
+            {open && (
+              <ArmyLibraryInlineRow>
+                <ListPreview row={list} navigation={navigation} />
+              </ArmyLibraryInlineRow>
+            )}
+          </Fragment>
+        );
+      })}
+      {total > pageSize && (
+        <ArmyLibraryInlineRow>
+          <Pages
+            page={detail.relatedPagination?.page || 1}
+            total={total}
+            pageSize={pageSize}
+            name="lists"
+            onPage={setPage}
+          />
+        </ArmyLibraryInlineRow>
+      )}
+    </>
   );
 }
 function FactionArchetypes({
   id,
-  name,
   navigation,
 }: {
   id: string;
-  name: string;
   navigation: Navigation;
 }) {
   const [page, setPage] = useState(1);
@@ -293,81 +299,79 @@ function FactionArchetypes({
     },
     navigation.revision,
   );
-  if (!data) return <Pending error={error} retry={retry} />;
+  if (!data)
+    return (
+      <ArmyLibraryInlineRow>
+        <Pending error={error} retry={retry} />
+      </ArmyLibraryInlineRow>
+    );
   return (
-    <section className={styles.children} aria-label={`Archetypes for ${name}`}>
-      <ArmyLibraryTable
-        library={data}
-        sort={navigation.query.sort}
-        segmented={navigation.query.patchId === "all"}
-        onSort={navigation.onSort}
-        onOpen={navigation.onOpen}
-        expansion={{
-          isOpen: (row) => navigation.expanded[`archetype:${row.id}`] || false,
-          toggle: (row) => navigation.onToggle(`archetype:${row.id}`),
-          content: (row) => (
-            <ArchetypeLists
-              row={row as LibraryArchetypeRow}
-              navigation={navigation}
+    <>
+      {data.archetypes.map((row) => {
+        const key = `archetype:${row.id}`;
+        const open = navigation.expanded[key] || false;
+        return (
+          <Fragment key={row.id}>
+            <ArmyLibraryDataRow
+              row={row}
+              patches={data.patches}
+              segmented={navigation.query.patchId === "all"}
+              expanded={open}
+              onToggle={() => navigation.onToggle(key)}
+              onDetails={() =>
+                navigation.onOpen({ kind: "archetype", id: row.id })
+              }
             />
-          ),
-        }}
-      />
-      <Pages
-        page={data.page}
-        total={data.total}
-        pageSize={data.pageSize}
-        name="archetypes"
-        onPage={setPage}
-      />
-    </section>
+            {open && <ArchetypeLists row={row} navigation={navigation} />}
+          </Fragment>
+        );
+      })}
+      {data.total > data.pageSize && (
+        <ArmyLibraryInlineRow>
+          <Pages
+            page={data.page}
+            total={data.total}
+            pageSize={data.pageSize}
+            name="archetypes"
+            onPage={setPage}
+          />
+        </ArmyLibraryInlineRow>
+      )}
+    </>
   );
 }
 export function ArmyLibraryHierarchy({
   library,
   ...navigation
 }: Navigation & { library: ArmyLibraryDTO }) {
-  const id = useId();
   return (
     <div className={styles.hierarchy}>
       <p className={styles.totals}>
         {countLabel(library.factionGroups.length, "factions")} ·{" "}
         {countLabel(library.total, "archetypes")}
       </p>
-      {library.factionGroups.map((faction) => {
-        const open = navigation.expanded[`faction:${faction.id}`] || false;
-        const contentId = `${id}-${faction.id}`;
-        const Chevron = open ? ChevronDown : ChevronRight;
-        return (
-          <section className={styles.faction} key={faction.id}>
-            <button
-              className={styles.heading}
-              aria-label={`${open ? "Collapse" : "Expand"} faction: ${faction.name}`}
-              aria-expanded={open}
-              aria-controls={contentId}
-              onClick={() => navigation.onToggle(`faction:${faction.id}`)}
-            >
-              <Chevron size={17} aria-hidden="true" />
-              <strong>
-                <FactionName name={faction.name} />
-              </strong>
-              <span className={styles.counts}>
-                {countLabel(faction.archetypes, "archetypes")} ·{" "}
-                {countLabel(faction.lists, "lists")}
-              </span>
-            </button>
-            <div id={contentId} hidden={!open}>
+      <ArmyLibraryTable
+        sort={navigation.query.sort}
+        segmented={navigation.query.patchId === "all"}
+        onSort={navigation.onSort}
+      >
+        {library.factionGroups.map((faction) => {
+          const key = `faction:${faction.id}`;
+          const open = navigation.expanded[key] || false;
+          return (
+            <Fragment key={faction.id}>
+              <ArmyLibraryFactionRow
+                row={faction}
+                expanded={open}
+                onToggle={() => navigation.onToggle(key)}
+              />
               {open && (
-                <FactionArchetypes
-                  id={faction.id}
-                  name={faction.name}
-                  navigation={navigation}
-                />
+                <FactionArchetypes id={faction.id} navigation={navigation} />
               )}
-            </div>
-          </section>
-        );
-      })}
+            </Fragment>
+          );
+        })}
+      </ArmyLibraryTable>
     </div>
   );
 }
