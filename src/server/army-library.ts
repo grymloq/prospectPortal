@@ -17,7 +17,12 @@ import { createHash } from "node:crypto";
 import { defaultPatchId, initialPatch } from "@/lib/patches";
 import { armyKey } from "@/lib/matchups";
 import { scrimListsSubmitted } from "@/lib/scrims";
-import { archetypeId, libraryIdentityAliases } from "./army-library-identity";
+import {
+  archetypeId,
+  archetypeName,
+  libraryIdentityAliases,
+} from "./army-library-identity";
+import { summarizeLibraryArmy } from "./army-library-summary";
 import { libraryDiscussionView } from "./library-discussions";
 import { createLibraryNorms } from "./army-library-norm";
 import { importedMatrixArmy } from "./army-library-import";
@@ -43,14 +48,6 @@ const active = (user: User | undefined): user is User =>
   user.confirmedMember === true &&
   !user.removedAt &&
   !user.accountDeletedAt;
-const archetypeName = (army: Army) =>
-  [
-    army.factionName,
-    army.detachmentNames.join(" + ") || "Unknown detachment",
-    army.dispositionName,
-  ]
-    .filter(Boolean)
-    .join(" — ");
 const publicArmy = (army: Army): Army => {
   const copy = structuredClone(army);
   if (copy.composition) delete copy.composition.canonical;
@@ -59,6 +56,8 @@ const publicArmy = (army: Army): Army => {
 function compactArmy(army: Army): Army {
   const compact = { ...army };
   delete compact.composition;
+  // Roster summaries are returned with authorized details, not every table row.
+  delete compact.summary;
   return publicArmy(compact);
 }
 function historyArmy(army: Army): Army {
@@ -797,6 +796,12 @@ export function queryArmyLibrary(
           ),
         },
       ];
+    if (list)
+      detail.army.summary = summarizeLibraryArmy(
+        detail.army,
+        selected?.version.patchId || list.patchId,
+        state,
+      );
     detail.standards = segmentIds.flatMap((patchId) => {
       const standard = norms.standard(detail!.archetypeId, patchId);
       return standard ? [standard] : [];

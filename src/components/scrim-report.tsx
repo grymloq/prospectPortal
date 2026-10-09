@@ -95,16 +95,20 @@ export default function ScrimReport({
               <DetachmentNames names={entry.army?.detachmentNames || []} />
             </p>
             <Disposition name={entry.army?.dispositionName || ""} />
-            {entry.army && (entry.army.listUrl || entry.army.listText) && (
-              <p>
-                <ArmyListLink
-                  url={entry.army.listUrl}
-                  text={entry.army.listText}
-                >
-                  View army list
-                </ArmyListLink>
-              </p>
-            )}
+            {entry.army &&
+              (entry.army.listUrl ||
+                entry.army.listText ||
+                entry.army.summary) && (
+                <p>
+                  <ArmyListLink
+                    url={entry.army.listUrl}
+                    text={entry.army.listText}
+                    summary={entry.army.summary}
+                  >
+                    View army list
+                  </ArmyListLink>
+                </p>
+              )}
           </section>
         ))}
       </div>

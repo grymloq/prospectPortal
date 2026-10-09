@@ -14,6 +14,7 @@ import {
   ArmyLibraryInlineRow,
 } from "./army-library-table";
 import { ArmyRoster } from "./army-roster";
+import { ArmySummary } from "./army-summary";
 import styles from "./army-library-hierarchy.module.css";
 
 type Navigation = {
@@ -169,6 +170,8 @@ function ListPreview({
           )}
           <ArmyRoster composition={detail.army.composition} />
         </>
+      ) : detail.army.summary?.units.length ? (
+        <ArmySummary summary={detail.army.summary} rosterOnly />
       ) : (
         <p className={styles.status}>
           {row.kind === "matrix"

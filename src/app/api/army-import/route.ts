@@ -6,6 +6,7 @@ import { authClient } from "@/server/supabase";
 import { cloudView } from "@/server/cloud-store";
 import { catalogue } from "@/lib/catalogue";
 import { fetchNewRecruitArmy } from "@/server/newrecruit-army";
+import { summarizeLibraryArmy } from "@/server/army-library-summary";
 export const runtime = "nodejs";
 export async function POST(req: NextRequest) {
   const headers = { "Cache-Control": "private, no-store" };
@@ -47,10 +48,9 @@ export async function POST(req: NextRequest) {
     }
     const patch = view.patches.find((p) => p.id === patchId && !p.removedAt);
     if (!patch) throw new Error("Choose an available ruleset.");
-    return NextResponse.json(
-      { army: await fetchNewRecruitArmy(url, patch.catalogue || catalogue) },
-      { headers },
-    );
+    const army = await fetchNewRecruitArmy(url, patch.catalogue || catalogue);
+    army.summary = summarizeLibraryArmy(army, patchId, view);
+    return NextResponse.json({ army }, { headers });
   } catch (error) {
     return NextResponse.json(
       {

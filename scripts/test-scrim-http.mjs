@@ -28,7 +28,7 @@ export async function testScrimHttp({ request, check, admin, player }) {
   const pastedDisposition = rules.dispositions.find(
     (d) => d.id === armies[0].disposition,
   );
-  const pastedList = `HTTP scrim list (2000 Points)\n${pastedFaction.name}\n${pastedDetachment.name} (${pastedDetachment.points} Detachment Points)\n${pastedDisposition.name}\n\nCHARACTERS\n  • 1x Fixture leader\n\nBATTLELINE\n  10x Fixture models\n`;
+  const pastedList = `HTTP scrim list (2000 Points)\n${pastedFaction.name}\n${pastedDetachment.name} (${pastedDetachment.points} Detachment Points)\n${pastedDisposition.name}\n\nCHARACTERS\nFixture leader (75 Points)\n  • 1x Fixture weapon\n\nBATTLELINE\nFixture unit (80 Points)\n  10x Fixture models\n`;
   armies[0] = { ...armies[0], listUrl: "", listText: pastedList };
   const other = await request("/api/session", {
     email: "player3@teamsweden.local",
@@ -110,6 +110,15 @@ export async function testScrimHttp({ request, check, admin, player }) {
       );
       assert.equal(saved.army.listText, pastedList);
       assert.equal(saved.shared, false);
+      assert.deepEqual(entry.army.summary, saved.army.summary);
+      assert.deepEqual(
+        entry.army.summary.units.map((u) => [u.name, u.quantity]),
+        [
+          ["Fixture leader", 1],
+          ["Fixture unit", 1],
+        ],
+      );
+      assert.ok(entry.army.summary.archetypeId.startsWith("archetype-v1-"));
       assert.ok(entry.listVersionId);
     },
   );

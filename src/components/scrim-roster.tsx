@@ -135,11 +135,14 @@ export default function ScrimRoster({
               )}
             </strong>
             {player.army ? (
-              player.army.listUrl || player.army.listText ? (
+              player.army.listUrl ||
+              player.army.listText ||
+              player.army.summary ? (
                 <div>
                   <ArmyListLink
                     url={player.army.listUrl}
                     text={player.army.listText}
+                    summary={player.army.summary}
                     name={`${player.name}'s army list`}
                   >
                     View list
@@ -645,10 +648,11 @@ function ListEditor({
                       ?.name
                   }
                 </p>
-                {(army.listUrl || army.listText) && (
+                {(army.listUrl || army.listText || army.summary) && (
                   <ArmyListLink
                     url={army.listUrl}
                     text={army.listText}
+                    summary={army.summary}
                     name={army.listName}
                   >
                     View list

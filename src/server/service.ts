@@ -18,6 +18,10 @@ import { feedbackCommand, submitFeedback } from "./feedback";
 import { libraryCommands, executeLibraryCommand } from "./library-discussions";
 import { setLibraryArchetypeDefault } from "./army-library-norm";
 import {
+  maintainLibraryArmySummaries,
+  snapshotArmyReferences,
+} from "./army-library-summary";
+import {
   compositionSchema,
   scopeSchema,
   gameContextSchema,
@@ -329,7 +333,10 @@ export function execute(s: State, actor: User, input: unknown) {
   validateLibraryPayload(input);
   if (ensureArmyLibrary(s)) maintainLibraryMemberships(s);
   const before = notificationSnapshot(s);
+  const previousArmySnapshots = snapshotArmyReferences(s);
   executeCommand(s, actor, input);
+  if (ensureArmyLibrary(s)) maintainLibraryMemberships(s);
+  maintainLibraryArmySummaries(s, previousArmySnapshots);
   notifyChanges(s, before, actor.id);
 }
 function executeCommand(s: State, actor: User, input: unknown) {
@@ -908,7 +915,11 @@ function executeCommand(s: State, actor: User, input: unknown) {
           [...input.detachments].sort().join("|") ===
             [...previous.detachments].sort().join("|")
         ) {
-          return { ...previous, ...input };
+          const snapshot = { ...previous, ...input };
+          return JSON.stringify({ ...previous, summary: undefined }) ===
+            JSON.stringify({ ...snapshot, summary: undefined })
+            ? previous
+            : snapshot;
         }
         return armySnapshot(input, gameRules, 3);
       };

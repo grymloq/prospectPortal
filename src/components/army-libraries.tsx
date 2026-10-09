@@ -21,6 +21,7 @@ import { MultiSelectDropdown } from "./multi-select-dropdown";
 import { ArmyLibraryHierarchy } from "./army-library-hierarchy";
 import { ArmyLibraryUnitComparison } from "./army-library-unit-comparison";
 import { ArmyRoster } from "./army-roster";
+import { ArmySummary } from "./army-summary";
 import { ArmyListLink } from "./army-list-drawer";
 import type { Mutate } from "./workspace";
 import styles from "./army-libraries.module.css";
@@ -691,6 +692,9 @@ export default function ArmyLibraries({
           <section className="panel padded">
             <h2>{detail.name}</h2>
             <Configuration army={detail.army} />
+            {detail.target.kind === "list" && (
+              <ArmySummary summary={detail.army.summary} />
+            )}
             {detail.ownerName && <p>Saved by {detail.ownerName}</p>}
             <div className={styles.filters}>
               {detail.target.kind === "list" && detail.versions.length > 0 && (
@@ -879,6 +883,7 @@ export default function ArmyLibraries({
                     <ArmyListLink
                       url={detail.currentSourceUrl || detail.army.listUrl}
                       text={detail.army.listText}
+                      summary={detail.army.summary}
                       name={detail.name}
                     >
                       View current external source

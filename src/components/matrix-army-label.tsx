@@ -205,6 +205,7 @@ export function MatrixArmyLabel({
         textOnly
         url={item.army.listUrl}
         text={item.army.listText}
+        summary={item.army.summary}
         name={label}
         className={`matrix-list-label ${styles.label}`}
         describedBy={anchor ? id : undefined}

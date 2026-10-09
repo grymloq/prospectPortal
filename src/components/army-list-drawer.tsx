@@ -2,9 +2,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import type { LibraryArmySummary } from "@/lib/types";
+import { ArmySummary } from "./army-summary";
 export function ArmyListLink({
   url,
   text,
+  summary,
   name = "Army list",
   children,
   className = "text-button",
@@ -14,6 +17,7 @@ export function ArmyListLink({
 }: {
   url: string;
   text?: string;
+  summary?: LibraryArmySummary;
   name?: string;
   children?: React.ReactNode;
   className?: string;
@@ -30,7 +34,7 @@ export function ArmyListLink({
         title={title}
         aria-describedby={describedBy}
         onClick={() => {
-          if (url || text) setOpen(true);
+          if (url || text || summary) setOpen(true);
         }}
       >
         {children || "Open army list"}
@@ -39,6 +43,7 @@ export function ArmyListLink({
         <ArmyListDrawer
           url={url}
           text={text}
+          summary={summary}
           name={name}
           onClose={() => setOpen(false)}
         />
@@ -49,11 +54,13 @@ export function ArmyListLink({
 function ArmyListDrawer({
   url,
   text,
+  summary,
   name,
   onClose,
 }: {
   url: string;
   text?: string;
+  summary?: LibraryArmySummary;
   name: string;
   onClose: () => void;
 }) {
@@ -123,9 +130,15 @@ function ArmyListDrawer({
           <X size={20} />
         </button>
       </header>
+      {summary && (
+        <details className="army-list-summary" open={!!text || !url}>
+          <summary>List summary</summary>
+          <ArmySummary summary={summary} />
+        </details>
+      )}
       {text ? (
         <pre className="army-list-pasted-text">{text}</pre>
-      ) : (
+      ) : url ? (
         <>
           {!loaded && (
             <p className="army-list-loading" role="status">
@@ -140,7 +153,7 @@ function ArmyListDrawer({
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
           />
         </>
-      )}
+      ) : null}
     </dialog>,
     document.body,
   );

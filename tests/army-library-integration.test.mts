@@ -48,6 +48,71 @@ function detail(state: State, actor: State["users"][number], id: string) {
   }).detail!;
 }
 
+test("every creation path uses the library summary and identity without publishing private armies", () => {
+  const { state, actor, other, source, list } = fixture();
+  const army = {
+    ...list.army,
+    listName: "Automatic summary",
+    listText:
+      "CHARACTERS\nWarboss (75 Points)\nBATTLELINE\nBoyz (80 Points)\nBoyz (80 Points)",
+    summary: { archetypeId: "FORGED", units: [] },
+  };
+  execute(state, actor, { type: "saveArmy", patchId: list.patchId, army });
+  const saved = state.savedArmies!.at(-1)!;
+  const summary = saved.army.summary!;
+  assert.deepEqual(
+    summary.units.map((u) => [u.name, u.quantity]),
+    [
+      ["Boyz", 2],
+      ["Warboss", 1],
+    ],
+  );
+  const membership = state.libraryMemberships!.find(
+    (m) => m.versionId === saved.currentVersionId,
+  )!;
+  assert.equal(summary.archetypeId, membership.archetypeId);
+  assert.equal(membership.variationId, undefined);
+  assert.equal(saved.shared, false);
+  assert.ok(
+    !viewState(state, other).savedArmies!.some((a) => a.id === saved.id),
+  );
+  assert.throws(() => detail(state, other, saved.id), /unavailable/);
+  const revision = saved.listRevision;
+  execute(state, actor, {
+    type: "saveArmy",
+    id: saved.id,
+    patchId: saved.patchId,
+    army: saved.army,
+    expectedRevision: revision,
+  });
+  assert.equal(saved.listRevision, revision);
+  assert.equal(
+    state.armyVersions!.filter((v) => v.listId === saved.id).length,
+    1,
+  );
+  execute(state, actor, { type: "matrixList", patchId: saved.patchId, army });
+  assert.deepEqual(state.matrixLists!.at(-1)!.army.summary, summary);
+  execute(state, actor, {
+    ...source,
+    type: "game",
+    id: undefined,
+    patchId: saved.patchId,
+    layout: "A",
+    own: army,
+    enemy: army,
+    ownListVersionId: undefined,
+    enemyListVersionId: undefined,
+  });
+  assert.deepEqual(state.games.at(-1)!.own.summary, summary);
+  assert.deepEqual(state.games.at(-1)!.enemy.summary, summary);
+  execute(state, actor, { type: "shareArmy", id: saved.id, shared: true });
+  const published = detail(state, other, saved.id);
+  assert.deepEqual(published.army.summary, summary);
+  assert.equal(published.archetypeId, summary.archetypeId);
+  execute(state, actor, { type: "shareArmy", id: saved.id, shared: false });
+  assert.throws(() => detail(state, other, saved.id), /unavailable/);
+});
+
 test("public queries expose identical admin/member data and never private state collections", () => {
   const { state, actor, other, admin, source, army, list } = fixture();
   execute(state, actor, { type: "shareArmy", id: list.id, shared: true });

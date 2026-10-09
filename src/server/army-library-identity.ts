@@ -13,6 +13,14 @@ import type {
 
 export const ROSTER_NORMALIZATION_VERSION = "newrecruit-selected-v1";
 export const LIBRARY_CLASSIFICATION_VERSION = "army-library-v1";
+export const archetypeName = (army: Army) =>
+  [
+    army.factionName,
+    army.detachmentNames.join(" + ") || "Unknown detachment",
+    army.dispositionName,
+  ]
+    .filter(Boolean)
+    .join(" — ");
 const hash = (value: unknown) =>
   createHash("sha256").update(JSON.stringify(value)).digest("hex");
 

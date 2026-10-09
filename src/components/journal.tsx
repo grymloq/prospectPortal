@@ -27,6 +27,7 @@ export type Choice = Pick<
   | "listText"
   | "composition"
   | "scope"
+  | "summary"
 >;
 export function blank(faction = catalogue.factions[0].id): Choice {
   return { faction, detachments: [], disposition: "", listUrl: "" };
@@ -621,10 +622,11 @@ export default function Journal({
                   <td>{view.users.find((u) => u.id === g.userId)?.name}</td>
                   <td>
                     <strong>
-                      {g.own.listUrl || g.own.listText ? (
+                      {g.own.listUrl || g.own.listText || g.own.summary ? (
                         <ArmyListLink
                           url={g.own.listUrl}
                           text={g.own.listText}
+                          summary={g.own.summary}
                           name={g.own.listName || g.own.factionName}
                         >
                           <FactionName name={g.own.factionName} />
@@ -643,10 +645,13 @@ export default function Journal({
                   <td>{g.opponent}</td>
                   <td>
                     <small>
-                      {g.enemy.listUrl || g.enemy.listText ? (
+                      {g.enemy.listUrl ||
+                      g.enemy.listText ||
+                      g.enemy.summary ? (
                         <ArmyListLink
                           url={g.enemy.listUrl}
                           text={g.enemy.listText}
+                          summary={g.enemy.summary}
                           name={g.enemy.listName || g.enemy.factionName}
                         >
                           <FactionName name={g.enemy.factionName} />
@@ -1099,10 +1104,11 @@ export default function Journal({
                 <Badge>
                   <Disposition name={army.dispositionName} />
                 </Badge>
-                {(army.listUrl || army.listText) && (
+                {(army.listUrl || army.listText || army.summary) && (
                   <ArmyListLink
                     url={army.listUrl}
                     text={army.listText}
+                    summary={army.summary}
                     name={army.listName || army.factionName}
                   />
                 )}

@@ -12,6 +12,7 @@ import type {
 import { armyKey } from "@/lib/matchups";
 import { canonicalRoster } from "./army-library-identity";
 import { rosterAttachmentSignature } from "@/lib/roster-display";
+import { maintainLibraryArmySummaries } from "./army-library-summary";
 
 const label = z.string().trim().min(1).max(300);
 const selection: z.ZodType<RosterSelection> = z.lazy(() =>
@@ -125,7 +126,7 @@ export function ensureArmyLibrary(state: State): boolean {
     saved.listRevision ||= 1;
     changed = true;
   }
-  return changed;
+  return maintainLibraryArmySummaries(state) || changed;
 }
 
 function versionContent(army: Army, patchId: string) {
@@ -195,7 +196,8 @@ export function updateArmyVersion(
   }
   if (
     changed ||
-    JSON.stringify(saved.army) !== JSON.stringify(army) ||
+    JSON.stringify({ ...saved.army, summary: undefined }) !==
+      JSON.stringify({ ...army, summary: undefined }) ||
     saved.patchId !== patchId
   ) {
     saved.listRevision = (saved.listRevision || 1) + 1;

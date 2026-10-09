@@ -28,6 +28,8 @@ export type User = {
   password?: string;
 };
 export type Army = {
+  /** Derived by the shared Army library helpers, never accepted from a client. */
+  summary?: LibraryArmySummary;
   /** Optional imported composition; catalogue revision below is not a list version. */
   composition?: RosterComposition;
   scope?: ArmyScope;
@@ -42,6 +44,13 @@ export type Army = {
   factionName: string;
   detachmentNames: string[];
   dispositionName: string;
+};
+export type LibraryArmySummary = {
+  version: "army-library-summary-v1";
+  archetypeId: string;
+  archetypeName: string;
+  rosterStatus: "complete" | "partial" | "unavailable";
+  units: LibraryUnitCount[];
 };
 export type ArmyScope = {
   systemId?: string;

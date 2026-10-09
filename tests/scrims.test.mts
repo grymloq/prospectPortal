@@ -436,7 +436,7 @@ test("text-only scrim submission reads configuration on the server and rejects f
   const owner = f.member(2);
   f.run(f.admin, { type: "scrimFinalize", teamId: team.id, finalized: false });
   const config = armySnapshot(armyFor(1));
-  const listText = `Text-only army (2000 Points)\n${config.factionName}\n${config.detachmentNames.join(" and ")} (3 Detachment Points)\n${config.dispositionName}\n\nCHARACTERS\n  • Fixture leader\n`;
+  const listText = `Text-only army (2000 Points)\n${config.factionName}\n${config.detachmentNames.join(" and ")} (3 Detachment Points)\n${config.dispositionName}\n\nCHARACTERS\nFixture leader (75 Points)\n  • Fixture weapon\n`;
   const command = {
     type: "scrimSubmit",
     teamId: team.id,
@@ -449,6 +449,13 @@ test("text-only scrim submission reads configuration on the server and rejects f
   assert.equal(entry.army!.disposition, config.disposition);
   assert.equal(entry.army!.listUrl, "");
   assert.equal(entry.army!.listName, "Text-only army");
+  assert.equal(entry.army!.summary!.units[0].name, "Fixture leader");
+  assert.equal(entry.army!.summary!.units[0].quantity, 1);
+  assert.equal(
+    entry.army!.summary!.archetypeId,
+    f.s.libraryMemberships!.find((m) => m.versionId === entry.listVersionId)!
+      .archetypeId,
+  );
   assert.equal(
     f.s.savedArmies!.find((a) => a.id === entry.savedArmyId)!.army.listText,
     listText,

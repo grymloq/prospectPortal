@@ -18,6 +18,7 @@ import { patchLabel } from "@/lib/patches";
 import { ArmyFields, blank, type Choice } from "./journal";
 import { Disposition } from "./disposition";
 import { ArmyListLink } from "./army-list-drawer";
+import { ArmySummary } from "./army-summary";
 import { PageHeading, Field, Modal, Empty, dateLabel } from "./ui";
 import type { Mutate } from "./workspace";
 export default function MyArmies({
@@ -197,10 +198,13 @@ export default function MyArmies({
                       <div className={styles.info}>
                         <div className={styles.nameRow}>
                           <h4>
-                            {a.army.listUrl || a.army.listText ? (
+                            {a.army.listUrl ||
+                            a.army.listText ||
+                            a.army.summary ? (
                               <ArmyListLink
                                 url={a.army.listUrl}
                                 text={a.army.listText}
+                                summary={a.army.summary}
                                 name={name}
                                 className={styles.listLink}
                                 title={`Open ${name}`}
@@ -222,6 +226,10 @@ export default function MyArmies({
                             fallback="No detachment"
                           />
                         </p>
+                        <details>
+                          <summary>List summary</summary>
+                          <ArmySummary summary={a.army.summary} />
+                        </details>
                       </div>
                       <div className={styles.actions}>
                         <button
