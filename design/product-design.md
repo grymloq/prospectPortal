@@ -425,6 +425,8 @@ Admins have a Users directory including Supabase accounts which have not yet ope
 
 ### Lists and disposition validation
 
+**Confirmed — scrim list entry (9 October 2026):** Submit list and Change list first offer Choose from your armies, Import, and Enter own. Saved-army selection lists the player's available armies for the scrim rules patch. Import retains the New Recruit shared-link input and import button. Enter own opens a multiline text field accepting New Recruit text export formats, preserving the full text and line breaks. The player supplies the list name, faction, detachments and disposition through the existing ruleset controls. Pasted text is saved with the independent scrim snapshot and private saved army, and is readable in the list drawer under the existing reveal rules. It does not claim verified structured roster identity.
+
 **Confirmed:** Each rostered player has one submitted army list. Players submit from My Armies or enter/import an army directly into the scrim. Direct submissions are also added to that player's private My Armies. Captains may submit on a player's behalf with the same effect. Submissions retain independent army snapshots; later library edits do not change scrim history. Captains do not gain access to a player's unshared army library.
 
 **Confirmed:** For standard teams, every disposition in the selected patch must appear at least once, with at most two lists per disposition. Incomplete drafts may have repeated dispositions and show warnings. The final team submission must satisfy the rule. Smaller teams (fewer players than dispositions) may omit dispositions but cannot repeat any. Team sizes above twice the disposition count cannot satisfy the cap and are rejected.

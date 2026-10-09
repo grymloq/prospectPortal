@@ -197,9 +197,10 @@ export default function MyArmies({
                       <div className={styles.info}>
                         <div className={styles.nameRow}>
                           <h4>
-                            {a.army.listUrl ? (
+                            {a.army.listUrl || a.army.listText ? (
                               <ArmyListLink
                                 url={a.army.listUrl}
+                                text={a.army.listText}
                                 name={name}
                                 className={styles.listLink}
                                 title={`Open ${name}`}
@@ -394,6 +395,19 @@ export default function MyArmies({
               preferredFactions={view.me.preferredFactions ?? [view.me.faction]}
               hideListName
             />
+            {army.listText !== undefined && (
+              <Field label="Army-list text">
+                <textarea
+                  required
+                  rows={14}
+                  maxLength={100000}
+                  value={army.listText}
+                  onChange={(e) =>
+                    setArmy({ ...army, listText: e.target.value })
+                  }
+                />
+              </Field>
+            )}
             <button className="primary" disabled={saving || importing}>
               {saving ? "Saving…" : "Save army list"}
             </button>

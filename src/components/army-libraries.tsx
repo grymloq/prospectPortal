@@ -872,10 +872,13 @@ export default function ArmyLibraries({
                     </button>
                   </p>
                 )}
-                {(detail.currentSourceUrl || detail.army.listUrl) && (
+                {(detail.currentSourceUrl ||
+                  detail.army.listUrl ||
+                  detail.army.listText) && (
                   <p>
                     <ArmyListLink
                       url={detail.currentSourceUrl || detail.army.listUrl}
+                      text={detail.army.listText}
                       name={detail.name}
                     >
                       View current external source

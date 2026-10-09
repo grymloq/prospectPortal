@@ -133,6 +133,7 @@ function versionContent(army: Army, patchId: string) {
     patchId,
     armyKey(army),
     army.revision,
+    army.listText || null,
     army.scope
       ? [
           army.scope.systemId,
@@ -240,7 +241,10 @@ export function validateGameVersion(
   if (
     version.patchId !== patchId ||
     armyKey(version.army) !== armyKey(army) ||
-    ((army.composition || version.army.composition) &&
+    ((army.composition ||
+      version.army.composition ||
+      army.listText ||
+      version.army.listText) &&
       versionContent(version.army, patchId) !== versionContent(army, patchId))
   )
     throw new Error(

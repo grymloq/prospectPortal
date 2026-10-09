@@ -21,6 +21,9 @@ export async function testScrimHttp({ request, check, admin, player }) {
     }
     throw new Error("Missing disposition fixture");
   });
+  const pastedList =
+    "HTTP scrim list\n\nCHARACTERS\n  • 1x Fixture leader\n\nBATTLELINE\n  10x Fixture models\n";
+  armies[0] = { ...armies[0], listUrl: "", listText: pastedList };
   const other = await request("/api/session", {
     email: "player3@teamsweden.local",
     password: "Sweden40k!",
@@ -90,6 +93,20 @@ export async function testScrimHttp({ request, check, admin, player }) {
   }
   const privateView = await request("/api/state", null, player.cookie);
   const privateScrim = privateView.data.scrims.find((s) => s.id === scrim.id);
+  check(
+    "pasted scrim lists retain full text in submissions, private saved armies and versions",
+    () => {
+      const entry = privateScrim.teams[0].entries[0];
+      assert.equal(entry.army.listText, pastedList);
+      assert.equal(entry.army.listUrl, "");
+      const saved = privateView.data.savedArmies.find(
+        (a) => a.id === entry.savedArmyId,
+      );
+      assert.equal(saved.army.listText, pastedList);
+      assert.equal(saved.shared, false);
+      assert.ok(entry.listVersionId);
+    },
+  );
   check(
     "scrim deadlines are on the calendar and opponent draft lists are server-hidden",
     () => {

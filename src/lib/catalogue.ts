@@ -25,6 +25,7 @@ export function dispositionsFor(
 export function armySnapshot(
   input: {
     listName?: string;
+    listText?: string;
     faction: string;
     detachments: string[];
     disposition: string;

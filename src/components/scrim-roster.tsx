@@ -135,17 +135,18 @@ export default function ScrimRoster({
               )}
             </strong>
             {player.army ? (
-              player.army.listUrl ? (
+              player.army.listUrl || player.army.listText ? (
                 <div>
                   <ArmyListLink
                     url={player.army.listUrl}
+                    text={player.army.listText}
                     name={`${player.name}'s army list`}
                   >
                     View list
                   </ArmyListLink>
                 </div>
               ) : (
-                <small>List link not provided</small>
+                <small>List not provided</small>
               )
             ) : canSeeLists ? (
               <small>List not submitted</small>
@@ -395,31 +396,48 @@ function ListEditor({
   onClose: () => void;
 }) {
   const [revision] = useState(scrim.revision);
-  const [army, setArmy] = useState<Choice>(
-    entry.army || blank(view.me.faction),
-  );
-  const [savedId, setSavedId] = useState("");
+  const [method, setMethod] = useState<"saved" | "import" | "own" | "">("");
+  const [ownArmy, setOwnArmy] = useState<Choice>(() => ({
+    ...(entry.army || blank(view.me.faction)),
+    // Pasted exports do not supply verified structured roster selections.
+    composition: undefined,
+  }));
+  const [importedArmy, setImportedArmy] = useState<Choice | null>(null);
+  const [savedId, setSavedId] = useState(entry.savedArmyId || "");
   const [busy, setBusy] = useState(false);
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   const rules =
     view.patches.find((p) => p.id === scrim.patchId)?.catalogue || catalogue;
-  const saved = (view.savedArmies || []).filter(
-    (a) => a.userId === entry.userId && a.patchId === scrim.patchId,
-  );
+  const saved = (view.savedArmies || [])
+    .filter((a) => a.userId === entry.userId && a.patchId === scrim.patchId)
+    .sort((a, b) =>
+      (a.army.listName || a.army.factionName).localeCompare(
+        b.army.listName || b.army.factionName,
+      ),
+    );
+  const selected = saved.find((a) => a.id === savedId);
+  const army =
+    method === "saved"
+      ? selected?.army
+      : method === "import"
+        ? importedArmy
+        : ownArmy;
   return (
     <Modal
       wide
-      title={`Submit list · ${entry.name}`}
+      title={`${entry.army ? "Change list" : "Submit list"} · ${entry.name}`}
       onClose={onClose}
       draftKey={`scrim:${scrim.id}:list:${entry.id}`}
       busy={busy}
       draft={{
-        value: { army, savedId, url },
-        restore: (saved) => {
-          setArmy(saved.army);
-          setSavedId(saved.savedId);
-          setUrl(saved.url);
+        value: { method, ownArmy, importedArmy, savedId, url },
+        restore: (draft) => {
+          setMethod(draft.method);
+          setOwnArmy(draft.ownArmy);
+          setImportedArmy(draft.importedArmy);
+          setSavedId(draft.savedId);
+          setUrl(draft.url);
         },
       }}
     >
@@ -429,109 +447,248 @@ function ListEditor({
           ? "A list entered here is also saved privately in this player's My Armies."
           : "This list belongs to the external roster."}
       </p>
-      <Field label="Use a saved army">
-        <select
-          value={savedId}
-          onChange={(e) => {
-            setSavedId(e.target.value);
-            const list = saved.find((a) => a.id === e.target.value);
-            if (list) setArmy(list.army);
+      <div
+        className={styles.listMethods}
+        role="group"
+        aria-label="Choose how to submit your list"
+      >
+        {(
+          [
+            ["saved", "Choose from your armies"],
+            ["import", "Import"],
+            ["own", "Enter own"],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            disabled={busy}
+            aria-pressed={method === value}
+            onClick={() => {
+              setMethod(value);
+              setError("");
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {method === "saved" && (
+        <>
+          {saved.length ? (
+            <fieldset className={styles.savedListChoices} disabled={busy}>
+              <legend>
+                {entry.userId === view.me.id
+                  ? "Your armies"
+                  : "Available saved armies"}
+              </legend>
+              {saved.map((list) => (
+                <label key={list.id}>
+                  <input
+                    type="radio"
+                    name="savedArmyId"
+                    value={list.id}
+                    checked={savedId === list.id}
+                    onChange={() => setSavedId(list.id)}
+                  />
+                  <span>
+                    <strong>
+                      {list.army.listName || list.army.factionName}
+                    </strong>
+                    <small>
+                      {list.army.factionName} ·{" "}
+                      {list.army.detachmentNames.join(" + ")} ·{" "}
+                      {list.army.dispositionName}
+                    </small>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+          ) : (
+            <p className={styles.muted}>
+              {entry.userId === view.me.id
+                ? "You have no saved armies for this rules patch. Import a list or choose Enter own."
+                : "No saved armies are available for this player and rules patch. Private armies are only available to their owner."}
+            </p>
+          )}
+        </>
+      )}
+      {method === "import" && (
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            setError("");
+            setImportedArmy(null);
+            try {
+              const r = await fetch("/api/army-import", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url, patchId: scrim.patchId }),
+              });
+              const data = await r.json();
+              if (!r.ok) throw new Error(data.error);
+              setImportedArmy(data.army);
+            } catch (e) {
+              setError((e as Error).message);
+            } finally {
+              setBusy(false);
+            }
           }}
         >
-          <option value="">Enter or import a list</option>
-          {saved.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.army.listName} · {a.army.factionName}
-            </option>
-          ))}
-        </select>
-      </Field>
-      {!savedId && (
-        <>
           <Field label="New Recruit shared-list link">
             <input
               type="url"
+              required
+              maxLength={2000}
+              placeholder="https://www.newrecruit.eu/app/list/…"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              disabled={busy}
+              onChange={(e) => {
+                setUrl(e.target.value);
+                setImportedArmy(null);
+                setError("");
+              }}
             />
           </Field>
-          <button
-            disabled={busy || !url}
-            onClick={async () => {
-              setBusy(true);
-              setError("");
-              try {
-                const r = await fetch("/api/army-import", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ url, patchId: scrim.patchId }),
-                });
-                const data = await r.json();
-                if (!r.ok) throw new Error(data.error);
-                setArmy(data.army);
-              } catch (e) {
-                setError((e as Error).message);
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
+          <button disabled={busy || !url.trim()}>
             Import from New Recruit
           </button>
-        </>
+        </form>
       )}
       {error && <p role="alert">{error}</p>}
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          const ok = await mutate(
-            {
-              type: "scrimSubmit",
-              scrimId: scrim.id,
-              revision,
-              teamId: team.id,
-              entryId: entry.id,
-              ...(savedId ? { savedArmyId: savedId } : { army }),
-            },
-            setError,
-          );
-          setBusy(false);
-          if (ok) onClose();
-        }}
-      >
-        {savedId ? (
-          <div className={styles.player}>
-            <strong>{army.listName}</strong>
-            <p>{rules.factions.find((f) => f.id === army.faction)?.name}</p>
-            <p>
-              {rules.dispositions.find((d) => d.id === army.disposition)?.name}
-            </p>
-          </div>
-        ) : (
-          <>
-            <Field label="Army-list name">
-              <input
-                required
-                maxLength={100}
-                value={army.listName || ""}
-                onChange={(e) => setArmy({ ...army, listName: e.target.value })}
-              />
-            </Field>
-            <ArmyFields
-              title="Submitted army"
-              value={army}
-              onChange={setArmy}
-              rules={rules}
-              maxDP={3}
-              hideListName
-            />
-          </>
-        )}
-        <button className="primary" disabled={busy}>
-          Save submitted list
-        </button>
-      </form>
+      {method && (method !== "import" || importedArmy) && (
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!army || (method === "saved" && !selected)) return;
+            setBusy(true);
+            setError("");
+            const ok = await mutate(
+              {
+                type: "scrimSubmit",
+                scrimId: scrim.id,
+                revision,
+                teamId: team.id,
+                entryId: entry.id,
+                ...(method === "saved" ? { savedArmyId: savedId } : { army }),
+              },
+              setError,
+            );
+            setBusy(false);
+            if (ok) onClose();
+          }}
+        >
+          <fieldset className={styles.listFields} disabled={busy}>
+            {method === "own" ? (
+              <>
+                <Field label="Army-list text">
+                  <textarea
+                    autoFocus
+                    required
+                    rows={14}
+                    maxLength={100000}
+                    className={styles.listText}
+                    placeholder="Paste your New Recruit list export here…"
+                    value={ownArmy.listText || ""}
+                    onChange={(e) =>
+                      setOwnArmy({ ...ownArmy, listText: e.target.value })
+                    }
+                  />
+                </Field>
+                <p className={styles.muted}>
+                  Paste any New Recruit text export format. Your text and line
+                  breaks are kept as entered. Choose the army details below.
+                </p>
+                <Field label="Army-list name">
+                  <input
+                    required
+                    maxLength={100}
+                    value={ownArmy.listName || ""}
+                    onChange={(e) =>
+                      setOwnArmy({ ...ownArmy, listName: e.target.value })
+                    }
+                  />
+                </Field>
+                <ArmyFields
+                  title="Submitted army"
+                  value={ownArmy}
+                  onChange={setOwnArmy}
+                  rules={rules}
+                  maxDP={3}
+                  hideListName
+                />
+              </>
+            ) : method === "import" && importedArmy ? (
+              <>
+                <Field label="Army-list name">
+                  <input
+                    required
+                    maxLength={100}
+                    value={importedArmy.listName || ""}
+                    onChange={(e) =>
+                      setImportedArmy({
+                        ...importedArmy,
+                        listName: e.target.value,
+                      })
+                    }
+                  />
+                </Field>
+                <ArmyFields
+                  title="Submitted army"
+                  value={importedArmy}
+                  onChange={setImportedArmy}
+                  rules={rules}
+                  maxDP={3}
+                  hideListName
+                />
+              </>
+            ) : army ? (
+              <div className={styles.listSummary}>
+                <strong>{army.listName || "Army list"}</strong>
+                <p>{rules.factions.find((f) => f.id === army.faction)?.name}</p>
+                <p>
+                  {army.detachments
+                    .map(
+                      (id) =>
+                        rules.factions
+                          .find((f) => f.id === army.faction)
+                          ?.detachments.find((d) => d.id === id)?.name,
+                    )
+                    .filter(Boolean)
+                    .join(" + ")}
+                </p>
+                <p>
+                  {
+                    rules.dispositions.find((d) => d.id === army.disposition)
+                      ?.name
+                  }
+                </p>
+                {(army.listUrl || army.listText) && (
+                  <ArmyListLink
+                    url={army.listUrl}
+                    text={army.listText}
+                    name={army.listName}
+                  >
+                    View list
+                  </ArmyListLink>
+                )}
+              </div>
+            ) : null}
+            <button
+              className="primary"
+              disabled={
+                busy ||
+                !army ||
+                (method === "saved" && !selected) ||
+                (method === "own" && !ownArmy.listText?.trim())
+              }
+            >
+              {busy ? "Saving…" : "Save submitted list"}
+            </button>
+          </fieldset>
+        </form>
+      )}
     </Modal>
   );
 }

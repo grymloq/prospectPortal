@@ -24,6 +24,7 @@ export type Choice = Pick<
   | "disposition"
   | "listUrl"
   | "listName"
+  | "listText"
   | "composition"
   | "scope"
 >;
@@ -620,9 +621,10 @@ export default function Journal({
                   <td>{view.users.find((u) => u.id === g.userId)?.name}</td>
                   <td>
                     <strong>
-                      {g.own.listUrl ? (
+                      {g.own.listUrl || g.own.listText ? (
                         <ArmyListLink
                           url={g.own.listUrl}
+                          text={g.own.listText}
                           name={g.own.listName || g.own.factionName}
                         >
                           <FactionName name={g.own.factionName} />
@@ -641,9 +643,10 @@ export default function Journal({
                   <td>{g.opponent}</td>
                   <td>
                     <small>
-                      {g.enemy.listUrl ? (
+                      {g.enemy.listUrl || g.enemy.listText ? (
                         <ArmyListLink
                           url={g.enemy.listUrl}
+                          text={g.enemy.listText}
                           name={g.enemy.listName || g.enemy.factionName}
                         >
                           <FactionName name={g.enemy.factionName} />
@@ -1096,9 +1099,10 @@ export default function Journal({
                 <Badge>
                   <Disposition name={army.dispositionName} />
                 </Badge>
-                {army.listUrl && (
+                {(army.listUrl || army.listText) && (
                   <ArmyListLink
                     url={army.listUrl}
+                    text={army.listText}
                     name={army.listName || army.factionName}
                   />
                 )}

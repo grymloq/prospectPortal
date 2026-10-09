@@ -2692,6 +2692,16 @@ tbody .matrix-list-label span:not([data-faction-label]):not([data-faction-text])
   margin: 10px 20px;
   font-size: var(--text-body-small);
 }
+.army-list-pasted-text {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin: 0;
+  padding: 20px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 13px/1.6 var(--font-mono, monospace);
+}
 @media (prefers-reduced-motion: reduce) {
   .army-list-drawer {
     transition: none;

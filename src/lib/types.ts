@@ -32,6 +32,8 @@ export type Army = {
   composition?: RosterComposition;
   scope?: ArmyScope;
   listName?: string;
+  /** Verbatim pasted list export; kept separate from structured roster evidence. */
+  listText?: string;
   faction: string;
   detachments: string[];
   disposition: string;

@@ -47,6 +47,11 @@ const army = z.object({
   composition: compositionSchema.optional(),
   scope: scopeSchema.optional(),
   listName: label.max(100),
+  listText: z
+    .string()
+    .max(100000)
+    .refine((v) => !!v.trim(), "Paste your army list.")
+    .optional(),
   faction: id,
   detachments: z.array(id).max(3),
   disposition: id,

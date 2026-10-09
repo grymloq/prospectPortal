@@ -3,6 +3,86 @@
   gap: var(--space-5);
   min-width: 0;
 }
+.listMethods {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 16px 0;
+}
+.listMethods button {
+  min-height: 48px;
+  white-space: normal;
+}
+.listMethods button[aria-pressed="true"] {
+  background: var(--navy);
+  color: white;
+  border-color: var(--navy);
+  box-shadow: inset 0 -3px 0 var(--yellow);
+}
+.savedListChoices {
+  border: 0;
+  padding: 0;
+  margin: 16px 0;
+  display: grid;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.savedListChoices legend {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.savedListChoices label {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.savedListChoices label:has(input:checked) {
+  border-color: var(--navy);
+  background: #f2f5fa;
+}
+.savedListChoices input {
+  width: auto;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.savedListChoices span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.savedListChoices small {
+  display: block;
+  margin-top: 4px;
+  color: #526277;
+}
+.listFields {
+  padding: 0;
+  margin: 16px 0 0;
+  border: 0;
+  min-width: 0;
+}
+.listText {
+  font: 13px/1.5 var(--font-mono, monospace);
+  resize: vertical;
+}
+.listSummary {
+  padding: 12px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.listSummary p {
+  margin: 4px 0;
+}
+@media (max-width: 480px) {
+  .listMethods {
+    grid-template-columns: 1fr;
+  }
+}
 @media (max-width: 760px) {
   .mobileSurface.mobileSurface {
     background: transparent;

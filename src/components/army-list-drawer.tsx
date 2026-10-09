@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 export function ArmyListLink({
   url,
+  text,
   name = "Army list",
   children,
   className = "text-button",
@@ -12,6 +13,7 @@ export function ArmyListLink({
   describedBy,
 }: {
   url: string;
+  text?: string;
   name?: string;
   children?: React.ReactNode;
   className?: string;
@@ -28,23 +30,30 @@ export function ArmyListLink({
         title={title}
         aria-describedby={describedBy}
         onClick={() => {
-          if (url) setOpen(true);
+          if (url || text) setOpen(true);
         }}
       >
         {children || "Open army list"}
       </button>
       {open && (
-        <ArmyListDrawer url={url} name={name} onClose={() => setOpen(false)} />
+        <ArmyListDrawer
+          url={url}
+          text={text}
+          name={name}
+          onClose={() => setOpen(false)}
+        />
       )}
     </>
   );
 }
 function ArmyListDrawer({
   url,
+  text,
   name,
   onClose,
 }: {
   url: string;
+  text?: string;
   name: string;
   onClose: () => void;
 }) {
@@ -98,9 +107,11 @@ function ArmyListDrawer({
       <header className="army-list-drawer-head">
         <div>
           <h2>{name}</h2>
-          <a href={url} target="_blank" rel="noreferrer">
-            Open in new tab
-          </a>
+          {url && (
+            <a href={url} target="_blank" rel="noreferrer">
+              Open in new tab
+            </a>
+          )}
         </div>
         <button
           type="button"
@@ -112,18 +123,24 @@ function ArmyListDrawer({
           <X size={20} />
         </button>
       </header>
-      {!loaded && (
-        <p className="army-list-loading" role="status">
-          Loading army list…
-        </p>
+      {text ? (
+        <pre className="army-list-pasted-text">{text}</pre>
+      ) : (
+        <>
+          {!loaded && (
+            <p className="army-list-loading" role="status">
+              Loading army list…
+            </p>
+          )}
+          <iframe
+            src={url}
+            title={name}
+            onLoad={() => setLoaded(true)}
+            referrerPolicy="no-referrer"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+          />
+        </>
       )}
-      <iframe
-        src={url}
-        title={name}
-        onLoad={() => setLoaded(true)}
-        referrerPolicy="no-referrer"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-      />
     </dialog>,
     document.body,
   );

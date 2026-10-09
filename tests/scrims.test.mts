@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test, after } from "node:test";
+import { test, after, mock } from "node:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import path from "node:path";
 import type { State, User } from "../src/lib/types";
@@ -14,6 +14,8 @@ const { matchupDatabase } = await import("../src/lib/matchup-database");
 const { scrimScore } = await import("../src/lib/scrims");
 const { ensureMembership } = await import("../src/server/membership");
 const { stockholmLocal } = await import("../src/lib/stockholm");
+const { validateGameVersion } =
+  await import("../src/server/army-library-versions");
 const base = readState();
 after(() => {
   db.close();
@@ -23,12 +25,12 @@ after(() => {
 });
 
 function at<T>(when: number, work: () => T): T {
-  const previous = Date.now;
-  Date.now = () => when;
+  // Advance both Date.now() and new Date() across Stockholm day boundaries.
+  mock.timers.enable({ apis: ["Date"], now: when });
   try {
     return work();
   } finally {
-    Date.now = previous;
+    mock.timers.reset();
   }
 }
 function armyFor(index: number) {
@@ -426,6 +428,108 @@ test("captain submissions save into the player's own library, without granting p
   });
   assert.equal(entry.army!.listName, oldName);
 });
+test("pasted scrim exports retain formatting, privacy and independent list versions", () => {
+  const f = fixture();
+  f.fill();
+  const team = f.scrim.teams[0];
+  const entry = team.entries[1];
+  const owner = f.member(2);
+  f.run(f.admin, { type: "scrimFinalize", teamId: team.id, finalized: false });
+  const formats = [
+    "My army (2000 Points)\r\n\r\nCHARACTERS\r\n  Warboss (75 Points)\r\n    • 1x Power klaw\r\n",
+    "+++++++++++++++++++++++++++++++++++++++++++++++\n+ FACTION KEYWORD: Xenos - Orks\n+ DETACHMENT: Dread Mob\n+++++++++++++++++++++++++++++++++++++++++++++++\n\n1x Warboss: Power klaw\n",
+    "**My army**\n\n*Warboss*\n- Power klaw\n<script>alert('literal export text')</script>\n",
+  ];
+  for (const listText of formats) {
+    f.run(owner, {
+      type: "scrimSubmit",
+      teamId: team.id,
+      entryId: entry.id,
+      army: { ...armyFor(1), listUrl: "", listText },
+    });
+    const saved = f.s.savedArmies!.find((a) => a.id === entry.savedArmyId)!;
+    const version = f.s.armyVersions!.find(
+      (v) => v.id === entry.listVersionId,
+    )!;
+    assert.equal(entry.army!.listText, listText);
+    assert.equal(saved.army.listText, listText);
+    assert.equal(version.army.listText, listText);
+    assert.equal(saved.shared, false);
+    assert.equal(saved.army.composition, undefined);
+    assert.throws(
+      () =>
+        validateGameVersion(
+          f.s,
+          owner,
+          version.id,
+          { ...version.army, listText: "Different submitted text" },
+          f.scrim.patchId,
+          true,
+        ),
+      /does not match/,
+    );
+    assert.ok(!viewState(f.s, f.member(3)).scrims![0].teams[0].entries.length);
+    assert.ok(
+      !viewState(f.s, f.member(1)).savedArmies!.some((a) => a.id === saved.id),
+    );
+    f.run(owner, {
+      type: "saveArmy",
+      id: saved.id,
+      patchId: f.scrim.patchId,
+      army: { ...saved.army, listText: "Changed after submitting\n" },
+      expectedRevision: saved.listRevision,
+    });
+    assert.notEqual(saved.currentVersionId, version.id);
+    assert.equal(entry.army!.listText, listText);
+    assert.equal(version.army.listText, listText);
+    f.run(owner, {
+      type: "scrimSubmit",
+      teamId: team.id,
+      entryId: entry.id,
+      savedArmyId: saved.id,
+    });
+    assert.equal(entry.army!.listText, "Changed after submitting\n");
+  }
+  const command = { type: "scrimSubmit", teamId: team.id, entryId: entry.id };
+  assert.throws(() =>
+    f.run(owner, { ...command, army: { ...armyFor(1), listText: "   \n" } }),
+  );
+  assert.throws(() =>
+    f.run(owner, {
+      ...command,
+      army: { ...armyFor(1), listText: "x".repeat(100001) },
+    }),
+  );
+  assert.throws(
+    () =>
+      f.run(f.member(3), {
+        ...command,
+        army: { ...armyFor(1), listText: formats[0] },
+      }),
+    /own list|captain/,
+  );
+  f.run(f.admin, { type: "scrimFinalize", teamId: team.id, finalized: true });
+  const revealed = at(f.deadline + 1, () => viewState(f.s, f.member(3)));
+  assert.equal(
+    revealed.scrims![0].teams[0].entries[1].army!.listText,
+    entry.army!.listText,
+  );
+  f.pair();
+  f.report(1, 12);
+  const journals = f.s.games.filter(
+    (g) => g.scrimPairingId === f.scrim.pairings[1].id,
+  );
+  assert.equal(journals.length, 2);
+  assert.equal(
+    journals.find((g) => g.userId === owner.id)!.own.listText,
+    entry.army!.listText,
+  );
+  assert.equal(
+    journals.find((g) => g.userId !== owner.id)!.enemy.listText,
+    entry.army!.listText,
+  );
+});
+
 test("server hides opponent lists before the deadline and all private plans until completion", () => {
   const f = fixture();
   f.fill();
