@@ -150,6 +150,13 @@ test("observed New Recruit annotations and explicit catalogue ancestry preserve 
   const unit = army.composition!.selections[0];
   assert.equal(unit.kind, "unit");
   assert.equal(unit.quantity, 2);
+  assert.equal(
+    army.composition!.attachmentsVersion,
+    "newrecruit-associations-v1",
+  );
+  assert.deepEqual(unit.associations, [
+    { instanceId: "selected-leader-instance", role: "Leading", quantity: 1 },
+  ]);
   assert.match(unit.sourceId, /:verified-bs-catalogue:unit$/);
   assert.equal(unit.selections[0].selections[0].kind, "model");
   assert.equal(unit.selections[0].selections[0].quantity, 5);

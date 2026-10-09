@@ -19,6 +19,7 @@ import { Disposition } from "./disposition";
 import { MultiSelectDropdown } from "./multi-select-dropdown";
 import { ArmyLibraryHierarchy } from "./army-library-hierarchy";
 import { ArmyLibraryUnitComparison } from "./army-library-unit-comparison";
+import { ArmyRoster } from "./army-roster";
 import { ArmyListLink } from "./army-list-drawer";
 import type { Mutate } from "./workspace";
 import styles from "./army-libraries.module.css";
@@ -112,21 +113,6 @@ function Configuration({ army }: { army: Army }) {
       </span>
       <Disposition name={army.dispositionName} />
     </div>
-  );
-}
-function Composition({ selections }: { selections: RosterSelection[] }) {
-  return (
-    <ul className={styles.composition}>
-      {selections.map((s, i) => (
-        <li key={`${s.sourceId}:${i}`}>
-          <span>
-            {s.quantityKnown === false ? "Unknown quantity" : s.quantity} ×{" "}
-            {s.name}
-          </span>
-          {s.selections.length > 0 && <Composition selections={s.selections} />}
-        </li>
-      ))}
-    </ul>
   );
 }
 function selectionKey(
@@ -682,9 +668,6 @@ export default function ArmyLibraries({
                   ? setArchetypeDefault
                   : undefined
               }
-              renderComposition={(selections) => (
-                <Composition selections={selections} />
-              )}
             />
           )}
           {library.total === 0 && (
@@ -923,9 +906,7 @@ export default function ArmyLibraries({
                     {detail.target.kind === "list" && (
                       <ArmyLibraryUnitComparison norm={detail.norm} />
                     )}
-                    <Composition
-                      selections={detail.army.composition.selections}
-                    />
+                    <ArmyRoster composition={detail.army.composition} />
                   </>
                 )}
                 {detail.target.kind === "archetype" &&
@@ -1231,7 +1212,7 @@ export default function ArmyLibraries({
                     />
                     <details>
                       <summary>Recorded roster</summary>
-                      <Composition selections={v.composition.selections} />
+                      <ArmyRoster composition={v.composition} />
                     </details>
                     {comparison && comparison.id !== v.id && (
                       <details>

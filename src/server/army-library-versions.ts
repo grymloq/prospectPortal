@@ -11,11 +11,23 @@ import type {
 } from "@/lib/types";
 import { armyKey } from "@/lib/matchups";
 import { canonicalRoster } from "./army-library-identity";
+import { rosterAttachmentSignature } from "@/lib/roster-display";
 
 const label = z.string().trim().min(1).max(300);
 const selection: z.ZodType<RosterSelection> = z.lazy(() =>
   z.object({
     sourceId: label,
+    instanceId: label.optional(),
+    associations: z
+      .array(
+        z.object({
+          instanceId: label,
+          role: z.enum(["Leading", "Supporting"]),
+          quantity: z.number().int().min(1).max(10000),
+        }),
+      )
+      .max(500)
+      .optional(),
     name: z.string().max(300),
     kind: z.enum(["unit", "model", "option", "enhancement"]),
     quantity: z.number().int().min(1).max(10000),
@@ -24,6 +36,7 @@ const selection: z.ZodType<RosterSelection> = z.lazy(() =>
   }),
 );
 export const compositionSchema = z.object({
+  attachmentsVersion: z.literal("newrecruit-associations-v1").optional(),
   status: z.enum(["complete", "partial", "unavailable"]),
   normalizationVersion: label,
   selections: z.array(selection).max(500),
@@ -131,6 +144,7 @@ function versionContent(army: Army, patchId: string) {
           army.composition.source.catalogueId,
           army.composition.source.catalogueRevision,
           canonicalRoster(army.composition),
+          rosterAttachmentSignature(army.composition),
         ]
       : null,
   ]);

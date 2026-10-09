@@ -49,6 +49,13 @@ export type ArmyScope = {
   continuityKey?: string;
 };
 export type RosterSelection = {
+  /** Selected-instance references are display metadata, not roster identity. */
+  instanceId?: string;
+  associations?: {
+    instanceId: string;
+    role: "Leading" | "Supporting";
+    quantity: number;
+  }[];
   /** Provider/system/catalogue namespaced source identity. */
   sourceId: string;
   name: string;
@@ -58,6 +65,7 @@ export type RosterSelection = {
   selections: RosterSelection[];
 };
 export type RosterComposition = {
+  attachmentsVersion?: "newrecruit-associations-v1";
   status: "complete" | "partial" | "unavailable";
   normalizationVersion: string;
   selections: RosterSelection[];

@@ -36,6 +36,12 @@ type Option = {
   type?: string;
   id_book?: string | number;
   catalogue_id?: string;
+  uid?: string;
+  associated?: {
+    uid: string;
+    label: "Leading" | "Supporting";
+    amount: number;
+  }[];
   unsupported?: boolean;
 };
 const maximumPayloadBytes = 2000000;
@@ -53,6 +59,7 @@ function validateOptions(input: unknown): Option {
         type: z.string().max(100).optional(),
         id_book: z.union([z.string().max(100), z.number().int()]).optional(),
         catalogue_id: z.string().max(300).optional(),
+        uid: z.string().min(1).max(300).optional(),
       })
       .parse(value);
     const displayFields = new Set([
@@ -86,10 +93,12 @@ function validateOptions(input: unknown): Option {
           .strict(),
       )
       .max(500);
+    const parsedAssociations = associations.safeParse(
+      (value as Record<string, unknown>).associated,
+    );
     if (
       Object.prototype.hasOwnProperty.call(value, "associated") &&
-      associations.safeParse((value as Record<string, unknown>).associated)
-        .success
+      parsedAssociations.success
     )
       displayFields.add("associated");
     const unsupported = Object.entries(value as Record<string, unknown>).some(
@@ -99,6 +108,9 @@ function validateOptions(input: unknown): Option {
     );
     return {
       ...node,
+      ...(parsedAssociations.success
+        ? { associated: parsedAssociations.data }
+        : {}),
       unsupported,
       options: node.options?.map((child) => visit(child, depth + 1)),
     };
@@ -169,6 +181,16 @@ function selectedComposition(
       name: node.name || "Unknown selection",
       kind,
       quantity: node.amount ?? 1,
+      ...(unit && node.uid ? { instanceId: node.uid } : {}),
+      ...(unit && node.associated?.length
+        ? {
+            associations: node.associated.map((reference) => ({
+              instanceId: reference.uid,
+              role: reference.label,
+              quantity: reference.amount,
+            })),
+          }
+        : {}),
       ...(node.amount === undefined && (!node.options?.length || unit)
         ? { quantityKnown: false }
         : {}),
@@ -282,6 +304,7 @@ function selectedComposition(
   });
   if (!selections.length) reasons.add("No selected units were supplied.");
   const composition: RosterComposition = {
+    attachmentsVersion: "newrecruit-associations-v1",
     status: !selections.length
       ? "unavailable"
       : reasons.size

@@ -15,6 +15,7 @@ import {
 } from "./army-library-identity";
 import { updateArmyVersion } from "./army-library-versions";
 import { fetchNewRecruitArmy, newRecruitListUrl } from "./newrecruit-army";
+import { rosterAttachmentSignature } from "@/lib/roster-display";
 
 const hash = (value: unknown) =>
   createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -293,6 +294,7 @@ function compositionContent(army: Army) {
       composition.source.catalogueId,
       composition.source.catalogueRevision,
       canonicalRoster(composition),
+      rosterAttachmentSignature(composition),
       composition.reasons,
     ])
   );

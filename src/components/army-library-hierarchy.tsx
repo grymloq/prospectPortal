@@ -1,12 +1,11 @@
 "use client";
-import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type {
   ArmyLibraryDTO,
   LibraryArchetypeRow,
   LibraryListRow,
   LibraryQuery,
   LibraryTarget,
-  RosterSelection,
 } from "@/lib/types";
 import {
   ArmyLibraryTable,
@@ -16,6 +15,7 @@ import {
 } from "./army-library-table";
 import { ArmyListLink } from "./army-list-drawer";
 import { ArmyLibraryUnitComparison } from "./army-library-unit-comparison";
+import { ArmyRoster } from "./army-roster";
 import styles from "./army-library-hierarchy.module.css";
 
 type Navigation = {
@@ -25,7 +25,6 @@ type Navigation = {
   onToggle: (key: string) => void;
   onSort: (sort: LibraryQuery["sort"]) => void;
   onOpen: (target: LibraryTarget, versionId?: string) => void;
-  renderComposition: (selections: RosterSelection[]) => ReactNode;
   onDefault?: (row: LibraryListRow) => void;
   writing?: boolean;
 };
@@ -195,7 +194,7 @@ function ListPreview({
             Published roster
             {detail.army.composition.status === "partial" ? " · Partial" : ""}
           </h4>
-          {navigation.renderComposition(detail.army.composition.selections)}
+          <ArmyRoster composition={detail.army.composition} />
         </>
       ) : (
         <p className={styles.status}>
