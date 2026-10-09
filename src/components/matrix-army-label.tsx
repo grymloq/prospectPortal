@@ -151,7 +151,12 @@ export function MatrixArmyLabel({
         ) : (
           <>
             <span className={`${styles.line} ${styles.identity}`}>
-              {name && <span className={styles.playerName}>{name} - </span>}
+              {name && (
+                <>
+                  <span className={styles.playerName}>{name}</span>
+                  <span aria-hidden="true">-</span>
+                </>
+              )}
               <FactionName name={item.army.factionName} />
             </span>
             <span

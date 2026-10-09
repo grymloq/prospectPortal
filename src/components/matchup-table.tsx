@@ -83,7 +83,7 @@ function MatchupTooltip({
     </div>
   );
 }
-function description(item: MatrixArmy) {
+function armyDescription(item: MatrixArmy) {
   return [
     item.army.listName || "",
     item.army.factionName,
@@ -159,6 +159,10 @@ export default function MatchupTable({
     score: number | null,
   ) => Promise<void>;
 }) {
+  const description = (item: MatrixArmy) =>
+    [rowNames?.[item.key] || columnNames?.[item.key], armyDescription(item)]
+      .filter(Boolean)
+      .join(" · ");
   const archetypes = useMatrixArchetypes(patchId, revision);
   const [error, setError] = useState("");
   const [fullMobile, setFullMobile] = useState(false);
