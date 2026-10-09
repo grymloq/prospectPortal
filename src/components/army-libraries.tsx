@@ -16,12 +16,16 @@ import type {
 import { PageHeading, Field, Badge, Empty, Modal, dateLabel } from "./ui";
 import { Disposition } from "./disposition";
 import { MultiSelectDropdown } from "./multi-select-dropdown";
-import { ArmyLibraryTable } from "./army-library-table";
+import { ArmyLibraryHierarchy } from "./army-library-hierarchy";
 import { ArmyListLink } from "./army-list-drawer";
 import type { Mutate } from "./workspace";
 import styles from "./army-libraries.module.css";
 
-type Location = { query: LibraryQuery; section: string };
+type Location = {
+  query: LibraryQuery;
+  section: string;
+  returnQuery?: LibraryQuery;
+};
 const sections = [
   "Overview",
   "Matchups",
@@ -37,14 +41,15 @@ function restoredLocation(key: string): Location {
     ) as Location | null;
     if (saved && ["lists", "archetypes"].includes(saved.query?.tab || ""))
       return {
-        query: saved.query,
+        query: { ...saved.query, tab: "archetypes" },
+        returnQuery: saved.returnQuery,
         section: sections.includes(saved.section) ? saved.section : "Overview",
       };
   } catch {
     /* Unavailable storage does not block navigation. */
   }
   return {
-    query: { tab: "lists", page: 1, pageSize: 20, sort: "name" },
+    query: { tab: "archetypes", page: 1, pageSize: 20, sort: "name" },
     section: "Overview",
   };
 }
@@ -198,6 +203,7 @@ export default function ArmyLibraries({
   const [contextPatch, setContextPatch] = useState("");
   const [writing, setWriting] = useState(false);
   const [comparisonId, setComparisonId] = useState("");
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const readOnly = !!view.accessPreview?.active;
   useEffect(() => {
     try {
@@ -267,8 +273,12 @@ export default function ArmyLibraries({
           ) {
             restoredTarget.current = undefined;
             setLocation((c) => ({
-              ...c,
-              query: { ...c.query, target: undefined, versionId: undefined },
+              query: {
+                ...(c.returnQuery || c.query),
+                tab: "archetypes",
+                target: undefined,
+                versionId: undefined,
+              },
               section: "Overview",
             }));
             return;
@@ -291,7 +301,7 @@ export default function ArmyLibraries({
       query: { ...current.query, page: 1, relatedPage: 1, ...patch },
     }));
   }
-  function open(target: LibraryTarget) {
+  function open(target: LibraryTarget, versionId?: string) {
     setDiscussionText("");
     setReplyId("");
     setEditingDiscussion(null);
@@ -300,10 +310,39 @@ export default function ArmyLibraries({
     setContextOpponent("");
     setContextPatch("");
     setLocation((current) => ({
-      query: { ...current.query, target, versionId: undefined, relatedPage: 1 },
+      returnQuery: current.returnQuery || current.query,
+      query: {
+        ...current.query,
+        ...(versionId
+          ? {
+              faction: undefined,
+              search: undefined,
+              detachments: undefined,
+              disposition: undefined,
+            }
+          : {}),
+        tab: "archetypes",
+        target,
+        versionId,
+        relatedPage: 1,
+      },
       section: "Overview",
     }));
     setLoading(true);
+  }
+  function backToLibrary() {
+    setLoading(true);
+    setError("");
+    setLocation((current) => ({
+      query: {
+        ...(current.returnQuery || current.query),
+        tab: "archetypes",
+        target: undefined,
+        versionId: undefined,
+        relatedPage: 1,
+      },
+      section: "Overview",
+    }));
   }
   async function write(command: object) {
     setWriting(true);
@@ -432,21 +471,6 @@ export default function ArmyLibraries({
           Refresh
         </button>
       </PageHeading>
-      <div className="tabs" aria-label="Army library views">
-        {(["lists", "archetypes"] as const).map((tab) => (
-          <button
-            key={tab}
-            className={query.tab === tab ? "active" : ""}
-            aria-pressed={query.tab === tab}
-            onClick={() => {
-              changeQuery({ tab, target: undefined, versionId: undefined });
-              setLocation((c) => ({ ...c, section: "Overview" }));
-            }}
-          >
-            {tab === "lists" ? "Army lists" : "Army archetypes"}
-          </button>
-        ))}
-      </div>
       <section
         className={`panel padded ${styles.filters}`}
         aria-label="Library filters"
@@ -563,13 +587,7 @@ export default function ArmyLibraries({
       {error && (
         <div className="alert" role="alert">
           {error}
-          <button
-            onClick={() =>
-              changeQuery({ target: undefined, versionId: undefined })
-            }
-          >
-            Return to library
-          </button>
+          <button onClick={backToLibrary}>Return to library</button>
           <button
             onClick={() => {
               setLoading(true);
@@ -584,12 +602,19 @@ export default function ArmyLibraries({
       {!loading && library && !query.target && (
         <section className="panel padded">
           {library.total > 0 && (
-            <ArmyLibraryTable
+            <ArmyLibraryHierarchy
               library={library}
-              sort={query.sort}
-              segmented={query.patchId === "all"}
+              query={query}
+              revision={view}
+              expanded={expanded}
+              onToggle={(key) =>
+                setExpanded((current) => ({ ...current, [key]: !current[key] }))
+              }
               onSort={(sort) => changeQuery({ sort })}
               onOpen={open}
+              renderComposition={(selections) => (
+                <Composition selections={selections} />
+              )}
             />
           )}
           {library.total === 0 && (
@@ -598,36 +623,13 @@ export default function ArmyLibraries({
               description="Choose All rulesets or clear filters. Lists without games are still eligible."
             />
           )}
-          <div className={styles.pagination}>
-            <span>
-              {library.total} {query.tab === "lists" ? "lists" : "archetypes"} ·
-              Page {library.page}
-            </span>
-            <button
-              disabled={library.page <= 1}
-              onClick={() => changeQuery({ page: library.page - 1 })}
-            >
-              Previous
-            </button>
-            <button
-              disabled={library.page * library.pageSize >= library.total}
-              onClick={() => changeQuery({ page: library.page + 1 })}
-            >
-              Next
-            </button>
-          </div>
         </section>
       )}
       {!loading && detail && (
         <>
-          <button
-            className={styles.back}
-            onClick={() =>
-              changeQuery({ target: undefined, versionId: undefined })
-            }
-          >
+          <button className={styles.back} onClick={backToLibrary}>
             <ArrowLeft size={16} />
-            Back to {query.tab === "archetypes" ? "archetypes" : "army lists"}
+            Back to army library
           </button>
           <section className="panel padded">
             <h2>{detail.name}</h2>

@@ -165,6 +165,112 @@ test("public identical rosters remain two lists and one variation with no invent
   assert.equal(detail(state, a).variations[0].leading, false);
 });
 
+test("faction hierarchy counts the full filtered public dataset across pages and deduplicates historical list memberships", () => {
+  const { state, a, admin } = fixture();
+  addList(state, "extra", a, {
+    ...army("extra"),
+    detachments: ["other"],
+    detachmentNames: ["Other"],
+  });
+  addList(state, "foreign", a, army("foreign", "g"));
+  addList(state, "private", a, army("private", "secret"));
+  state.savedArmies!.find((row) => row.id === "private")!.shared = false;
+  const removed = { ...user("removed"), confirmedMember: false };
+  state.users.push(removed);
+  addList(state, "removed-list", removed, army("removed", "removed"));
+  const historical: ArmyListVersion = {
+    ...state.armyVersions![0],
+    id: "list-a:history",
+    number: 2,
+    army: {
+      ...army("historical", "g"),
+      detachments: ["historical"],
+      detachmentNames: ["Historical"],
+    },
+  };
+  state.armyVersions!.push(historical);
+  state.libraryMemberships!.push(classifyLibraryVersion(historical));
+  const original = JSON.stringify(state);
+  const result = queryArmyLibrary(state, a, { tab: "archetypes", pageSize: 1 });
+  assert.equal(result.archetypes.length, 1);
+  assert.deepEqual(result.factionGroups, [
+    { id: "f", name: "Faction f", archetypes: 2, lists: 3 },
+    { id: "g", name: "Faction g", archetypes: 2, lists: 2 },
+  ]);
+  assert.deepEqual(
+    queryArmyLibrary(state, admin, { tab: "archetypes", pageSize: 1 })
+      .factionGroups,
+    result.factionGroups,
+  );
+  assert.deepEqual(
+    queryArmyLibrary(state, a, { faction: "f" }).factionGroups,
+    result.factionGroups.slice(0, 1),
+  );
+  assert.deepEqual(
+    queryArmyLibrary(state, a, { search: "List foreign" }).factionGroups,
+    [{ id: "g", name: "Faction g", archetypes: 1, lists: 1 }],
+  );
+  assert.equal(JSON.stringify(state), original);
+  state.savedArmies!.find((row) => row.id === "list-a")!.shared = false;
+  assert.deepEqual(queryArmyLibrary(state, a, {}).factionGroups, [
+    { id: "f", name: "Faction f", archetypes: 2, lists: 2 },
+    { id: "g", name: "Faction g", archetypes: 1, lists: 1 },
+  ]);
+});
+
+test("nested archetype lists sort before pagination and historical rows keep their roster status", () => {
+  const { state, a } = fixture();
+  for (let i = 24; i >= 0; i--)
+    addList(state, `paged-${i}`, a, {
+      ...army(),
+      listName: `Army ${String(i).padStart(2, "0")}`,
+    });
+  const archetype = queryArmyLibrary(state, a, { tab: "archetypes" })
+    .archetypes[0];
+  const first = queryArmyLibrary(state, a, {
+    target: { kind: "archetype", id: archetype.id },
+    sort: "name",
+  }).detail!;
+  const second = queryArmyLibrary(state, a, {
+    target: { kind: "archetype", id: archetype.id },
+    sort: "name",
+    relatedPage: 2,
+  }).detail!;
+  assert.equal(first.relatedPagination!.lists, 27);
+  assert.equal(first.lists[0].name, "Army 00");
+  assert.equal(second.lists[0].name, "Army 20");
+  state.games.push(
+    game("top", "a", { ownListVersionId: "paged-24:v1", score: 19 }),
+  );
+  const ranked = queryArmyLibrary(state, a, {
+    target: { kind: "archetype", id: archetype.id },
+    sort: "score",
+  }).detail!;
+  assert.equal(ranked.lists[0].id, "paged-24");
+  const history: ArmyListVersion = {
+    ...state.armyVersions![0],
+    id: "list-a:partial-history",
+    number: 2,
+    army: {
+      ...army(),
+      detachments: ["old"],
+      detachmentNames: ["Old"],
+      composition: undefined,
+    },
+  };
+  state.armyVersions!.push(history);
+  state.libraryMemberships!.push(classifyLibraryVersion(history));
+  const old = queryArmyLibrary(state, a, {
+    tab: "archetypes",
+    detachments: ["old"],
+  }).archetypes[0];
+  const oldDetail = queryArmyLibrary(state, a, {
+    target: { kind: "archetype", id: old.id },
+  }).detail!;
+  assert.equal(oldDetail.lists[0].compositionStatus, "unavailable");
+  assert.equal(oldDetail.lists[0].versionId, history.id);
+});
+
 test("list references stay specific while variation comparison pools public identical versions", () => {
   const { state, a } = fixture();
   state.games = [

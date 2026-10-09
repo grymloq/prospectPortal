@@ -278,6 +278,13 @@ export type ArmyLibraryDTO = {
   total: number;
   lists: LibraryListRow[];
   archetypes: LibraryArchetypeRow[];
+  /** Complete filtered faction groups, independent of the result page. */
+  factionGroups: {
+    id: string;
+    name: string;
+    archetypes: number;
+    lists: number;
+  }[];
   detail?: LibraryDetail;
   patches: { id: string; name: string; date: string }[];
   facets: {

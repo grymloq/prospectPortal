@@ -542,6 +542,8 @@ export function queryArmyLibrary(
           archetypeId: member.archetypeId,
           variationId: member.variationId,
           versionId: member.version.id,
+          compositionStatus:
+            member.version.army.composition?.status || "unavailable",
         },
       ]);
   }
@@ -696,6 +698,10 @@ export function queryArmyLibrary(
               items.filter((o) => o.listId === row.id),
               segmented,
             ),
+            recentTrend: libraryRecentTrend(
+              items.filter((o) => o.listId === row.id),
+              segmented,
+            ),
           })),
       discussions: libraryDiscussionView(state, actor, target, {
         patchId: filters.patchId,
@@ -730,6 +736,7 @@ export function queryArmyLibrary(
         conflicts: new Set(relevantConflicts.map((o) => o.matchId)).size,
       },
     };
+    rank(detail.lists, query.sort);
     const relatedPageSize = 20;
     const relatedTotals = {
       discussions: detail.discussions.length,
@@ -828,6 +835,23 @@ export function queryArmyLibrary(
     Math.max(1, Math.ceil(total / pageSize)),
   );
   const start = (page - 1) * pageSize;
+  const factionGroups = new Map<
+    string,
+    { id: string; name: string; archetypes: number; listIds: Set<string> }
+  >();
+  for (const archetype of archetypes) {
+    const id = archetype.army.faction;
+    const group = factionGroups.get(id) || {
+      id,
+      name: archetype.army.factionName,
+      archetypes: 0,
+      listIds: new Set<string>(),
+    };
+    group.archetypes++;
+    for (const row of groupedRows.get(archetype.id) || [])
+      group.listIds.add(row.id);
+    factionGroups.set(id, group);
+  }
   return {
     tab,
     filters,
@@ -837,6 +861,9 @@ export function queryArmyLibrary(
     lists: tab === "lists" ? rows.slice(start, start + pageSize) : [],
     archetypes:
       tab === "archetypes" ? archetypes.slice(start, start + pageSize) : [],
+    factionGroups: [...factionGroups.values()]
+      .map(({ listIds, ...group }) => ({ ...group, lists: listIds.size }))
+      .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id)),
     detail,
     patches: (state.patches || [])
       .map(({ id, name, date }) => ({ id, name, date }))
