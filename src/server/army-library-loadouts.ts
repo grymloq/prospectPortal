@@ -5,6 +5,7 @@ import type {
   RosterSelection,
 } from "@/lib/types";
 import { canonicalRoster } from "./army-library-identity";
+import { visibleEquipment } from "@/lib/roster-equipment";
 
 type UnitLoadouts = {
   name: string;
@@ -96,7 +97,12 @@ function selectedLoadouts(army: Army) {
           selections: [{ ...node, quantity: 1 }],
         }),
       );
-      items(node.selections, entry, node.quantity, depth + 1);
+      items(
+        visibleEquipment(node.selections, node, army.composition!),
+        entry,
+        node.quantity,
+        depth + 1,
+      );
       units.set(node.sourceId, entry);
     }
   }
@@ -149,12 +155,21 @@ export function libraryLoadoutChanges(
       [...base.variants].some((variant) => !list.variants.has(variant))
     ) {
       // Unequal group sizes cannot identify the surviving character. Show recorded group totals instead.
+      const changedItems = new Set(
+        [...added, ...removed].map((item) =>
+          JSON.stringify([item.sourceId, item.kind]),
+        ),
+      );
       result.push({
         ...change,
         added: [],
         removed: [],
-        before: sorted(base.items.values()),
-        after: sorted(list.items.values()),
+        before: sorted(base.items.values()).filter((item) =>
+          changedItems.has(JSON.stringify([item.sourceId, item.kind])),
+        ),
+        after: sorted(list.items.values()).filter((item) =>
+          changedItems.has(JSON.stringify([item.sourceId, item.kind])),
+        ),
       });
     }
   }

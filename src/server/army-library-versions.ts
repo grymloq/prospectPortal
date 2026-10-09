@@ -46,6 +46,12 @@ export const compositionSchema = z.object({
     systemId: label.optional(),
     catalogueId: label.optional(),
     catalogueRevision: label.optional(),
+    catalogues: z
+      .array(
+        z.object({ id: label, revision: z.number().int().min(0).max(100000) }),
+      )
+      .max(100)
+      .optional(),
     importedAt: z.iso.datetime().optional(),
   }),
 });

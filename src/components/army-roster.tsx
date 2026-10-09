@@ -1,5 +1,6 @@
 import type { RosterComposition, RosterSelection } from "@/lib/types";
 import { consolidateRoster } from "@/lib/roster-display";
+import { visibleEquipment } from "@/lib/roster-equipment";
 import styles from "./army-roster.module.css";
 
 function Loadout({ selections }: { selections: RosterSelection[] }) {
@@ -20,6 +21,29 @@ function Loadout({ selections }: { selections: RosterSelection[] }) {
   );
 }
 
+function SelectedEquipment({
+  selection,
+  composition,
+}: {
+  selection: RosterSelection;
+  composition: RosterComposition;
+}) {
+  const equipment = visibleEquipment(
+    selection.selections,
+    selection,
+    composition,
+  );
+  return equipment.length ? (
+    <Loadout selections={equipment} />
+  ) : (
+    <p className={styles.note}>
+      {selection.selections.length
+        ? "No optional or additional equipment recorded."
+        : "No specific loadout was supplied."}
+    </p>
+  );
+}
+
 /** Consolidated units stay readable; selected loadouts are available on demand. */
 export function ArmyRoster({
   composition,
@@ -27,6 +51,7 @@ export function ArmyRoster({
   composition: RosterComposition;
 }) {
   const { units, other } = consolidateRoster(composition);
+  const otherEquipment = visibleEquipment(other, undefined, composition);
   return (
     <div className={styles.roster}>
       {!composition.attachmentsVersion && (
@@ -73,13 +98,10 @@ export function ArmyRoster({
                         {variant.quantity} × {unit.name} · Loadout {index + 1}
                       </h5>
                     )}
-                    {variant.selection.selections.length ? (
-                      <Loadout selections={variant.selection.selections} />
-                    ) : (
-                      <p className={styles.note}>
-                        No specific loadout was supplied.
-                      </p>
-                    )}
+                    <SelectedEquipment
+                      selection={variant.selection}
+                      composition={composition}
+                    />
                   </div>
                 ))}
                 {unit.leaders.map((leader, index) => (
@@ -90,13 +112,10 @@ export function ArmyRoster({
                         : "Supporting"}
                       : {leader.quantity} × {leader.selection.name}
                     </h5>
-                    {leader.selection.selections.length ? (
-                      <Loadout selections={leader.selection.selections} />
-                    ) : (
-                      <p className={styles.note}>
-                        No specific loadout was supplied.
-                      </p>
-                    )}
+                    <SelectedEquipment
+                      selection={leader.selection}
+                      composition={composition}
+                    />
                   </div>
                 ))}
               </div>
@@ -104,13 +123,13 @@ export function ArmyRoster({
           </li>
         ))}
       </ul>
-      {other.length > 0 && (
+      {otherEquipment.length > 0 && (
         <details className={styles.unit}>
           <summary>Other recorded selections</summary>
-          <Loadout selections={other} />
+          <Loadout selections={otherEquipment} />
         </details>
       )}
-      {!units.length && !other.length && (
+      {!units.length && !otherEquipment.length && (
         <p className={styles.note}>No selected units were supplied.</p>
       )}
     </div>

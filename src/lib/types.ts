@@ -77,6 +77,8 @@ export type RosterComposition = {
     systemId?: string;
     catalogueId?: string;
     catalogueRevision?: string;
+    /** Actual source book revisions; nrversion alone is the export/app version. */
+    catalogues?: { id: string; revision: number }[];
     importedAt?: string;
   };
 };

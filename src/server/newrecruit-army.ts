@@ -1,6 +1,7 @@
 import { armySnapshot, type Catalogue } from "@/lib/catalogue";
 import { z } from "zod";
 import type { RosterComposition, RosterSelection } from "@/lib/types";
+import { catalogueRevisions } from "@/lib/roster-equipment";
 import {
   canonicalRoster,
   rosterFingerprint,
@@ -450,6 +451,10 @@ export function armyFromNewRecruit(
     data.nrversion === undefined ? undefined : String(data.nrversion),
     (data.books_revision?.length || 0) > 1,
   );
+  if (data.books_revision?.length)
+    snapshot.composition.source.catalogues = catalogueRevisions(
+      data.books_revision,
+    );
   return snapshot;
 }
 export async function fetchNewRecruitArmy(input: string, rules: Catalogue) {
