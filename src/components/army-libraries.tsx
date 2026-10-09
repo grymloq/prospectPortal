@@ -15,6 +15,7 @@ import type {
 } from "@/lib/types";
 import { PageHeading, Field, Badge, Empty, Modal, dateLabel } from "./ui";
 import { Disposition } from "./disposition";
+import { MultiSelectDropdown } from "./multi-select-dropdown";
 import { ArmyListLink } from "./army-list-drawer";
 import type { Mutate } from "./workspace";
 import styles from "./army-libraries.module.css";
@@ -499,28 +500,15 @@ export default function ArmyLibraries({
             ))}
           </select>
         </Field>
-        <Field label="Detachment combination">
-          <select
-            multiple
-            disabled={loading}
-            value={query.detachments || []}
-            onChange={(e) =>
-              changeQuery({
-                detachments: Array.from(
-                  e.target.selectedOptions,
-                  (o) => o.value,
-                ),
-                disposition: undefined,
-              })
-            }
-          >
-            {library?.facets.detachments.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-        </Field>
+        <MultiSelectDropdown
+          label="Detachment combination"
+          options={library?.facets.detachments || []}
+          selected={query.detachments || []}
+          disabled={loading}
+          onChange={(detachments) =>
+            changeQuery({ detachments, disposition: undefined })
+          }
+        />
         <Field label="Disposition">
           <select
             value={query.disposition || ""}
