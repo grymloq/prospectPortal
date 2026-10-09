@@ -47,17 +47,26 @@
 .preview {
   position: fixed;
   z-index: 1000;
-  width: min(360px, calc(100vw - 16px));
-  max-height: min(360px, calc(100vh - 24px));
-  overflow: hidden;
+  width: max-content;
+  min-width: min(360px, calc(100vw - 16px));
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  overscroll-behavior: contain;
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: white;
   color: var(--navy);
   box-shadow: 0 6px 24px #102a4326;
-  pointer-events: none;
+  pointer-events: auto;
   font-size: var(--text-small);
+}
+.preview .line {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .preview ul {
   list-style: none;

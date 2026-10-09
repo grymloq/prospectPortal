@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ArmyLibraryDTO } from "@/lib/types";
 import { armyKey, type MatrixArmy } from "@/lib/matchups";
@@ -10,6 +10,26 @@ import { Disposition } from "./disposition";
 import { FactionName } from "./faction-avatar";
 import { detachmentAbbreviation } from "@/lib/detachment-abbreviations";
 import styles from "./matrix-army-label.module.css";
+
+function positionPreview(element: HTMLElement, target: HTMLElement) {
+  const rect = target.getBoundingClientRect();
+  const { width, height } = element.getBoundingClientRect();
+  const below = rect.bottom + 4;
+  const top =
+    below + height <= window.innerHeight - 8
+      ? below
+      : rect.top - height - 4 >= 8
+        ? rect.top - height - 4
+        : Math.max(8, Math.min(below, window.innerHeight - height - 8));
+  element.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))}px`;
+  element.style.top = `${top}px`;
+  return (
+    rect.bottom > 0 &&
+    rect.top < window.innerHeight &&
+    rect.right > 0 &&
+    rect.left < window.innerWidth
+  );
+}
 
 /** Only public library classifications may supply the optional archetype line. */
 export function useMatrixArchetypes(
@@ -69,10 +89,11 @@ export function MatrixArmyLabel({
 }) {
   const id = useId();
   const target = useRef<HTMLSpanElement>(null);
+  const preview = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [anchor, setAnchor] = useState<{
     left: number;
-    top?: number;
-    bottom?: number;
+    top: number;
   }>();
   const composition = item.army.composition;
   const units = composition && consolidateRoster(composition).units;
@@ -88,15 +109,55 @@ export function MatrixArmyLabel({
     .join(" · ");
   useEffect(() => {
     if (!anchor) return;
+    const scroll = (event: Event) => {
+      if (
+        event.target instanceof Node &&
+        preview.current?.contains(event.target)
+      )
+        return;
+      if (
+        preview.current &&
+        target.current &&
+        !positionPreview(preview.current, target.current)
+      )
+        setAnchor(undefined);
+    };
     const hide = () => setAnchor(undefined);
-    window.addEventListener("scroll", hide, true);
+    window.addEventListener("scroll", scroll, true);
     window.addEventListener("resize", hide);
     return () => {
-      window.removeEventListener("scroll", hide, true);
+      window.removeEventListener("scroll", scroll, true);
       window.removeEventListener("resize", hide);
     };
   }, [anchor]);
+  useEffect(
+    () => () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    },
+    [],
+  );
+  useLayoutEffect(() => {
+    const element = preview.current;
+    if (element && target.current) positionPreview(element, target.current);
+  });
+  function keepOpen() {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  }
+  function leave() {
+    keepOpen();
+    closeTimer.current = setTimeout(() => setAnchor(undefined), 160);
+  }
+  function blur(event: React.FocusEvent) {
+    if (
+      event.relatedTarget instanceof Node &&
+      (target.current?.contains(event.relatedTarget) ||
+        preview.current?.contains(event.relatedTarget))
+    )
+      return;
+    leave();
+  }
   function show() {
+    keepOpen();
     const rect = target.current?.getBoundingClientRect();
     if (!rect) return;
     setAnchor({
@@ -107,9 +168,7 @@ export function MatrixArmyLabel({
           window.innerWidth - Math.min(360, window.innerWidth - 16) - 8,
         ),
       ),
-      ...(rect.top > window.innerHeight / 2
-        ? { bottom: window.innerHeight - rect.top + 8 }
-        : { top: rect.bottom + 8 }),
+      top: rect.bottom + 4,
     });
   }
   return (
@@ -117,10 +176,13 @@ export function MatrixArmyLabel({
       ref={target}
       className={styles.target}
       onMouseEnter={show}
-      onMouseLeave={() => setAnchor(undefined)}
+      onMouseLeave={leave}
       onFocus={show}
-      onBlur={() => setAnchor(undefined)}
-      onClickCapture={() => setAnchor(undefined)}
+      onBlur={blur}
+      onClickCapture={(event) => {
+        if (target.current?.contains(event.target as Node))
+          setAnchor(undefined);
+      }}
       onKeyDown={(event) => {
         if (event.key === "Escape") {
           event.stopPropagation();
@@ -176,7 +238,18 @@ export function MatrixArmyLabel({
       </ArmyListLink>
       {anchor &&
         createPortal(
-          <div id={id} role="tooltip" className={styles.preview} style={anchor}>
+          <div
+            ref={preview}
+            id={id}
+            role="tooltip"
+            className={styles.preview}
+            style={anchor}
+            tabIndex={0}
+            onMouseEnter={keepOpen}
+            onMouseLeave={leave}
+            onFocus={keepOpen}
+            onBlur={blur}
+          >
             <strong className={styles.line}>
               {item.army.listName || name || item.army.factionName}
             </strong>
@@ -187,7 +260,7 @@ export function MatrixArmyLabel({
             {units?.length ? (
               <>
                 <ul aria-label="Consolidated roster preview">
-                  {units.slice(0, 10).map((unit) => (
+                  {units.map((unit) => (
                     <li key={unit.key}>
                       <span className={styles.line}>
                         {unit.quantityKnown
@@ -206,9 +279,6 @@ export function MatrixArmyLabel({
                     </li>
                   ))}
                 </ul>
-                {units.length > 10 && (
-                  <small>+{units.length - 10} more unit groups</small>
-                )}
               </>
             ) : (
               <p>No imported roster available.</p>
