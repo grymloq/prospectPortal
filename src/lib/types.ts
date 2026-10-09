@@ -117,6 +117,86 @@ export type LibraryMembership = {
   classificationVersion: string;
   classifiedAt: string;
 };
+/** An administrator's ruleset-specific baseline. Cleared records retain CAS revisions. */
+export type LibraryArchetypeDefault = {
+  archetypeId: string;
+  patchId: string;
+  versionId?: string;
+  revision: number;
+  updatedBy: string;
+  updatedAt: string;
+};
+export type LibraryRosterSourceKind =
+  | "saved"
+  | "matrix"
+  | "journal-own"
+  | "journal-enemy"
+  | "scrim"
+  | "matrix-history"
+  | "version";
+/** A fetched current external source, never a replacement historical snapshot. */
+export type LibraryRosterImport = {
+  id: string;
+  sourceKey: string;
+  sourceRevision: string;
+  sourceKind: LibraryRosterSourceKind;
+  patchId: string;
+  sourceUrl: string;
+  importedAt: string;
+  status: "complete" | "partial" | "unavailable" | "failed" | "unsupported";
+  army?: Army;
+  error?: string;
+};
+/** Unit counts exclude descendant model/equipment selections as separate units. */
+export type LibraryUnitCount = {
+  sourceId: string;
+  name: string;
+  quantity: number;
+  quantityKnown?: boolean;
+  modelCount?: number;
+};
+export type LibraryUnitDeviation = {
+  sourceId: string;
+  name: string;
+  baselineQuantity: number;
+  listQuantity: number;
+  delta: number;
+  baselineModels?: number;
+  listModels?: number;
+};
+export type LibraryArchetypeStandard = {
+  archetypeId: string;
+  patchId: string;
+  listId: string;
+  versionId: string;
+  name: string;
+  ownerName: string;
+  variationId: string;
+  repetitions: number;
+  selection: "marked" | "most-repeated";
+  defaultRevision: number;
+  units: LibraryUnitCount[];
+};
+export type LibraryNormComparison = {
+  status: "same" | "different" | "partial" | "unavailable" | "no-standard";
+  standard?: LibraryArchetypeStandard;
+  units: LibraryUnitCount[];
+  deviations: LibraryUnitDeviation[];
+  /** Exact composition includes loadouts, independently of unit-count differences. */
+  compositionMatches?: boolean;
+};
+/** Compact table comparison; full unit payloads belong in authorized list details. */
+export type LibraryNormSummary = {
+  status: LibraryNormComparison["status"];
+  baselineName?: string;
+  addedUnits: number;
+  removedUnits: number;
+  changedUnits: number;
+  isDefault: boolean;
+  canSetDefault: boolean;
+  defaultRevision: number;
+  compositionMatches?: boolean;
+};
 export type LibraryTarget = { kind: "list" | "archetype"; id: string };
 export type LibraryDiscussionContext = {
   patchId?: string;
@@ -188,6 +268,7 @@ export type LibraryMatchup = {
   metrics: LibraryMetrics;
 };
 export type LibraryListRow = {
+  norm?: LibraryNormSummary;
   recentTrend?: {
     change: number;
     from: string;
@@ -234,6 +315,9 @@ export type LibraryVersionRow = {
   metrics: LibraryMetrics;
 };
 export type LibraryDetail = {
+  norm?: LibraryNormComparison;
+  /** Standards remain separate per ruleset even in an All rulesets detail. */
+  standards?: LibraryArchetypeStandard[];
   relatedPagination?: {
     page: number;
     pageSize: number;
@@ -448,6 +532,8 @@ export type BrowserSubscription = {
   keys: { auth: string; p256dh: string };
 };
 export type State = {
+  libraryDefaults?: LibraryArchetypeDefault[];
+  libraryRosterImports?: LibraryRosterImport[];
   armyVersions?: ArmyListVersion[];
   libraryMemberships?: LibraryMembership[];
   libraryDiscussions?: LibraryDiscussion[];
@@ -572,7 +658,11 @@ export type Scrim = {
 /** Library collections are queried through their dedicated authorized DTO endpoint. */
 export type View = Omit<
   State,
-  "armyVersions" | "libraryMemberships" | "libraryDiscussions"
+  | "armyVersions"
+  | "libraryMemberships"
+  | "libraryDiscussions"
+  | "libraryDefaults"
+  | "libraryRosterImports"
 > & {
   pushDeviceIds?: string[];
   accessPreview?: {

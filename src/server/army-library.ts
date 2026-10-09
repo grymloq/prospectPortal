@@ -19,6 +19,8 @@ import { armyKey } from "@/lib/matchups";
 import { scrimListsSubmitted } from "@/lib/scrims";
 import { archetypeId, libraryIdentityAliases } from "./army-library-identity";
 import { libraryDiscussionView } from "./library-discussions";
+import { createLibraryNorms } from "./army-library-norm";
+import { importedMatrixArmy } from "./army-library-import";
 import {
   filterLibraryObservations,
   LEADING_MINIMUM_MATCHES,
@@ -226,17 +228,16 @@ function publicRows(
       : matrix.id;
     if (sourcesSeen.has(source)) continue;
     sourcesSeen.add(source);
-    const army = publicArmy(matrix.army);
-    delete army.composition;
+    const army = importedMatrixArmy(state, matrix);
     rows.push({
       id: `matrix:${matrix.id}`,
       kind: "matrix",
       name: army.listName || army.factionName,
       ownerName: sources.users.get(matrix.userId)!.name,
-      army,
+      army: compactArmy(army),
       patchId: matrix.patchId,
       archetypeId: archetypeId(army, matrix.patchId, state),
-      compositionStatus: "unavailable",
+      compositionStatus: army.composition?.status || "unavailable",
       metrics: libraryMetrics([]),
     });
   }
@@ -459,6 +460,19 @@ export function queryArmyLibrary(
   if (!active(state.users.find((user) => user.id === actor.id)))
     throw new Error("Confirmed membership required.");
   const sources = publishedVersions(state);
+  // Standards are computed before search, pagination and game-context filters.
+  const norms = createLibraryNorms(state, actor, sources.versions.values());
+  const rosterArmy = (row: LibraryListRow): Army => {
+    const version = sources.versions.get(row.versionId || "");
+    if (version) return version.version.army;
+    if (row.kind === "matrix") {
+      const matrix = state.matrixLists?.find(
+        (entry) => `matrix:${entry.id}` === row.id,
+      );
+      if (matrix) return importedMatrixArmy(state, matrix);
+    }
+    return row.army;
+  };
   const filters: LibraryFilters = {
     patchId: query.patchId || defaultPatchId(state),
     search: query.search,
@@ -497,6 +511,13 @@ export function queryArmyLibrary(
     )
     .map((row) => ({
       ...row,
+      norm: norms.summary(
+        rosterArmy(row),
+        row.archetypeId,
+        row.patchId,
+        row.versionId,
+        row.kind === "saved",
+      ),
       metrics: libraryMetrics(
         row.kind === "saved" ? listObservations(row.id) : [],
         segmented,
@@ -544,6 +565,12 @@ export function queryArmyLibrary(
           versionId: member.version.id,
           compositionStatus:
             member.version.army.composition?.status || "unavailable",
+          norm: norms.summary(
+            member.version.army,
+            member.archetypeId,
+            member.version.patchId,
+            member.version.id,
+          ),
         },
       ]);
   }
@@ -668,7 +695,7 @@ export function queryArmyLibrary(
           (list?.versionId
             ? sources.versions.get(list.versionId)?.version.army
             : members[0]?.version.army) ||
-          identity.army,
+          (list ? rosterArmy(list) : identity.army),
       ),
       ownerName: list?.ownerName,
       currentSourceUrl:
@@ -736,6 +763,44 @@ export function queryArmyLibrary(
         conflicts: new Set(relevantConflicts.map((o) => o.matchId)).size,
       },
     };
+    const selectedArmy =
+      selected?.version.army ||
+      (list?.versionId
+        ? sources.versions.get(list.versionId)?.version.army
+        : undefined) ||
+      (list ? rosterArmy(list) : detail.army);
+    const comparisonPatch = selected?.version.patchId || list?.patchId;
+    if (list && comparisonPatch)
+      detail.norm = norms.compare(
+        selectedArmy,
+        detail.archetypeId,
+        comparisonPatch,
+      );
+    if (list && selected)
+      detail.lists = [
+        {
+          ...list,
+          army: compactArmy(selected.version.army),
+          patchId: selected.version.patchId,
+          archetypeId: selected.archetypeId,
+          versionId: selected.version.id,
+          variationId: selected.variationId,
+          metrics: libraryMetrics(items, segmented),
+          recentTrend: libraryRecentTrend(items, segmented),
+          compositionStatus:
+            selected.version.army.composition?.status || "unavailable",
+          norm: norms.summary(
+            selected.version.army,
+            selected.archetypeId,
+            selected.version.patchId,
+            selected.version.id,
+          ),
+        },
+      ];
+    detail.standards = segmentIds.flatMap((patchId) => {
+      const standard = norms.standard(detail!.archetypeId, patchId);
+      return standard ? [standard] : [];
+    });
     rank(detail.lists, query.sort);
     const relatedPageSize = 20;
     const relatedTotals = {

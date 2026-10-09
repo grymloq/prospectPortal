@@ -71,6 +71,27 @@ function validateOptions(input: unknown): Option {
       "points",
       "totalCost",
     ]);
+    // New Recruit exports attachment annotations separately from selected
+    // entries. Their volatile UIDs identify selected instances, not equipment.
+    // Accept only the observed, bounded reference shape; unfamiliar association
+    // data still makes exact roster identity unavailable.
+    const associations = z
+      .array(
+        z
+          .object({
+            uid: z.string().min(1).max(300),
+            label: z.enum(["Leading", "Supporting"]),
+            amount: z.number().int().min(1).max(10000),
+          })
+          .strict(),
+      )
+      .max(500);
+    if (
+      Object.prototype.hasOwnProperty.call(value, "associated") &&
+      associations.safeParse((value as Record<string, unknown>).associated)
+        .success
+    )
+      displayFields.add("associated");
     const unsupported = Object.entries(value as Record<string, unknown>).some(
       ([key, extra]) =>
         !displayFields.has(key) &&
@@ -98,6 +119,10 @@ function selectedComposition(
   multipleCatalogues: boolean,
 ): RosterComposition {
   const reasons = new Set<string>();
+  if (nodes(root).some((node) => node.unsupported))
+    reasons.add(
+      "Selected roster data contains unsupported selection metadata.",
+    );
   const namespace = (catalogue: string, id: string) =>
     `newrecruit:${encodeURIComponent(systemId)}:${encodeURIComponent(catalogue)}:${encodeURIComponent(id)}`;
   function selection(
@@ -117,6 +142,21 @@ function selectedComposition(
       reasons.add("A selected roster entry has no source identifier.");
     if (node.amount === undefined && (!node.options?.length || unit))
       reasons.add("A selected roster entry has an unknown quantity.");
+    if (!unit && node.type === "unit")
+      reasons.add("Nested unit selection semantics are ambiguous.");
+    if (
+      !unit &&
+      node.type !== "model" &&
+      (node.amount || 0) > 1 &&
+      (node.options || []).some((child) =>
+        nodes(child).some(
+          (entry) => entry.type === "model" || entry.type === "unit",
+        ),
+      )
+    )
+      reasons.add(
+        "A selected model or unit has an ambiguous repeated option ancestor.",
+      );
     const kind = unit
       ? "unit"
       : node.type === "model"
@@ -138,13 +178,33 @@ function selectedComposition(
       }),
     };
   }
-  const rosterRoots = nodes(root).filter((node) => node.name === "Army Roster");
+  const rosterRoots: { node: Option; catalogue: string }[] = [];
+  function findRosters(node: Option, parentCatalogue: string) {
+    if (node.amount === 0) return;
+    if (node.amount !== undefined && node.amount > 1)
+      reasons.add(
+        "A roster ancestor has an ambiguous repeated group quantity.",
+      );
+    const catalogue =
+      node.catalogue_id ||
+      (node.id_book === undefined ? parentCatalogue : String(node.id_book));
+    if (node.name === "Army Roster") {
+      rosterRoots.push({ node, catalogue });
+      return;
+    }
+    for (const child of node.options || []) findRosters(child, catalogue);
+  }
+  findRosters(root, catalogueId);
   const unitNodes: { node: Option; catalogue: string; unit: boolean }[] = [];
   if (rosterRoots.length) {
-    for (const roster of rosterRoots) {
+    for (const { node: roster, catalogue: rosterCatalogue } of rosterRoots) {
       for (const category of roster.options || []) {
         if (category.amount === 0) continue;
-        const catalogue = roster.catalogue_id || catalogueId;
+        const catalogue =
+          category.catalogue_id ||
+          (category.id_book === undefined
+            ? rosterCatalogue
+            : String(category.id_book));
         if (category.name === "Configuration") {
           for (const extra of category.options || [])
             if (
@@ -181,6 +241,10 @@ function selectedComposition(
         unitNodes.push({ node, catalogue, unit: true });
         return;
       }
+      if (node.amount !== undefined && node.amount > 1)
+        reasons.add(
+          "A roster ancestor has an ambiguous repeated group quantity.",
+        );
       for (const child of node.options || []) explicitUnits(child, catalogue);
     }
     explicitUnits(root, catalogueId);

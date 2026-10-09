@@ -16,6 +16,7 @@ import { ensureMembership, requireMember } from "./membership";
 import { executeScrim, scrimCommands, scrimView } from "./scrims";
 import { feedbackCommand, submitFeedback } from "./feedback";
 import { libraryCommands, executeLibraryCommand } from "./library-discussions";
+import { setLibraryArchetypeDefault } from "./army-library-norm";
 import {
   compositionSchema,
   scopeSchema,
@@ -59,6 +60,13 @@ const army = z.object({
 });
 const commands = z.discriminatedUnion("type", [
   ...libraryCommands,
+  z.object({
+    type: z.literal("libraryArchetypeDefault"),
+    archetypeId: z.string().min(1).max(300),
+    patchId: id,
+    versionId: z.string().min(1).max(300).optional(),
+    expectedRevision: z.number().int().min(0),
+  }),
   ...notificationCommands,
   feedbackCommand,
   z.object({ type: z.literal("feedbackRead"), id, read: z.boolean() }),
@@ -360,6 +368,10 @@ function executeCommand(s: State, actor: User, input: unknown) {
       createdAt: now,
     });
   switch (c.type) {
+    case "libraryArchetypeDefault": {
+      setLibraryArchetypeDefault(s, actor, c);
+      break;
+    }
     case "libraryConsolidationApply": {
       applyConsolidation(s, actor, c.sourceRevision);
       audit(`${actor.name} consolidated army library classifications.`);
