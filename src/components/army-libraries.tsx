@@ -8,6 +8,7 @@ import type {
   ConsolidationPreview,
   LibraryDiscussion,
   LibraryMetrics,
+  LibraryListRow,
   LibraryQuery,
   LibraryTarget,
   RosterSelection,
@@ -17,6 +18,7 @@ import { PageHeading, Field, Badge, Empty, Modal, dateLabel } from "./ui";
 import { Disposition } from "./disposition";
 import { MultiSelectDropdown } from "./multi-select-dropdown";
 import { ArmyLibraryHierarchy } from "./army-library-hierarchy";
+import { ArmyLibraryUnitComparison } from "./army-library-unit-comparison";
 import { ArmyListLink } from "./army-list-drawer";
 import type { Mutate } from "./workspace";
 import styles from "./army-libraries.module.css";
@@ -202,6 +204,8 @@ export default function ArmyLibraries({
   const [contextOpponent, setContextOpponent] = useState("");
   const [contextPatch, setContextPatch] = useState("");
   const [writing, setWriting] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importReport, setImportReport] = useState("");
   const [comparisonId, setComparisonId] = useState("");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const readOnly = !!view.accessPreview?.active;
@@ -354,6 +358,57 @@ export default function ArmyLibraries({
     }
     return ok;
   }
+  async function setArchetypeDefault(row: LibraryListRow) {
+    await write({
+      type: "libraryArchetypeDefault",
+      archetypeId: row.archetypeId,
+      patchId: row.patchId,
+      versionId: row.norm?.isDefault ? undefined : row.versionId,
+      expectedRevision: row.norm?.defaultRevision || 0,
+    });
+  }
+  async function importStoredLists() {
+    setImportBusy(true);
+    setError("");
+    setImportReport("");
+    try {
+      let offset: number | undefined = 0;
+      const totals = {
+        updated: 0,
+        complete: 0,
+        partial: 0,
+        failed: 0,
+        unsupported: 0,
+        skipped: 0,
+      };
+      while (offset !== undefined) {
+        const response = await fetch("/api/army-library/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ offset }),
+        });
+        const payload = await response.json();
+        if (!response.ok)
+          throw new Error(payload.error || "Could not import stored lists.");
+        for (const key of Object.keys(totals) as (keyof typeof totals)[])
+          totals[key] += payload.report[key];
+        setImportReport(
+          `${totals.updated} saved lists updated; ${totals.complete} complete roster sources, ${totals.partial} partial, ${totals.failed} failed, ${totals.unsupported} unsupported, ${totals.skipped} skipped. Historical snapshots were preserved.`,
+        );
+        const next = payload.nextOffset as number | undefined;
+        if (next !== undefined && next <= offset)
+          throw new Error(
+            "Import batch did not advance. Run the import again.",
+          );
+        offset = next;
+      }
+      setRefresh((n) => n + 1);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setImportBusy(false);
+    }
+  }
   async function loadPreview() {
     setPreviewBusy(true);
     setError("");
@@ -454,6 +509,14 @@ export default function ArmyLibraries({
       >
         {view.me.role === "admin" && (
           <button
+            disabled={importBusy || readOnly || writing}
+            onClick={() => void importStoredLists()}
+          >
+            {importBusy ? "Importing lists…" : "Import stored lists"}
+          </button>
+        )}
+        {view.me.role === "admin" && (
+          <button
             disabled={previewBusy || readOnly}
             onClick={() => void loadPreview()}
           >
@@ -471,6 +534,7 @@ export default function ArmyLibraries({
           Refresh
         </button>
       </PageHeading>
+      {importReport && <p role="status">{importReport}</p>}
       <section
         className={`panel padded ${styles.filters}`}
         aria-label="Library filters"
@@ -605,13 +669,19 @@ export default function ArmyLibraries({
             <ArmyLibraryHierarchy
               library={library}
               query={query}
-              revision={view}
+              revision={library}
               expanded={expanded}
               onToggle={(key) =>
                 setExpanded((current) => ({ ...current, [key]: !current[key] }))
               }
               onSort={(sort) => changeQuery({ sort })}
               onOpen={open}
+              writing={writing}
+              onDefault={
+                view.me.role === "admin" && !readOnly
+                  ? setArchetypeDefault
+                  : undefined
+              }
               renderComposition={(selections) => (
                 <Composition selections={selections} />
               )}
@@ -849,10 +919,26 @@ export default function ArmyLibraries({
                   <p>{detail.army.composition.reasons.join("; ")}</p>
                 ) : null}
                 {detail.army.composition && (
-                  <Composition
-                    selections={detail.army.composition.selections}
-                  />
+                  <>
+                    {detail.target.kind === "list" && (
+                      <ArmyLibraryUnitComparison norm={detail.norm} />
+                    )}
+                    <Composition
+                      selections={detail.army.composition.selections}
+                    />
+                  </>
                 )}
+                {detail.target.kind === "archetype" &&
+                  detail.standards?.map((standard) => (
+                    <p key={standard.patchId}>
+                      Standard: <strong>{standard.name}</strong> ·{" "}
+                      {patchName(standard.patchId)} ·{" "}
+                      {standard.selection === "marked"
+                        ? "Marked default"
+                        : "Most repeated variant"}{" "}
+                      · {standard.repetitions} lists
+                    </p>
+                  ))}
                 <p className={styles.note}>
                   {detail.coverage.unclassifiedAppearances} unclassified
                   appearances · {detail.coverage.missingDeployment} missing

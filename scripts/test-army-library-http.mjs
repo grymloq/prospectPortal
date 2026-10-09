@@ -544,4 +544,94 @@ export async function testArmyLibraryHttp({ request, check, admin, player }) {
   );
   for (const id of ids)
     assert.equal((await mutate({ type: "deleteArmy", id })).status, 200);
+
+  const normArmy = {
+    ...inputArmy,
+    listName: "HTTP archetype default",
+    composition: {
+      status: "complete",
+      normalizationVersion: "newrecruit-selected-v1",
+      reasons: [],
+      source: {
+        provider: "newrecruit",
+        systemId: String(metadataPatch.catalogue.systemId),
+        catalogueId: inputArmy.faction,
+      },
+      selections: [
+        {
+          sourceId: `newrecruit:${metadataPatch.catalogue.systemId}:${inputArmy.faction}:http-unit`,
+          name: "HTTP unit",
+          kind: "unit",
+          quantity: 2,
+          selections: [],
+        },
+      ],
+    },
+  };
+  const createdNorm = await mutate({
+    type: "saveArmy",
+    patchId: metadataPatch.id,
+    army: normArmy,
+  });
+  assert.equal(createdNorm.status, 200, JSON.stringify(createdNorm.data));
+  const normList = createdNorm.data.savedArmies.find(
+    (row) => row.army.listName === normArmy.listName,
+  );
+  assert.equal(
+    (await mutate({ type: "shareArmy", id: normList.id, shared: true })).status,
+    200,
+  );
+  const getNormDetail = async () =>
+    request(
+      `/api/army-library?patchId=${encodeURIComponent(metadataPatch.id)}&targetKind=list&targetId=${encodeURIComponent(normList.id)}`,
+      null,
+      player.cookie,
+    );
+  const normResponse = await getNormDetail();
+  assert.equal(normResponse.status, 200, JSON.stringify(normResponse.data));
+  const normDetail = normResponse.data.library.detail;
+  const mark = {
+    type: "libraryArchetypeDefault",
+    archetypeId: normDetail.archetypeId,
+    patchId: metadataPatch.id,
+    versionId: normList.currentVersionId,
+    expectedRevision: 0,
+  };
+  assert.equal((await mutate(mark)).status, 400);
+  const markResult = await mutate(mark, admin.cookie);
+  assert.equal(markResult.status, 200, JSON.stringify(markResult.data));
+  assert.equal((await mutate(mark, admin.cookie)).status, 400);
+  const marked = (await getNormDetail()).data.library.detail;
+  assert.equal(marked.norm.standard.selection, "marked");
+  assert.equal(marked.norm.standard.versionId, normList.currentVersionId);
+  assert.equal(marked.norm.status, "same");
+  check(
+    "archetype defaults require administrators, pin public immutable versions, and reject stale writes",
+    () => {},
+  );
+  assert.equal(
+    (
+      await mutate(
+        { ...mark, versionId: undefined, expectedRevision: 1 },
+        admin.cookie,
+      )
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await mutate({ type: "deleteArmy", id: normList.id })).status,
+    200,
+  );
+  assert.equal((await request("/api/army-library/import", {})).status, 401);
+  assert.equal(
+    (await request("/api/army-library/import", {}, player.cookie)).status,
+    403,
+  );
+  const imported = await request("/api/army-library/import", {}, admin.cookie);
+  assert.equal(imported.status, 200, JSON.stringify(imported.data));
+  assert.ok(imported.data.report);
+  check(
+    "stored roster imports are administrator-only and use an authorized atomic maintenance route",
+    () => {},
+  );
 }

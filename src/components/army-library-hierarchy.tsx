@@ -14,9 +14,8 @@ import {
   ArmyLibraryFactionRow,
   ArmyLibraryInlineRow,
 } from "./army-library-table";
-import { FactionName } from "./faction-avatar";
 import { ArmyListLink } from "./army-list-drawer";
-import { Disposition } from "./disposition";
+import { ArmyLibraryUnitComparison } from "./army-library-unit-comparison";
 import styles from "./army-library-hierarchy.module.css";
 
 type Navigation = {
@@ -27,6 +26,8 @@ type Navigation = {
   onSort: (sort: LibraryQuery["sort"]) => void;
   onOpen: (target: LibraryTarget, versionId?: string) => void;
   renderComposition: (selections: RosterSelection[]) => ReactNode;
+  onDefault?: (row: LibraryListRow) => void;
+  writing?: boolean;
 };
 function countLabel(count: number, noun: string) {
   return `${count} ${count === 1 ? noun.slice(0, -1) : noun}`;
@@ -182,18 +183,12 @@ function ListPreview({
           </ArmyListLink>
         )}
       </div>
-      <div className={styles.configuration}>
-        <FactionName name={detail.army.factionName} />
-        <span>
-          {detail.army.detachmentNames.join(" + ") || "No recorded detachments"}
-        </span>
-        <Disposition name={detail.army.dispositionName} />
-      </div>
       <p className={styles.status}>
         Saved by {detail.ownerName || row.ownerName} ·{" "}
         {data.patches.find((p) => p.id === row.patchId)?.name ||
           "Unknown ruleset"}
       </p>
+      <ArmyLibraryUnitComparison norm={detail.norm} />
       {detail.army.composition?.selections.length ? (
         <>
           <h4>
@@ -251,6 +246,12 @@ function ArchetypeLists({
               patches={data.patches}
               segmented={navigation.query.patchId === "all"}
               expanded={open}
+              writing={navigation.writing}
+              onDefault={
+                navigation.onDefault && list.norm?.canSetDefault
+                  ? () => navigation.onDefault!(list)
+                  : undefined
+              }
               onToggle={() => navigation.onToggle(key)}
               onDetails={() =>
                 navigation.onOpen({ kind: "list", id: list.id }, list.versionId)

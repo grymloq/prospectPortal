@@ -111,6 +111,8 @@ export function ArmyLibraryDataRow({
   expanded,
   onToggle,
   onDetails,
+  onDefault,
+  writing = false,
 }: {
   row: DataRow;
   patches: ArmyLibraryDTO["patches"];
@@ -118,6 +120,8 @@ export function ArmyLibraryDataRow({
   expanded: boolean;
   onToggle: () => void;
   onDetails: () => void;
+  onDefault?: () => void;
+  writing?: boolean;
 }) {
   const list = "ownerName" in row;
   const level = list ? "list" : "archetype";
@@ -151,6 +155,20 @@ export function ArmyLibraryDataRow({
                 : "List"
               : "Archetype"}
           </small>
+          {list && (
+            <button
+              type="button"
+              className={styles.details}
+              aria-label={`View List: ${row.name}`}
+              aria-expanded={expanded}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!expanded) onToggle();
+              }}
+            >
+              View List
+            </button>
+          )}
           <button
             type="button"
             className={styles.details}
@@ -162,23 +180,36 @@ export function ArmyLibraryDataRow({
           >
             Details
           </button>
+          {list && onDefault && (
+            <button
+              type="button"
+              className={styles.details}
+              disabled={writing}
+              aria-label={`${row.norm?.isDefault ? "Clear" : "Set"} archetype default: ${row.name}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDefault();
+              }}
+            >
+              {row.norm?.isDefault ? "Clear default" : "Set as default"}
+            </button>
+          )}
         </div>
       </td>
       <td>{list ? row.ownerName : null}</td>
       <td>
-        {row.army.detachmentNames.length ? (
-          row.army.detachmentNames.map((name, index) => (
-            <span className={styles.line} key={`${index}:${name}`}>
-              {name}
-            </span>
-          ))
-        ) : (
-          <span className={styles.muted}>No recorded detachments</span>
-        )}
+        {!list &&
+          (row.army.detachmentNames.length ? (
+            row.army.detachmentNames.map((name, index) => (
+              <span className={styles.line} key={`${index}:${name}`}>
+                {name}
+              </span>
+            ))
+          ) : (
+            <span className={styles.muted}>No recorded detachments</span>
+          ))}
       </td>
-      <td>
-        <Disposition name={row.army.dispositionName} />
-      </td>
+      <td>{!list && <Disposition name={row.army.dispositionName} />}</td>
       <td>
         {patchIds.map((id) => {
           const patch = patches.find((p) => p.id === id);
@@ -191,15 +222,42 @@ export function ArmyLibraryDataRow({
         })}
       </td>
       <td>
-        {list
-          ? row.kind === "matrix"
-            ? "No roster"
-            : row.compositionStatus === "complete"
-              ? "Complete"
-              : row.compositionStatus === "partial"
-                ? "Partial"
-                : "Unclassified"
-          : null}
+        {list &&
+          (row.norm?.isDefault ? (
+            <strong>Default</strong>
+          ) : row.norm?.status === "same" ? (
+            <span>
+              {row.norm.compositionMatches === false
+                ? "Loadout differs"
+                : "Standard units"}
+            </span>
+          ) : row.norm?.status === "different" ? (
+            <>
+              {row.norm.addedUnits > 0 && (
+                <span className={styles.line}>
+                  +{row.norm.addedUnits} units
+                </span>
+              )}
+              {row.norm.removedUnits > 0 && (
+                <span className={styles.line}>
+                  −{row.norm.removedUnits} units
+                </span>
+              )}
+              {row.norm.changedUnits > 0 && (
+                <span className={styles.line}>
+                  {row.norm.changedUnits} unit types changed
+                </span>
+              )}
+            </>
+          ) : (
+            <span className={styles.muted}>
+              {row.norm?.status === "no-standard"
+                ? "No standard yet"
+                : row.compositionStatus === "partial"
+                  ? "Incomplete unit data"
+                  : "Unit data unavailable"}
+            </span>
+          ))}
       </td>
       <td className={styles.number}>
         {!list && (
@@ -313,7 +371,7 @@ export function ArmyLibraryTable({
               <th scope="col">Detachments</th>
               <th scope="col">Disposition</th>
               <th scope="col">Ruleset</th>
-              <th scope="col">Roster</th>
+              <th scope="col">Unit changes</th>
               <th scope="col">Lists</th>
               <th scope="col">Variations</th>
               {sortable("Average /20", "score")}
