@@ -5,6 +5,17 @@ import { matchupDatabase } from "@/lib/matchup-database";
 import { armySnapshot, catalogue } from "@/lib/catalogue";
 import { armyKey, cellKey, layouts, outcomeForScore } from "@/lib/matchups";
 import {
+  compositionSchema,
+  scopeSchema,
+  gameContextSchema,
+  ensureArmyLibrary,
+  validateRecordedContext,
+} from "./army-library-versions";
+import {
+  maintainLibraryMemberships,
+  normalizeRosterIdentity,
+} from "./army-library-identity";
+import {
   onScrimTeam,
   isScrimCaptain,
   rosterWarnings,
@@ -33,6 +44,8 @@ const date = z
   );
 const ref = { scrimId: id, revision: z.number().int().min(0) };
 const army = z.object({
+  composition: compositionSchema.optional(),
+  scope: scopeSchema.optional(),
   listName: label.max(100),
   faction: id,
   detachments: z.array(id).max(3),
@@ -132,6 +145,7 @@ export const scrimCommands = [
     score,
     date,
     notes: z.string().max(5000).optional(),
+    gameContext: gameContextSchema.optional(),
   }),
   z.object({
     type: z.literal("scrimMatchComment"),
@@ -570,6 +584,8 @@ export function executeScrim(state: State, actor: User, input: unknown) {
       } else {
         if (!command.army) throw new Error("Enter an army list.");
         snapshot = armySnapshot(command.army, rulesFor(state, scrim), 3);
+        if (snapshot.composition)
+          snapshot.composition = normalizeRosterIdentity(snapshot.composition);
         if (entry.userId) {
           savedArmyId = randomUUID();
           (state.savedArmies ||= []).push({
@@ -586,6 +602,13 @@ export function executeScrim(state: State, actor: User, input: unknown) {
       const changed = !entry.army || armyKey(entry.army) !== armyKey(snapshot);
       entry.army = snapshot;
       entry.savedArmyId = savedArmyId;
+      if (savedArmyId) {
+        ensureArmyLibrary(state);
+        entry.listVersionId = state.savedArmies!.find(
+          (a) => a.id === savedArmyId,
+        )?.currentVersionId;
+        maintainLibraryMemberships(state, [savedArmyId]);
+      } else delete entry.listVersionId;
       scrim.teams.forEach((t) => {
         t.estimates = t.estimates.filter(
           (e) =>
@@ -740,6 +763,8 @@ export function executeScrim(state: State, actor: User, input: unknown) {
       pair.date = command.date;
       pair.updatedBy = actor.name;
       pair.updatedAt = now;
+      if (command.gameContext)
+        pair.gameContext = validateRecordedContext(command.gameContext);
       for (const [player, opponent, value] of [
         [a, b, pair.scoreA],
         [b, a, 20 - pair.scoreA],
@@ -760,6 +785,11 @@ export function executeScrim(state: State, actor: User, input: unknown) {
           opponentUserId: opponent.userId,
           own: structuredClone(player.army!),
           enemy: structuredClone(opponent.army!),
+          ownListVersionId: player.listVersionId,
+          enemyListVersionId: opponent.listVersionId,
+          gameContext: pair.gameContext
+            ? structuredClone(pair.gameContext)
+            : undefined,
           score: value,
           layout: pair.layout,
           patchId: scrim.patchId,

@@ -11,6 +11,8 @@ import { execute } from "./service";
 import { ensurePatches } from "@/lib/patches";
 import { accessError, ensureMembership } from "./membership";
 import { previewView } from "./access-preview";
+import { ensureArmyLibrary } from "./army-library-versions";
+import { maintainLibraryMemberships } from "./army-library-identity";
 
 export function ensureProfile(
   state: State,
@@ -70,7 +72,9 @@ export async function cloudView(
     const state = data.value as State;
     const patchMigration = ensurePatches(state);
     const memberMigration = ensureMembership(state);
-    const migrated = patchMigration || memberMigration;
+    const libraryMigration = ensureArmyLibrary(state);
+    if (libraryMigration) maintainLibraryMemberships(state);
+    const migrated = patchMigration || memberMigration || libraryMigration;
     const { actor, changed } = ensureProfile(state, identity);
     const denied = accessError(actor);
     if (!denied) {

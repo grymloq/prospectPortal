@@ -6,6 +6,8 @@ import type { State, User } from "@/lib/types";
 import { catalogue, armySnapshot } from "@/lib/catalogue";
 import { ensurePatches } from "@/lib/patches";
 import { ensureMembership } from "./membership";
+import { ensureArmyLibrary } from "./army-library-versions";
+import { maintainLibraryMemberships } from "./army-library-identity";
 
 export function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
@@ -253,6 +255,7 @@ export function readState(): State {
   );
   ensurePatches(state);
   ensureMembership(state);
+  if (ensureArmyLibrary(state)) maintainLibraryMemberships(state);
   return state;
 }
 export function transaction<T>(work: (s: State) => T): T {

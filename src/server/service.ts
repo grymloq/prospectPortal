@@ -15,6 +15,21 @@ import { ensurePatches, defaultPatchId } from "@/lib/patches";
 import { ensureMembership, requireMember } from "./membership";
 import { executeScrim, scrimCommands, scrimView } from "./scrims";
 import { feedbackCommand, submitFeedback } from "./feedback";
+import {
+  compositionSchema,
+  scopeSchema,
+  gameContextSchema,
+  ensureArmyLibrary,
+  updateArmyVersion,
+  validateGameVersion,
+  validateRecordedContext,
+  validateLibraryPayload,
+} from "./army-library-versions";
+import {
+  maintainLibraryMemberships,
+  applyConsolidation,
+  normalizeRosterIdentity,
+} from "./army-library-identity";
 const text = z.string().trim().min(1).max(5000),
   id = z.string().min(1).max(100);
 const url = z
@@ -33,6 +48,8 @@ const date = z
     "Invalid date",
   );
 const army = z.object({
+  composition: compositionSchema.optional(),
+  scope: scopeSchema.optional(),
   listName: z.string().trim().max(100).optional(),
   faction: id,
   detachments: z.array(id).max(3),
@@ -57,6 +74,21 @@ const commands = z.discriminatedUnion("type", [
     id: id.optional(),
     patchId: id,
     army,
+    expectedRevision: z.number().int().min(1).optional(),
+  }),
+  z.object({
+    type: z.literal("libraryConsolidationApply"),
+    sourceRevision: z.string().min(1).max(100),
+  }),
+  z.object({
+    type: z.literal("libraryGameContribution"),
+    id,
+    contribution: z.boolean(),
+  }),
+  z.object({
+    type: z.literal("libraryVersionPublication"),
+    id,
+    published: z.boolean(),
   }),
   z.object({ type: z.literal("shareArmy"), id, shared: z.boolean() }),
   z.object({ type: z.literal("deleteArmy"), id }),
@@ -167,6 +199,10 @@ const commands = z.discriminatedUnion("type", [
     own: army,
     enemy: army,
     score: z.number().int().min(0).max(20),
+    ownListVersionId: id.optional(),
+    enemyListVersionId: id.optional(),
+    libraryContribution: z.boolean().optional(),
+    gameContext: gameContextSchema.optional(),
     layout: z.enum(["A", "B", "C"]).optional(),
     patchId: id.optional(),
     context: text.max(200),
@@ -212,6 +248,7 @@ export function viewState(s: State, actor: User): View {
   ensurePatches(s);
   ensureMembership(s);
   requireMember(actor);
+  if (ensureArmyLibrary(s)) maintainLibraryMemberships(s);
   const admin = actor.role === "admin";
   return {
     me: publicUser(actor),
@@ -233,7 +270,10 @@ export function viewState(s: State, actor: User): View {
     savedArmies: (s.savedArmies || []).filter(
       (a) =>
         a.userId === actor.id ||
-        (a.shared && s.users.some((u) => u.id === a.userId && !u.removedAt)),
+        (a.shared &&
+          s.users.some(
+            (u) => u.id === a.userId && u.confirmedMember && !u.removedAt,
+          )),
     ),
     matrixListHistory: s.matrixListHistory || [],
     matrixChanges: s.matrixChanges || [],
@@ -271,6 +311,8 @@ export function viewState(s: State, actor: User): View {
   };
 }
 export function execute(s: State, actor: User, input: unknown) {
+  validateLibraryPayload(input);
+  if (ensureArmyLibrary(s)) maintainLibraryMemberships(s);
   const before = notificationSnapshot(s);
   executeCommand(s, actor, input);
   notifyChanges(s, before, actor.id);
@@ -315,6 +357,38 @@ function executeCommand(s: State, actor: User, input: unknown) {
       createdAt: now,
     });
   switch (c.type) {
+    case "libraryConsolidationApply": {
+      applyConsolidation(s, actor, c.sourceRevision);
+      audit(`${actor.name} consolidated army library classifications.`);
+      break;
+    }
+    case "libraryGameContribution": {
+      const game = s.games.find((g) => g.id === c.id && g.userId === actor.id);
+      if (!game)
+        throw new Error("You can contribute only your own recorded results.");
+      game.libraryContribution = c.contribution;
+      break;
+    }
+    case "libraryVersionPublication": {
+      const version = s.armyVersions!.find(
+        (v) => v.id === c.id && v.userId === actor.id,
+      );
+      const saved = s.savedArmies?.find(
+        (a) => a.id === version?.listId && a.userId === actor.id,
+      );
+      if (!version || !saved || !saved.shared)
+        throw new Error("Publish versions only from your own shared lists.");
+      version.published = c.published;
+      if (version.id === saved.currentVersionId && !c.published) {
+        saved.shared = false;
+        for (const prior of s.armyVersions!.filter(
+          (v) => v.listId === saved.id,
+        ))
+          prior.published = false;
+      }
+      maintainLibraryMemberships(s, [saved.id]);
+      break;
+    }
     case "feedbackRead":
     case "feedbackDelete":
     case "feedbackRestore": {
@@ -373,16 +447,21 @@ function executeCommand(s: State, actor: User, input: unknown) {
       if (!patch) throw new Error("Choose an available rules patch.");
       if (!c.army.listName?.trim()) throw new Error("Name your army list.");
       const snapshot = armySnapshot(c.army, patch.catalogue || catalogue, 3);
+      if (snapshot.composition)
+        snapshot.composition = normalizeRosterIdentity(snapshot.composition);
       s.savedArmies ||= [];
-      if (existing)
-        Object.assign(existing, {
-          patchId: patch.id,
-          army: snapshot,
-          updatedAt: now,
-          ownerName: actor.name,
-        });
-      else
-        s.savedArmies.push({
+      if (existing) {
+        updateArmyVersion(
+          s,
+          existing,
+          snapshot,
+          patch.id,
+          now,
+          c.expectedRevision,
+        );
+        existing.ownerName = actor.name;
+      } else {
+        const saved = {
           id: randomUUID(),
           userId: actor.id,
           patchId: patch.id,
@@ -390,7 +469,11 @@ function executeCommand(s: State, actor: User, input: unknown) {
           shared: false,
           ownerName: actor.name,
           updatedAt: now,
-        });
+        };
+        s.savedArmies.push(saved);
+        ensureArmyLibrary(s);
+      }
+      maintainLibraryMemberships(s, [existing?.id || s.savedArmies.at(-1)!.id]);
       break;
     }
     case "shareArmy":
@@ -398,8 +481,16 @@ function executeCommand(s: State, actor: User, input: unknown) {
       const saved = s.savedArmies?.find((a) => a.id === c.id);
       if (!saved || saved.userId !== actor.id)
         throw new Error("You can change only your own army lists.");
-      if (c.type === "shareArmy") saved.shared = c.shared;
-      else {
+      if (c.type === "shareArmy") {
+        saved.shared = c.shared;
+        for (const version of s.armyVersions!.filter(
+          (v) => v.listId === saved.id,
+        )) {
+          if (!c.shared) version.published = false;
+          else if (version.id === saved.currentVersionId)
+            version.published = true;
+        }
+      } else {
         s.savedArmies = s.savedArmies!.filter((a) => a.id !== c.id);
         if (actor.defaultArmyId === c.id) actor.defaultArmyId = "";
       }
@@ -801,13 +892,38 @@ function executeCommand(s: State, actor: User, input: unknown) {
         }
         return armySnapshot(input, gameRules, 3);
       };
+      const ownSnapshot = snapshot(c.own, old?.own);
+      const enemySnapshot = snapshot(c.enemy, old?.enemy);
+      for (const army of [ownSnapshot, enemySnapshot])
+        if (army.composition)
+          army.composition = normalizeRosterIdentity(army.composition);
       const game = {
         ...fields,
         outcome: outcomeForScore(c.score),
         id: old?.id || randomUUID(),
         userId: actor.id,
-        own: snapshot(c.own, old?.own),
-        enemy: snapshot(c.enemy, old?.enemy),
+        own: ownSnapshot,
+        enemy: enemySnapshot,
+        ownListVersionId: validateGameVersion(
+          s,
+          actor,
+          c.ownListVersionId,
+          ownSnapshot,
+          c.patchId,
+          true,
+        ),
+        enemyListVersionId: validateGameVersion(
+          s,
+          actor,
+          c.enemyListVersionId,
+          enemySnapshot,
+          c.patchId,
+          false,
+          old?.enemyListVersionId,
+        ),
+        libraryContribution:
+          c.libraryContribution ?? old?.libraryContribution ?? false,
+        gameContext: validateRecordedContext(c.gameContext),
         updatedAt: now,
       };
       s.games = s.games.filter((g) => g.id !== game.id);
