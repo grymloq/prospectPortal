@@ -2,7 +2,7 @@
 import { patchLabel } from "@/lib/patches";
 import { useState, useEffect, useId } from "react";
 import { Plus, Search, Pencil, Trash2, Check } from "lucide-react";
-import type { Army, Game, View } from "@/lib/types";
+import type { Army, Game, View, RecordedGameContext } from "@/lib/types";
 import {
   catalogue,
   dispositionsFor,
@@ -14,9 +14,16 @@ import { ArmyListLink } from "./army-list-drawer";
 import type { Mutate } from "./workspace";
 import { PageHeading, Badge, Field, Modal, Empty, dateLabel } from "./ui";
 import ScrimReport from "./scrim-report";
+import RecordedContextFields from "./game-context-fields";
 export type Choice = Pick<
   Army,
-  "faction" | "detachments" | "disposition" | "listUrl" | "listName"
+  | "faction"
+  | "detachments"
+  | "disposition"
+  | "listUrl"
+  | "listName"
+  | "composition"
+  | "scope"
 >;
 export function blank(faction = catalogue.factions[0].id): Choice {
   return { faction, detachments: [], disposition: "", listUrl: "" };
@@ -60,13 +67,13 @@ function GameArmyFields({
         <select
           value={saved?.id || ""}
           onChange={(e) => {
-            setSelected(e.target.value);
             const list = lists.find((a) => a.id === e.target.value);
             if (list)
               onChange({
                 ...list.army,
                 detachments: [...list.army.detachments],
               });
+            setSelected(e.target.value);
           }}
         >
           <option value="">Enter army manually</option>
@@ -194,6 +201,7 @@ export function ArmyFields({
                     : value.detachments.filter((id) => id !== d.id);
                   onChange({
                     ...value,
+                    composition: undefined,
                     detachments: selected,
                     disposition: defaultDisposition(
                       dispositionsFor(value.faction, selected, rules),
@@ -217,7 +225,13 @@ export function ArmyFields({
                 name={dispositionGroup}
                 required
                 checked={value.disposition === d.id}
-                onChange={() => onChange({ ...value, disposition: d.id })}
+                onChange={() =>
+                  onChange({
+                    ...value,
+                    disposition: d.id,
+                    composition: undefined,
+                  })
+                }
               />
               <Disposition name={d.name} />
             </label>
@@ -315,6 +329,15 @@ export default function Journal({
   const [score, setScore] = useState("10");
   const [ownSavedId, setOwnSavedId] = useState(defaultArmy?.id || "");
   const [enemySavedId, setEnemySavedId] = useState("");
+  const [ownVersionId, setOwnVersionId] = useState(
+    defaultArmy?.currentVersionId || "",
+  );
+  const [enemyVersionId, setEnemyVersionId] = useState("");
+  const [libraryContribution, setLibraryContribution] = useState(false);
+  const [gameContext, setGameContext] = useState<RecordedGameContext>({
+    version: "1",
+  });
+  const [consentBusy, setConsentBusy] = useState(false);
   const [rulesPatch, setRulesPatch] = useState(
     defaultArmy?.patchId ||
       view.defaultPatchId ||
@@ -347,6 +370,16 @@ export default function Journal({
     setEnemy(game === "new" ? blank() : game.enemy);
     setOwnSavedId(game === "new" ? defaultArmy?.id || "" : "");
     setEnemySavedId("");
+    setOwnVersionId(
+      game === "new"
+        ? defaultArmy?.currentVersionId || ""
+        : game.ownListVersionId || "",
+    );
+    setEnemyVersionId(game === "new" ? "" : game.enemyListVersionId || "");
+    setLibraryContribution(game === "new" ? false : !!game.libraryContribution);
+    setGameContext(
+      game === "new" ? { version: "1" } : game.gameContext || { version: "1" },
+    );
     setEdit(game);
   }
   const canLog = !userId || userId === view.me.id;
@@ -679,6 +712,10 @@ export default function Journal({
               opponentUserId,
               ownSavedId,
               enemySavedId,
+              ownVersionId,
+              enemyVersionId,
+              libraryContribution,
+              gameContext,
             },
             restore: (saved) => {
               setOwn(saved.own);
@@ -689,6 +726,10 @@ export default function Journal({
               setOpponentUserId(saved.opponentUserId);
               setOwnSavedId(saved.ownSavedId);
               setEnemySavedId(saved.enemySavedId);
+              setOwnVersionId(saved.ownVersionId);
+              setEnemyVersionId(saved.enemyVersionId);
+              setLibraryContribution(saved.libraryContribution);
+              setGameContext(saved.gameContext);
             },
           }}
         >
@@ -753,6 +794,10 @@ export default function Journal({
                 eventId: f.get("eventId"),
                 own,
                 enemy,
+                ownListVersionId: ownVersionId || undefined,
+                enemyListVersionId: enemyVersionId || undefined,
+                libraryContribution,
+                gameContext: gameContext.missionPack ? gameContext : undefined,
               });
               setSaving(false);
               if (ok) setEdit(null);
@@ -810,15 +855,32 @@ export default function Journal({
                 )}
               </div>
             </div>
+            {(ownVersionId && !ownSavedId) ||
+            (enemyVersionId && !enemySavedId) ? (
+              <p>
+                Recorded immutable list-version references are retained.
+                Changing an army configuration clears its reference.
+              </p>
+            ) : null}
             <div className="form-grid armies">
               <GameArmyFields
                 key={`own-${rulesPatch}`}
                 view={view}
                 patchId={rulesPatch}
                 selected={ownSavedId}
-                setSelected={setOwnSavedId}
+                setSelected={(id) => {
+                  setOwnSavedId(id);
+                  setOwnVersionId(
+                    view.savedArmies?.find((a) => a.id === id)
+                      ?.currentVersionId || "",
+                  );
+                }}
                 value={own}
-                onChange={setOwn}
+                onChange={(choice) => {
+                  if (JSON.stringify(choice) !== JSON.stringify(own))
+                    setOwnVersionId("");
+                  setOwn(choice);
+                }}
                 rules={rules}
               />
               <GameArmyFields
@@ -828,10 +890,20 @@ export default function Journal({
                 opponent
                 opponentUserId={opponentUserId}
                 selected={enemySavedId}
-                setSelected={setEnemySavedId}
+                setSelected={(id) => {
+                  setEnemySavedId(id);
+                  setEnemyVersionId(
+                    view.savedArmies?.find((a) => a.id === id)
+                      ?.currentVersionId || "",
+                  );
+                }}
                 rules={rules}
                 value={enemy}
-                onChange={setEnemy}
+                onChange={(choice) => {
+                  if (JSON.stringify(choice) !== JSON.stringify(enemy))
+                    setEnemyVersionId("");
+                  setEnemy(choice);
+                }}
               />
             </div>
             <div className="form-grid">
@@ -887,6 +959,12 @@ export default function Journal({
                         : "",
                     );
                     setEnemySavedId("");
+                    setOwnVersionId(
+                      defaultArmy?.patchId === e.target.value
+                        ? defaultArmy.currentVersionId || ""
+                        : "",
+                    );
+                    setEnemyVersionId("");
                     setOwn(
                       defaultArmy?.patchId === e.target.value
                         ? defaultArmy.army
@@ -935,6 +1013,25 @@ export default function Journal({
                 </select>
               </Field>
             </div>
+            <RecordedContextFields
+              value={gameContext}
+              onChange={setGameContext}
+            />
+            <label className="field">
+              <span>
+                <input
+                  type="checkbox"
+                  checked={libraryContribution}
+                  onChange={(e) => setLibraryContribution(e.target.checked)}
+                />{" "}
+                Contribute this game to Army libraries
+              </span>
+              <small>
+                Shares your recorded score and authorized army/context facts.
+                Opponent identity and private reflections stay private. Roster
+                sharing is controlled separately in My armies.
+              </small>
+            </label>
             <Field label="Reflection & lessons">
               <textarea
                 name="notes"
@@ -995,11 +1092,40 @@ export default function Journal({
             ))}
           </div>
           <h3>Reflection</h3>
+          <p>
+            Mission pack: {detail.gameContext?.missionPack?.name || "Unknown"} ·
+            Deployment: {detail.gameContext?.deployment?.name || "Unknown"}
+            <br />
+            Your mission: {detail.gameContext?.ownMission?.name || "Unknown"} ·
+            Opponent mission:{" "}
+            {detail.gameContext?.enemyMission?.name || "Unknown"}
+          </p>
           <p className="preserve">
             {detail.notes || "No reflection recorded."}
           </p>
           {detail.userId === view.me.id && (
             <div className="form-footer">
+              <button
+                disabled={consentBusy || !!view.accessPreview?.active}
+                aria-pressed={!!detail.libraryContribution}
+                onClick={async () => {
+                  setConsentBusy(true);
+                  const contribution = !detail.libraryContribution;
+                  if (
+                    await mutate({
+                      type: "libraryGameContribution",
+                      id: detail.id,
+                      contribution,
+                    })
+                  )
+                    setDetail({ ...detail, libraryContribution: contribution });
+                  setConsentBusy(false);
+                }}
+              >
+                {detail.libraryContribution
+                  ? "Withdraw library contribution"
+                  : "Contribute this game to libraries"}
+              </button>
               <button
                 onClick={() => {
                   open(detail);

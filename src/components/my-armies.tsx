@@ -1,14 +1,22 @@
 "use client";
-import { useState } from "react";
-import { ChevronDown, Globe, Lock, Pencil, Star, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  ChevronDown,
+  Globe,
+  Lock,
+  Pencil,
+  Star,
+  Trash2,
+  History,
+} from "lucide-react";
 import styles from "./my-armies.module.css";
-import type { View } from "@/lib/types";
+import type { View, ArmyListVersion } from "@/lib/types";
 import { catalogue } from "@/lib/catalogue";
 import { patchLabel } from "@/lib/patches";
 import { ArmyFields, blank, type Choice } from "./journal";
 import { Disposition } from "./disposition";
 import { ArmyListLink } from "./army-list-drawer";
-import { PageHeading, Field, Modal, Empty } from "./ui";
+import { PageHeading, Field, Modal, Empty, dateLabel } from "./ui";
 import type { Mutate } from "./workspace";
 export default function MyArmies({
   view,
@@ -24,6 +32,45 @@ export default function MyArmies({
   const [importUrl, setImportUrl] = useState("");
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState("");
+  const [expectedRevision, setExpectedRevision] = useState<
+    number | undefined
+  >();
+  const [historyId, setHistoryId] = useState("");
+  const [versions, setVersions] = useState<
+    Pick<
+      ArmyListVersion,
+      "id" | "number" | "patchId" | "createdAt" | "published"
+    >[]
+  >([]);
+  const [versionLoading, setVersionLoading] = useState(false);
+  const [versionError, setVersionError] = useState("");
+  const [versionBusy, setVersionBusy] = useState(false);
+  const [versionRefresh, setVersionRefresh] = useState(0);
+  useEffect(() => {
+    if (!historyId) return;
+    const controller = new AbortController();
+    fetch(
+      `/api/army-library?action=ownVersions&listId=${encodeURIComponent(historyId)}`,
+      { cache: "no-store", signal: controller.signal },
+    )
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error);
+        return data.versions;
+      })
+      .then((data) => {
+        setVersions(data);
+        setVersionError("");
+        setVersionLoading(false);
+      })
+      .catch((e) => {
+        if (e.name !== "AbortError") {
+          setVersionError(e.message);
+          setVersionLoading(false);
+        }
+      });
+    return () => controller.abort();
+  }, [historyId, versionRefresh, view]);
   async function importList() {
     setImporting(true);
     setImportError("");
@@ -75,6 +122,7 @@ export default function MyArmies({
       saved?.army || blank(view.me.preferredFactions?.[0] || view.me.faction),
     );
     setEditing(id);
+    setExpectedRevision(saved?.listRevision);
     setImportUrl("");
     setImportError("");
   }
@@ -88,6 +136,10 @@ export default function MyArmies({
           Add army list
         </button>
       </PageHeading>
+      <p className={styles.detachments}>
+        Sharing publishes the current roster to confirmed members. Game results
+        require separate per-game consent in Game journal.
+      </p>
       <div className={styles.library}>
         {!lists.length && (
           <section className="panel padded">
@@ -215,6 +267,19 @@ export default function MyArmies({
                           <Pencil size={17} />
                         </button>
                         <button
+                          className={styles.action}
+                          aria-label={`Version publication: ${name}`}
+                          title="Manage historical version publication"
+                          onClick={() => {
+                            setVersions([]);
+                            setVersionLoading(true);
+                            setVersionError("");
+                            setHistoryId(a.id);
+                          }}
+                        >
+                          <History size={17} />
+                        </button>
+                        <button
                           className={`${styles.action} ${styles.remove}`}
                           aria-label={`Remove: ${name}`}
                           title="Remove army"
@@ -240,11 +305,12 @@ export default function MyArmies({
           draftKey={`army:${editing}`}
           busy={saving || importing}
           draft={{
-            value: { patchId, army, importUrl },
+            value: { patchId, army, importUrl, expectedRevision },
             restore: (saved) => {
               setPatchId(saved.patchId);
               setArmy(saved.army);
               setImportUrl(saved.importUrl);
+              setExpectedRevision(saved.expectedRevision);
             },
           }}
         >
@@ -257,6 +323,7 @@ export default function MyArmies({
                 id: editing === "new" ? undefined : editing,
                 patchId,
                 army,
+                expectedRevision,
               });
               setSaving(false);
               if (ok) setEditing(null);
@@ -325,6 +392,84 @@ export default function MyArmies({
               {saving ? "Saving…" : "Save army list"}
             </button>
           </form>
+        </Modal>
+      )}
+      {historyId && (
+        <Modal
+          title="Army version publication"
+          onClose={() => setHistoryId("")}
+          busy={versionBusy}
+        >
+          <p>
+            Historical versions are private unless explicitly published.
+            Unsharing the list withdraws every version; sharing it again
+            publishes only the current version.
+          </p>
+          {versionLoading && <p role="status">Loading versions…</p>}
+          {versionError && (
+            <p role="alert">
+              {versionError}{" "}
+              <button
+                onClick={() => {
+                  setVersionLoading(true);
+                  setVersionRefresh((n) => n + 1);
+                }}
+              >
+                Retry
+              </button>
+            </p>
+          )}
+          {!versionLoading &&
+            versions.map((v) => {
+              const current = lists.find((a) => a.id === historyId);
+              return (
+                <article className={styles.army} key={v.id}>
+                  <div className={styles.info}>
+                    <strong>
+                      Version {v.number}
+                      {current?.currentVersionId === v.id ? " · Current" : ""}
+                    </strong>
+                    <p className={styles.detachments}>
+                      {view.patches.find((p) => p.id === v.patchId)?.name ||
+                        "Unknown ruleset"}{" "}
+                      · {dateLabel(v.createdAt)}
+                    </p>
+                  </div>
+                  {current?.currentVersionId === v.id ? (
+                    <span className={styles.tag}>
+                      {v.published ? "Published" : "Private"} · Use sharing
+                      control
+                    </span>
+                  ) : (
+                    <button
+                      disabled={
+                        versionBusy ||
+                        !current?.shared ||
+                        !!view.accessPreview?.active
+                      }
+                      aria-pressed={v.published}
+                      onClick={async () => {
+                        setVersionBusy(true);
+                        if (
+                          await mutate(
+                            {
+                              type: "libraryVersionPublication",
+                              id: v.id,
+                              published: !v.published,
+                            },
+                            setVersionError,
+                          )
+                        )
+                          setVersionRefresh((n) => n + 1);
+                        setVersionBusy(false);
+                      }}
+                    >
+                      {v.published ? "Make private" : "Publish version"}
+                    </button>
+                  )}
+                </article>
+              );
+            })}
         </Modal>
       )}
     </>

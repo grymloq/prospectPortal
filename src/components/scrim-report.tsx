@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import type { Scrim, View } from "@/lib/types";
+import type { Scrim, View, RecordedGameContext } from "@/lib/types";
+import RecordedContextFields from "./game-context-fields";
 import { stockholmLocal } from "@/lib/stockholm";
 import { Field, Modal } from "./ui";
 import { Disposition } from "./disposition";
@@ -44,6 +45,17 @@ export default function ScrimReport({
     pair.date || stockholmLocal(new Date().toISOString()).slice(0, 10),
   );
   const [notes, setNotes] = useState(mine?.notes || "");
+  const [gameContext, setGameContext] = useState<RecordedGameContext>(() =>
+    pair.gameContext
+      ? perspective === "a"
+        ? pair.gameContext
+        : {
+            ...pair.gameContext,
+            ownMission: pair.gameContext.enemyMission,
+            enemyMission: pair.gameContext.ownMission,
+          }
+      : { version: "1" },
+  );
   return (
     <Modal
       wide
@@ -56,11 +68,12 @@ export default function ScrimReport({
       draftKey={`scrim:${scrim.id}:result:${pair.id}`}
       busy={busy}
       draft={{
-        value: { result, date, notes },
+        value: { result, date, notes, gameContext },
         restore: (saved) => {
           setResult(saved.result);
           setDate(saved.date);
           setNotes(saved.notes);
+          setGameContext(saved.gameContext);
         },
       }}
     >
@@ -104,6 +117,7 @@ export default function ScrimReport({
               perspective,
               score: Number(result),
               date,
+              gameContext,
               ...(playing ? { notes } : {}),
             },
             setError,
@@ -157,6 +171,7 @@ export default function ScrimReport({
             </small>
           </Field>
         )}
+        <RecordedContextFields value={gameContext} onChange={setGameContext} />
         {error && <p role="alert">{error}</p>}
         <div className={styles.actions}>
           <button

@@ -763,8 +763,17 @@ export function executeScrim(state: State, actor: User, input: unknown) {
       pair.date = command.date;
       pair.updatedBy = actor.name;
       pair.updatedAt = now;
-      if (command.gameContext)
-        pair.gameContext = validateRecordedContext(command.gameContext);
+      if (command.gameContext) {
+        const recorded = validateRecordedContext(command.gameContext)!;
+        pair.gameContext =
+          command.perspective === "a"
+            ? recorded
+            : {
+                ...recorded,
+                ownMission: recorded.enemyMission,
+                enemyMission: recorded.ownMission,
+              };
+      }
       for (const [player, opponent, value] of [
         [a, b, pair.scoreA],
         [b, a, 20 - pair.scoreA],
@@ -788,7 +797,15 @@ export function executeScrim(state: State, actor: User, input: unknown) {
           ownListVersionId: player.listVersionId,
           enemyListVersionId: opponent.listVersionId,
           gameContext: pair.gameContext
-            ? structuredClone(pair.gameContext)
+            ? structuredClone(
+                player === a
+                  ? pair.gameContext
+                  : {
+                      ...pair.gameContext,
+                      ownMission: pair.gameContext.enemyMission,
+                      enemyMission: pair.gameContext.ownMission,
+                    },
+              )
             : undefined,
           score: value,
           layout: pair.layout,

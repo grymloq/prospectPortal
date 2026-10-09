@@ -20,6 +20,7 @@ import Prospects from "./prospects";
 import Profile from "./profile";
 import Journal from "./journal";
 import MyArmies from "./my-armies";
+import ArmyLibraries from "./army-libraries";
 import MatchupMatrix from "./matchup-matrix";
 import Events from "./events";
 import Scrims from "./scrims";
@@ -113,6 +114,7 @@ export default function Workspace({
       "Profile",
       "Game journal",
       "My armies",
+      "Army libraries",
       "Matchup matrix",
       "Calendar",
       "Scrims",
@@ -304,6 +306,7 @@ export default function Workspace({
     },
     { name: "Game journal", page: "Game journal", icon: BookOpen },
     { name: "My armies", page: "My armies", icon: Trophy },
+    { name: "Army libraries", page: "Army libraries", icon: BookOpen },
     { name: "Matchup matrix", page: "Matchup matrix", icon: Grid3X3 },
     { name: "Calendar", page: "Calendar", icon: CalendarDays },
     { name: "Scrims", page: "Scrims", icon: Trophy },
@@ -526,6 +529,13 @@ export default function Workspace({
             )}
             {currentPage === "My armies" && (
               <MyArmies view={view} mutate={mutate} />
+            )}
+            {currentPage === "Army libraries" && (
+              <ArmyLibraries
+                key={`${view.me.id}:${previewActive}`}
+                view={view}
+                mutate={mutate}
+              />
             )}
             {currentPage === "Calendar" && (
               <Events
