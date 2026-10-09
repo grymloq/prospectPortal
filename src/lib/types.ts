@@ -152,6 +152,7 @@ export type LibraryFilters = {
   dateTo?: string;
 };
 export type LibraryQuery = LibraryFilters & {
+  relatedPage?: number;
   tab?: "lists" | "archetypes";
   target?: LibraryTarget;
   versionId?: string;
@@ -177,7 +178,8 @@ export type LibraryTrend = {
   metrics: LibraryMetrics;
 };
 export type LibraryMatchup = {
-  dimension: "faction" | "archetype" | "list" | "variation" | "deployment" | "mission";
+  dimension:
+    "faction" | "archetype" | "list" | "variation" | "deployment" | "mission";
   id: string;
   label: string;
   classification: "good" | "bad" | "uncertain";
@@ -185,6 +187,13 @@ export type LibraryMatchup = {
   metrics: LibraryMetrics;
 };
 export type LibraryListRow = {
+  recentTrend?: {
+    change: number;
+    from: string;
+    to: string;
+    previousMatches: number;
+    currentMatches: number;
+  };
   id: string;
   kind: "saved" | "matrix";
   name: string;
@@ -205,6 +214,7 @@ export type LibraryVariation = {
   leading: boolean;
 };
 export type LibraryArchetypeRow = {
+  recentTrend?: LibraryListRow["recentTrend"];
   id: string;
   name: string;
   army: Army;
@@ -223,6 +233,16 @@ export type LibraryVersionRow = {
   metrics: LibraryMetrics;
 };
 export type LibraryDetail = {
+  relatedPagination?: {
+    page: number;
+    pageSize: number;
+    lists: number;
+    versions: number;
+    variations: number;
+    totalPages: number;
+    discussions?: number;
+  };
+  currentSourceUrl?: string;
   target: LibraryTarget;
   name: string;
   army: Army;
@@ -236,8 +256,18 @@ export type LibraryDetail = {
   lists: LibraryListRow[];
   discussions: LibraryDiscussion[];
   /** All-ruleset summaries always expose individual patch segments. */
-  segments: { patchId: string; metrics: LibraryMetrics; publicLists: number; variations: number }[];
-  coverage: { unclassifiedAppearances: number; missingDeployment: number; missingMission: number; conflicts: number };
+  segments: {
+    patchId: string;
+    metrics: LibraryMetrics;
+    publicLists: number;
+    variations: number;
+  }[];
+  coverage: {
+    unclassifiedAppearances: number;
+    missingDeployment: number;
+    missingMission: number;
+    conflicts: number;
+  };
 };
 export type ArmyLibraryDTO = {
   tab: "lists" | "archetypes";
@@ -249,7 +279,11 @@ export type ArmyLibraryDTO = {
   archetypes: LibraryArchetypeRow[];
   detail?: LibraryDetail;
   patches: { id: string; name: string; date: string }[];
-  facets: { factions: { id: string; name: string }[]; detachments: { id: string; name: string }[]; dispositions: { id: string; name: string }[] };
+  facets: {
+    factions: { id: string; name: string }[];
+    detachments: { id: string; name: string }[];
+    dispositions: { id: string; name: string }[];
+  };
   policy: { leadingMinimumMatches: number; uncertainty: string };
 };
 export type ConsolidationPreview = {
@@ -527,7 +561,10 @@ export type Scrim = {
   cancelled?: boolean;
 };
 /** Library collections are queried through their dedicated authorized DTO endpoint. */
-export type View = Omit<State, "armyVersions" | "libraryMemberships" | "libraryDiscussions"> & {
+export type View = Omit<
+  State,
+  "armyVersions" | "libraryMemberships" | "libraryDiscussions"
+> & {
   pushDeviceIds?: string[];
   accessPreview?: {
     active: boolean;

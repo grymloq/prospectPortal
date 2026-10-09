@@ -15,6 +15,7 @@ import { ensurePatches, defaultPatchId } from "@/lib/patches";
 import { ensureMembership, requireMember } from "./membership";
 import { executeScrim, scrimCommands, scrimView } from "./scrims";
 import { feedbackCommand, submitFeedback } from "./feedback";
+import { libraryCommands, executeLibraryCommand } from "./library-discussions";
 import {
   compositionSchema,
   scopeSchema,
@@ -57,6 +58,7 @@ const army = z.object({
   listUrl: url,
 });
 const commands = z.discriminatedUnion("type", [
+  ...libraryCommands,
   ...notificationCommands,
   feedbackCommand,
   z.object({ type: z.literal("feedbackRead"), id, read: z.boolean() }),
@@ -322,6 +324,7 @@ function executeCommand(s: State, actor: User, input: unknown) {
   requireMember(actor);
   ensurePatches(s);
   const c = commands.parse(input);
+  if (executeLibraryCommand(s, actor, c)) return;
   if (
     c.type === "notificationRead" ||
     c.type === "pushSubscribe" ||

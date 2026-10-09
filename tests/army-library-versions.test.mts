@@ -210,3 +210,38 @@ test("local transaction rolls back invalid nested roster input without changing 
   );
   assert.deepEqual(readState(), before);
 });
+
+test("discussion pagination keeps ancestors visible while all authorized replies remain discoverable", async () => {
+  const { queryArmyLibrary } = await import("../src/server/army-library");
+  const { state, actor, source, army } = fixture();
+  execute(state, actor, { type: "saveArmy", patchId: source.patchId, army });
+  const saved = state.savedArmies![0];
+  execute(state, actor, { type: "shareArmy", id: saved.id, shared: true });
+  const target = { kind: "list" as const, id: saved.id };
+  execute(state, actor, {
+    type: "libraryDiscussion",
+    target,
+    text: "Parent thread",
+  });
+  const parentId = state.libraryDiscussions!.at(-1)!.id;
+  for (let i = 0; i < 40; i++)
+    execute(state, actor, {
+      type: "libraryDiscussion",
+      target,
+      parentId,
+      text: `Reply ${i}`,
+    });
+  const seen = new Set<string>();
+  for (let page = 1; page <= 3; page++) {
+    const detail = queryArmyLibrary(state, actor, {
+      target,
+      patchId: saved.patchId,
+      relatedPage: page,
+    }).detail!;
+    assert.equal(detail.relatedPagination!.discussions, 41);
+    assert.ok(detail.discussions.some((d) => d.id === parentId));
+    for (const row of detail.discussions) seen.add(row.id);
+    assert.ok(detail.discussions.length <= 21);
+  }
+  assert.equal(seen.size, 41);
+});
