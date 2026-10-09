@@ -2706,36 +2706,6 @@ tbody .matrix-list-label span:not([data-faction-label]):not([data-faction-text])
   overflow: visible;
   text-overflow: clip;
 }
-.matrix-tooltip-target {
-  display: block;
-}
-.matrix-matchup-tooltip {
-  position: fixed;
-  z-index: 1000;
-  width: min(360px, calc(100vw - 16px));
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: white;
-  color: var(--navy);
-  box-shadow: 0 6px 24px #102a4326;
-  pointer-events: none;
-  font-size: var(--text-small);
-  line-height: 1.5;
-}
-.matrix-tooltip-army + .matrix-tooltip-army {
-  margin-top: 16px;
-}
-.matrix-tooltip-heading {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-weight: 650;
-  white-space: nowrap;
-}
-.matrix-tooltip-heading .disposition-label {
-  white-space: nowrap;
-}
 .matrix-list-label .matrix-army-heading .disposition-label {
   display: inline-flex;
   white-space: nowrap;

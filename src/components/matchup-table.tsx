@@ -1,7 +1,5 @@
 "use client";
-import { FactionName } from "./faction-avatar";
-import { useState, useId, type ReactNode } from "react";
-import { createPortal } from "react-dom";
+import { useState, type ReactNode } from "react";
 import {
   armyKey,
   cellKey,
@@ -11,78 +9,9 @@ import {
 } from "@/lib/matchups";
 import type { Layout } from "@/lib/types";
 import MatrixScores from "./matrix-scores";
-import { Disposition } from "./disposition";
 import { MatrixArmyLabel, useMatrixArchetypes } from "./matrix-army-label";
 import MobileMatchups from "./mobile-matchups";
 import mobileStyles from "./mobile-matchups.module.css";
-function MatchupTooltip({
-  row,
-  column,
-  children,
-}: {
-  row: MatrixArmy;
-  column: MatrixArmy;
-  children: (id?: string) => ReactNode;
-}) {
-  const id = useId();
-  const [anchor, setAnchor] = useState<{
-    left: number;
-    top?: number;
-    bottom?: number;
-  } | null>(null);
-  function show(element: HTMLElement) {
-    const rect = element.getBoundingClientRect();
-    setAnchor({
-      left: Math.max(
-        8,
-        Math.min(
-          rect.left,
-          window.innerWidth - Math.min(360, window.innerWidth - 16) - 8,
-        ),
-      ),
-      ...(rect.top > 220
-        ? { bottom: window.innerHeight - rect.top + 8 }
-        : { top: rect.bottom + 8 }),
-    });
-  }
-  return (
-    <div
-      className="matrix-tooltip-target"
-      onMouseEnter={(e) => show(e.currentTarget)}
-      onMouseLeave={() => setAnchor(null)}
-      onFocus={(e) => show(e.currentTarget)}
-      onBlur={() => setAnchor(null)}
-      onClickCapture={() => setAnchor(null)}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") setAnchor(null);
-      }}
-    >
-      {children(anchor ? id : undefined)}
-      {anchor &&
-        createPortal(
-          <div
-            id={id}
-            role="tooltip"
-            className="matrix-matchup-tooltip"
-            style={anchor}
-          >
-            {[row, column].map((item, i) => (
-              <div className="matrix-tooltip-army" key={i}>
-                <div className="matrix-tooltip-heading">
-                  <FactionName name={item.army.factionName} /> -{" "}
-                  <Disposition name={item.army.dispositionName} />
-                </div>
-                <div>
-                  {item.army.detachmentNames.join(" + ") || "No detachments"}
-                </div>
-              </div>
-            ))}
-          </div>,
-          document.body,
-        )}
-    </div>
-  );
-}
 function armyDescription(item: MatrixArmy) {
   return [
     item.army.listName || "",
@@ -325,46 +254,38 @@ export default function MatchupTable({
                           setHover({ row: row.key, column: col.key })
                         }
                       >
-                        <MatchupTooltip row={row} column={col}>
-                          {(tooltipId) => (
-                            <div className="matrix-cell-group">
-                              <div
-                                className="matrix-cell"
-                                aria-describedby={tooltipId}
-                              >
-                                <MatrixScores
-                                  own={row}
-                                  enemy={col}
-                                  label={`${description(row)} versus ${description(col)}`}
-                                  value={cell}
-                                  logged={data.cells?.get(
-                                    cellKey(row.key, col.key),
-                                  )}
-                                  manualA={data.manual.has(
-                                    cellKey(row.key, col.key) + "A",
-                                  )}
-                                  manualB={data.manual.has(
-                                    cellKey(row.key, col.key) + "B",
-                                  )}
-                                  manualC={data.manual.has(
-                                    cellKey(row.key, col.key) + "C",
-                                  )}
-                                  onScore={onScore}
-                                  onError={setError}
-                                />
-                              </div>
-                              <button
-                                type="button"
-                                className="matrix-cell-details"
-                                aria-label={`Details: ${description(row)} versus ${description(col)}`}
-                                aria-describedby={tooltipId}
-                                onClick={() => onCell(row, col)}
-                              >
-                                ···
-                              </button>
-                            </div>
-                          )}
-                        </MatchupTooltip>
+                        <div className="matrix-cell-group">
+                          <div className="matrix-cell">
+                            <MatrixScores
+                              own={row}
+                              enemy={col}
+                              label={`${description(row)} versus ${description(col)}`}
+                              value={cell}
+                              logged={data.cells?.get(
+                                cellKey(row.key, col.key),
+                              )}
+                              manualA={data.manual.has(
+                                cellKey(row.key, col.key) + "A",
+                              )}
+                              manualB={data.manual.has(
+                                cellKey(row.key, col.key) + "B",
+                              )}
+                              manualC={data.manual.has(
+                                cellKey(row.key, col.key) + "C",
+                              )}
+                              onScore={onScore}
+                              onError={setError}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            className="matrix-cell-details"
+                            aria-label={`Details: ${description(row)} versus ${description(col)}`}
+                            onClick={() => onCell(row, col)}
+                          >
+                            ···
+                          </button>
+                        </div>
                       </td>
                     );
                   })}
