@@ -14,6 +14,7 @@ import { onScrimTeam, rosterWarnings } from "@/lib/scrims";
 import { ArmyFields, type Choice } from "./journal";
 import { ArmyListLink } from "./army-list-drawer";
 import { Disposition } from "./disposition";
+import { DispositionPicker } from "./disposition-picker";
 import { Badge, Field, Modal } from "./ui";
 import type { Mutate } from "./workspace";
 import styles from "./scrims.module.css";
@@ -755,29 +756,18 @@ function ListEditor({
                   </fieldset>
                 )}
                 {textReview?.missing.includes("disposition") && (
-                  <Field label="Force disposition missing from this export">
-                    <select
-                      required
-                      value={textChoices.disposition}
-                      onChange={(e) =>
-                        setTextChoices({
-                          ...textChoices,
-                          disposition: e.target.value,
-                        })
-                      }
-                    >
-                      <option value="">Choose force disposition</option>
-                      {dispositionsFor(
-                        textReview.faction,
-                        textReview.detachments || textChoices.detachments,
-                        rules,
-                      ).map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
+                  <DispositionPicker
+                    legend="Force disposition missing from this export"
+                    available={dispositionsFor(
+                      textReview.faction,
+                      textReview.detachments || textChoices.detachments,
+                      rules,
+                    )}
+                    value={textChoices.disposition}
+                    onChange={(disposition) =>
+                      setTextChoices({ ...textChoices, disposition })
+                    }
+                  />
                 )}
               </>
             ) : method === "import" && importedArmy ? (

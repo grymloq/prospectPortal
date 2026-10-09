@@ -2,7 +2,7 @@
 import { DetachmentNames } from "./detachment-name";
 import { FactionName } from "./faction-avatar";
 import { patchLabel } from "@/lib/patches";
-import { useState, useEffect, useId } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Search, Pencil, Trash2, Check } from "lucide-react";
 import type { Army, Game, View, RecordedGameContext } from "@/lib/types";
 import {
@@ -12,6 +12,7 @@ import {
   type Catalogue,
 } from "@/lib/catalogue";
 import { Disposition } from "./disposition";
+import { DispositionPicker } from "./disposition-picker";
 import { ArmyListLink } from "./army-list-drawer";
 import type { Mutate } from "./workspace";
 import { PageHeading, Badge, Field, Modal, Empty, dateLabel } from "./ui";
@@ -133,7 +134,6 @@ export function ArmyFields({
   maxDP?: number;
   hideListName?: boolean;
 }) {
-  const dispositionGroup = useId();
   const faction = rules.factions.find((f) => f.id === value.faction),
     available = dispositionsFor(value.faction, value.detachments, rules);
   const points =
@@ -220,32 +220,13 @@ export function ArmyFields({
           ))}
         </div>
       </div>
-      <fieldset className="disposition-picker">
-        <legend>Force disposition</legend>
-        <div className="disposition-options">
-          {available.map((d) => (
-            <label key={d.id}>
-              <input
-                type="radio"
-                name={dispositionGroup}
-                required
-                checked={value.disposition === d.id}
-                onChange={() =>
-                  onChange({
-                    ...value,
-                    disposition: d.id,
-                    composition: undefined,
-                  })
-                }
-              />
-              <Disposition name={d.name} />
-            </label>
-          ))}
-        </div>
-        {!available.length && (
-          <small>Select detachments to see available dispositions.</small>
-        )}
-      </fieldset>
+      <DispositionPicker
+        available={available}
+        value={value.disposition}
+        onChange={(disposition) =>
+          onChange({ ...value, disposition, composition: undefined })
+        }
+      />
       {!hideListName && (
         <Field label="Army-list name (optional)">
           <input
