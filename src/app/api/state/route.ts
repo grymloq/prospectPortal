@@ -1,3 +1,5 @@
+import { scrimScoreResponse } from "@/server/scrim-score-response";
+import type { ScrimLayoutEdit } from "@/lib/types";
 import { after } from "next/server";
 import { deliverNotifications } from "@/server/notification-worker";
 import { NextRequest, NextResponse } from "next/server";
@@ -24,14 +26,18 @@ async function handle(req: NextRequest, mutate: boolean) {
         { error: "Sign in to continue." },
         { status: 401, headers },
       );
+    const command = mutate ? await req.json() : undefined;
+    const view = await cloudView(
+      user,
+      command,
+      undefined,
+      undefined,
+      req.cookies.get(previewCookie)?.value,
+    );
     return NextResponse.json(
-      await cloudView(
-        user,
-        mutate ? await req.json() : undefined,
-        undefined,
-        undefined,
-        req.cookies.get(previewCookie)?.value,
-      ),
+      command?.type === "scrimLayoutEstimate"
+        ? scrimScoreResponse(view, command as ScrimLayoutEdit)
+        : view,
       { headers },
     );
   } catch (e) {

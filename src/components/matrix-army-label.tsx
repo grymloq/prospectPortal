@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import type { ArmyLibraryDTO } from "@/lib/types";
 import { armyKey, type MatrixArmy } from "@/lib/matchups";
@@ -96,7 +103,10 @@ export function MatrixArmyLabel({
     top: number;
   }>();
   const composition = item.army.composition;
-  const units = composition && consolidateRoster(composition).units;
+  const units = useMemo(
+    () => composition && consolidateRoster(composition).units,
+    [composition],
+  );
   const label = [
     name,
     item.army.listName,

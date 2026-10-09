@@ -1,3 +1,4 @@
+import { scrimScoreResponse } from "../scrim-score-response";
 import { generateDeadlineNotifications } from "../notifications";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -49,9 +50,14 @@ export async function POST(req: NextRequest) {
       execute(s, actor, body);
       return viewState(s, actor);
     });
-    return NextResponse.json(view, {
-      headers: { "Cache-Control": "no-store" },
-    });
+    return NextResponse.json(
+      body.type === "scrimLayoutEstimate"
+        ? scrimScoreResponse(view, body)
+        : view,
+      {
+        headers: { "Cache-Control": "no-store" },
+      },
+    );
   } catch (e) {
     return NextResponse.json(
       {

@@ -122,6 +122,18 @@ export const scrimCommands = [
       .max(64),
   }),
   z.object({
+    type: z.literal("scrimLayoutEstimate"),
+    ...ref,
+    teamId: id,
+    ownId: id,
+    enemyId: id,
+    ownArmyKey: z.string().min(1).max(2000),
+    enemyArmyKey: z.string().min(1).max(2000),
+    layout: z.enum(["A", "B", "C"]),
+    score: estimate,
+    expectedScore: estimate,
+  }),
+  z.object({
     type: z.literal("scrimEstimate"),
     ...ref,
     teamId: id,
@@ -675,6 +687,7 @@ export function executeScrim(state: State, actor: User, input: unknown) {
       break;
     }
     case "scrimEstimate":
+    case "scrimLayoutEstimate":
     case "scrimPlanComment": {
       if (!onScrimTeam(team!, actor.id))
         throw new Error("Only team members can change their team's matrix.");
@@ -705,7 +718,39 @@ export function executeScrim(state: State, actor: User, input: unknown) {
         }
       }
       if (!cell) throw new Error("Matchup not found.");
-      if (command.type === "scrimEstimate") {
+      if (command.type === "scrimLayoutEstimate") {
+        const own = team!.entries.find((e) => e.id === command.ownId)?.army;
+        const enemy = revealed
+          ? scrim.teams
+              .find((t) => t.id !== team!.id)
+              ?.entries.find((e) => e.id === command.enemyId)?.army
+          : databaseEntries(
+              state,
+              scrim,
+              databaseMatrix(state, scrim, actor),
+            ).find((e) => e.id === command.enemyId)?.army;
+        if (
+          !own ||
+          !enemy ||
+          armyKey(own) !== command.ownArmyKey ||
+          armyKey(enemy) !== command.enemyArmyKey
+        )
+          throw new Error(
+            "These army lists changed. Refresh the workspace before saving.",
+          );
+        if (cell.scores[command.layout] !== command.expectedScore)
+          throw new Error(
+            "This estimate changed. Refresh the workspace and review the latest value before saving.",
+          );
+      }
+      if (
+        command.type === "scrimEstimate" ||
+        command.type === "scrimLayoutEstimate"
+      ) {
+        const scores =
+          command.type === "scrimLayoutEstimate"
+            ? { ...cell.scores, [command.layout]: command.score }
+            : command.scores;
         cell.history ||= [
           {
             scores: { ...cell.scores },
@@ -714,11 +759,11 @@ export function executeScrim(state: State, actor: User, input: unknown) {
           },
         ];
         cell.history.push({
-          scores: { ...command.scores },
+          scores: { ...scores },
           authorName: actor.name,
           createdAt: now,
         });
-        cell.scores = command.scores;
+        cell.scores = scores;
       } else
         cell.comments.push({
           id: randomUUID(),

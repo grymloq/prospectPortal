@@ -645,6 +645,27 @@ export type ScrimEstimate = {
   updatedBy?: string;
   updatedAt?: string;
 };
+export type ScrimLayoutEdit = {
+  type: "scrimLayoutEstimate";
+  scrimId: string;
+  revision: number;
+  teamId: string;
+  ownId: string;
+  enemyId: string;
+  ownArmyKey: string;
+  enemyArmyKey: string;
+  layout: Layout;
+  score: number | null;
+  expectedScore: number | null;
+};
+export type ScrimScoreUpdate = {
+  kind: "scrim-score";
+  viewerId: string;
+  scrimId: string;
+  revision: number;
+  teamId: string;
+  cell: ScrimEstimate;
+};
 export type ScrimTeam = {
   id: string;
   name: string;

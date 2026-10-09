@@ -1,7 +1,7 @@
 "use client";
 import { FactionCredits } from "./faction-avatar";
 import TeamLogo from "@/components/team-logo";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import {
   Users,
   BookOpen,
@@ -15,7 +15,11 @@ import {
   RefreshCw,
   X,
 } from "lucide-react";
-import type { View } from "@/lib/types";
+import {
+  applyScrimScoreUpdate,
+  createScrimScoreQueue,
+} from "@/lib/scrim-score-queue";
+import type { ScrimLayoutEdit, View } from "@/lib/types";
 import Auth from "./auth";
 import Prospects from "./prospects";
 import Profile from "./profile";
@@ -50,6 +54,10 @@ export default function Workspace({
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
     [journalKey, setJournalKey] = useState(0);
+  const viewRef = useRef<View | null>(null);
+  const scoreQueue = useRef<ReturnType<typeof createScrimScoreQueue> | null>(
+    null,
+  );
   const [directoryPending, setDirectoryPending] = useState<{
     actor: string;
     count: number;
@@ -90,7 +98,8 @@ export default function Workspace({
     ? `team-sweden:location:v1:${view.accessPreview?.active ? "preview:" : ""}${view.me.id}:${view.me.role}`
     : "";
   const restoredOwner = useRef("");
-  function acceptView(view: View | null) {
+  const acceptView = useCallback((view: View | null) => {
+    viewRef.current = view;
     setView(view);
     if (!view) {
       restoredOwner.current = "";
@@ -152,7 +161,7 @@ export default function Workspace({
         : "Our Team",
     );
     setLocationOwner(locationKey);
-  }
+  }, []);
   useEffect(() => {
     if (!locationKey || locationOwner !== locationKey) return;
     try {
@@ -200,7 +209,7 @@ export default function Workspace({
         }
       });
     return () => controller.abort();
-  }, []);
+  }, [acceptView]);
   // Reload server-filtered lists when a deadline passes while the workspace is open.
   useEffect(() => {
     if (!view) return;
@@ -232,42 +241,73 @@ export default function Workspace({
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [view]);
-  async function mutate(command: object, onError?: (message: string) => void) {
-    if (view?.accessPreview?.active) {
-      const message =
-        "Access preview is read-only. Exit preview to make changes.";
-      setError(message);
-      onError?.(message);
-      return false;
-    }
-    setBusy(true);
-    setError("");
-    try {
-      const r = await fetch(
-        (command as { type?: string }).type === "importPatch"
-          ? "/api/patch-import"
-          : "/api/state",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(command),
-        },
-      );
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error);
-      acceptView(data);
-      setNotice("Changes saved");
-      window.setTimeout(() => setNotice(""), 3000);
-      return true;
-    } catch (e) {
-      setError((e as Error).message);
-      onError?.((e as Error).message);
-      return false;
-    } finally {
-      setBusy(false);
-    }
-  }
+  }, [view, acceptView]);
+  const mutate = useCallback(
+    async (command: object, onError?: (message: string) => void) => {
+      if (viewRef.current?.accessPreview?.active) {
+        const message =
+          "Access preview is read-only. Exit preview to make changes.";
+        setError(message);
+        onError?.(message);
+        return false;
+      }
+      if ((command as { type?: string }).type === "scrimLayoutEstimate") {
+        if (scoreQueue.current === null)
+          scoreQueue.current = createScrimScoreQueue({
+            read: () => viewRef.current,
+            apply: (update) => {
+              const next = applyScrimScoreUpdate(viewRef.current!, update);
+              viewRef.current = next;
+              setView(next);
+            },
+            request: async (command) => {
+              const response = await fetch("/api/state", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(command),
+              });
+              const data = await response.json();
+              if (!response.ok) throw new Error(data.error);
+              return data;
+            },
+          });
+        try {
+          await scoreQueue.current!(command as ScrimLayoutEdit);
+          return true;
+        } catch (error) {
+          onError?.((error as Error).message);
+          return false;
+        }
+      }
+      setBusy(true);
+      setError("");
+      try {
+        const r = await fetch(
+          (command as { type?: string }).type === "importPatch"
+            ? "/api/patch-import"
+            : "/api/state",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(command),
+          },
+        );
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error);
+        acceptView(data);
+        setNotice("Changes saved");
+        window.setTimeout(() => setNotice(""), 3000);
+        return true;
+      } catch (e) {
+        setError((e as Error).message);
+        onError?.((e as Error).message);
+        return false;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [acceptView],
+  );
   function openProfile(id: string) {
     setProfileId(id);
     setPage("Profile");

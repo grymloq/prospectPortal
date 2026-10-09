@@ -479,6 +479,66 @@ test("list lock alone does not reveal incomplete or unfinalized opposing rosters
   });
 });
 
+test("single-layout scrim edits clear only the targeted score and retain revisions, army identity and team privacy", () => {
+  const f = fixture();
+  f.fill();
+  at(f.deadline + 1, () => {
+    const team = f.scrim.teams[0],
+      own = team.entries[0],
+      enemy = f.scrim.teams[1].entries[0];
+    f.run(f.member(1), {
+      type: "scrimEstimate",
+      teamId: team.id,
+      ownId: own.id,
+      enemyId: enemy.id,
+      scores: { A: 4, B: 11, C: 0 },
+    });
+    const edit = {
+      type: "scrimLayoutEstimate",
+      teamId: team.id,
+      ownId: own.id,
+      enemyId: enemy.id,
+      ownArmyKey: armyKey(own.army!),
+      enemyArmyKey: armyKey(enemy.army!),
+      layout: "A",
+      score: null,
+      expectedScore: 4,
+    };
+    const revision = f.scrim.revision;
+    f.run(f.member(1), edit);
+    const cell = team.estimates.find(
+      (c) => c.ownId === own.id && c.enemyId === enemy.id,
+    )!;
+    assert.deepEqual(cell.scores, { A: null, B: 11, C: 0 });
+    assert.equal(f.scrim.revision, revision + 1);
+    assert.deepEqual(cell.history!.at(-1)!.scores, cell.scores);
+    assert.throws(
+      () => f.run(f.member(1), { ...edit, revision }),
+      /scrim changed/,
+    );
+    assert.throws(() => f.run(f.member(1), edit), /estimate changed/);
+    assert.throws(
+      () =>
+        f.run(f.member(1), {
+          ...edit,
+          expectedScore: null,
+          ownArmyKey: "wrong",
+        }),
+      /army lists changed/,
+    );
+    assert.throws(
+      () => f.run(f.member(3), { ...edit, expectedScore: null }),
+      /Only team/,
+    );
+    assert.throws(
+      () => f.run(f.admin, { ...edit, expectedScore: null }),
+      /Only team/,
+    );
+    const other = viewState(f.s, f.member(3)).scrims![0].teams[0];
+    assert.equal(other.estimates.length, 0);
+  });
+});
+
 test("team members edit only their own matrix, with comments and independent shared seeds", () => {
   const f = fixture();
   f.s.manualEstimates = [
@@ -1062,7 +1122,11 @@ test("admins replace and add captains and non-playing coaches with revision and 
       }),
     /captain or an admin/,
   );
-  execute(f.s, f.admin, { type: "matrixList", patchId: f.scrim.patchId, army: armyFor(0) });
+  execute(f.s, f.admin, {
+    type: "matrixList",
+    patchId: f.scrim.patchId,
+    army: armyFor(0),
+  });
   const own = team.entries[0];
   const enemy = viewState(f.s, f.member(15)).scrims![0].databaseEntries![0];
   f.run(f.member(15), {

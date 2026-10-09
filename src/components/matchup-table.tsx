@@ -10,7 +10,7 @@ import {
   type Matchup,
 } from "@/lib/matchups";
 import type { Layout } from "@/lib/types";
-import MatrixLayoutScore from "./matrix-layout-score";
+import MatrixScores from "./matrix-scores";
 import { Disposition } from "./disposition";
 import { MatrixArmyLabel, useMatrixArchetypes } from "./matrix-army-label";
 import MobileMatchups from "./mobile-matchups";
@@ -157,6 +157,7 @@ export default function MatchupTable({
     column: MatrixArmy,
     layout: Layout,
     score: number | null,
+    expectedScore: number | null,
   ) => Promise<void>;
 }) {
   const description = (item: MatrixArmy) =>
@@ -331,28 +332,26 @@ export default function MatchupTable({
                                 className="matrix-cell"
                                 aria-describedby={tooltipId}
                               >
-                                {layouts.map((layout) => (
-                                  <MatrixLayoutScore
-                                    key={layout}
-                                    label={`Layout ${layout}: ${description(row)} versus ${description(col)}`}
-                                    value={cell?.[layout]}
-                                    logged={
-                                      data.cells?.get(
-                                        cellKey(row.key, col.key),
-                                      )?.[layout]
-                                    }
-                                    manual={data.manual.has(
-                                      cellKey(row.key, col.key) + layout,
-                                    )}
-                                    onSave={
-                                      onScore
-                                        ? (score) =>
-                                            onScore(row, col, layout, score)
-                                        : undefined
-                                    }
-                                    onError={setError}
-                                  />
-                                ))}
+                                <MatrixScores
+                                  own={row}
+                                  enemy={col}
+                                  label={`${description(row)} versus ${description(col)}`}
+                                  value={cell}
+                                  logged={data.cells?.get(
+                                    cellKey(row.key, col.key),
+                                  )}
+                                  manualA={data.manual.has(
+                                    cellKey(row.key, col.key) + "A",
+                                  )}
+                                  manualB={data.manual.has(
+                                    cellKey(row.key, col.key) + "B",
+                                  )}
+                                  manualC={data.manual.has(
+                                    cellKey(row.key, col.key) + "C",
+                                  )}
+                                  onScore={onScore}
+                                  onError={setError}
+                                />
                               </div>
                               <button
                                 type="button"

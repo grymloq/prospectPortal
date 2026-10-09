@@ -16,21 +16,26 @@ export default function MatrixLayoutScore({
   value?: Estimate;
   logged?: Estimate;
   manual: boolean;
-  onSave?: (score: number | null) => Promise<void>;
+  onSave?: (
+    score: number | null,
+    expectedScore: number | null,
+  ) => Promise<void>;
   onError: (message: string) => void;
 }) {
   const button = useRef<HTMLButtonElement>(null);
   const saving = useRef(false);
   const cancelled = useRef(false);
-  // Capture the save callback when editing starts, including its server revision.
+  // Capture the edited value for conflict checks; queued saves advance their revisions.
   const [edit, setEdit] = useState<{
     text: string;
     initial: string;
+    expectedScore: number | null;
     save: NonNullable<typeof onSave>;
   } | null>(null);
   const [busy, setBusy] = useState(false);
   const [invalid, setInvalid] = useState(false);
-  const score = value?.count ? value.average : null;
+  const [pending, setPending] = useState<{ score: number | null } | null>(null);
+  const score = pending ? pending.score : value?.count ? value.average : null;
   const difference =
     manual && score !== null && logged?.count
       ? Math.round((score - logged.average) * 10) / 10
@@ -65,13 +70,16 @@ export default function MatrixLayoutScore({
     saving.current = true;
     setBusy(true);
     onError("");
+    setPending({ score: next });
+    setEdit(null);
     try {
-      await edit.save(next);
-      setEdit(null);
+      await edit.save(next, edit.expectedScore);
     } catch (error) {
+      setEdit(edit);
       setInvalid(true);
       onError((error as Error).message);
     } finally {
+      setPending(null);
       saving.current = false;
       setBusy(false);
     }
@@ -111,17 +119,23 @@ export default function MatrixLayoutScore({
     <button
       ref={button}
       type="button"
-      aria-disabled={!onSave}
+      aria-disabled={!onSave || busy}
+      aria-busy={busy}
       className={`${styles.score} ${tone}`}
       aria-label={`${label}: ${score === null ? "unknown" : score}${manual ? ", manual estimate" : ""}${delta ? `, ${delta} compared with logs` : ""}`}
       title={`${label}${logged?.count ? ` · Logged average ${logged.average.toFixed(1)} from ${logged.count} games` : " · No logged games"}${onSave ? " · Click to edit" : ""}`}
       onClick={
-        onSave
+        onSave && !busy
           ? () => {
               cancelled.current = false;
               onError("");
               const initial = score === null ? "" : String(score);
-              setEdit({ text: initial, initial, save: onSave });
+              setEdit({
+                text: initial,
+                initial,
+                expectedScore: score,
+                save: onSave,
+              });
             }
           : undefined
       }

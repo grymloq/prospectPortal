@@ -1,7 +1,20 @@
 "use client";
-import { useState } from "react";
-import type { Scrim, ScrimEstimate, ScrimTeam, View } from "@/lib/types";
-import { armyKey, cellKey, layouts, type Matchup } from "@/lib/matchups";
+import { useCallback, useMemo, useState } from "react";
+import type {
+  Layout,
+  Scrim,
+  ScrimEstimate,
+  ScrimEntry,
+  ScrimTeam,
+  View,
+} from "@/lib/types";
+import {
+  armyKey,
+  cellKey,
+  layouts,
+  type Matchup,
+  type MatrixArmy,
+} from "@/lib/matchups";
 import { matchupDatabase } from "@/lib/matchup-database";
 import MatchupTable, { MatrixAverageBadge } from "./matchup-table";
 import MatchupMissions from "./matchup-missions";
@@ -11,6 +24,53 @@ import type { Mutate } from "./workspace";
 import styles from "./scrims.module.css";
 import { AxisFilter, emptyFilter, type Filter } from "./matrix-axis-filter";
 import MatrixListEditor from "./matrix-list-editor";
+
+function useSubmittedArmies(entries: ScrimEntry[] | undefined) {
+  return useMemo(() => {
+    const submitted = entries?.filter((entry) => entry.army) || [];
+    return {
+      submitted,
+      rows: submitted.map((entry) => ({ key: entry.id, army: entry.army! })),
+    };
+  }, [entries]);
+}
+function useScoreSave(
+  mutate: Mutate,
+  scrimId: string,
+  teamId: string | undefined,
+) {
+  return useCallback(
+    async (
+      row: MatrixArmy,
+      column: MatrixArmy,
+      layout: Layout,
+      score: number | null,
+      expectedScore: number | null,
+    ) => {
+      let error = "Unable to save the estimate.";
+      const ok = await mutate(
+        {
+          type: "scrimLayoutEstimate",
+          scrimId: scrimId,
+          revision: 0, // The workspace queue supplies the accepted revision at dispatch.
+          teamId: teamId!,
+          ownId: row.key,
+          enemyId: column.key,
+          ownArmyKey: armyKey(row.army),
+          enemyArmyKey: armyKey(column.army),
+          layout,
+          score,
+          expectedScore,
+        },
+        (message) => {
+          error = message;
+        },
+      );
+      if (!ok) throw new Error(error);
+    },
+    [mutate, scrimId, teamId],
+  );
+}
 
 export default function ScrimMatrix({
   view,
@@ -26,6 +86,8 @@ export default function ScrimMatrix({
   );
   const [selectedTeam, setSelectedTeam] = useState(visible[0]?.id || "");
   const team = visible.find((t) => t.id === selectedTeam) || visible[0];
+  const canEdit = !!team && onScrimTeam(team, view.me.id) && !scrim.cancelled;
+  const teamId = team?.id;
   const other = scrim.teams.find((t) => t.id !== team?.id);
   const [editing, setEditing] = useState<ScrimEstimate | null>(null);
   const [adding, setAdding] = useState(false);
@@ -33,19 +95,39 @@ export default function ScrimMatrix({
   const [filterMode, setFilterMode] = useState(false);
   const ready = !!scrim.listsRevealed;
   const activeFilter = filterMode === ready ? opponentFilter : emptyFilter();
-  const opponents = ready
-    ? other?.entries.filter((entry) => entry.army) || []
-    : scrim.databaseEntries || [];
-  const submitted = team?.entries.filter((entry) => entry.army) || [];
-  const base = matchupDatabase(view, scrim.patchId);
-  const rows = submitted.map((entry) => ({
-    key: entry.id,
-    army: entry.army!,
-  }));
-  const allColumns = opponents.map((entry) => ({
-    key: entry.id,
-    army: entry.army!,
-  }));
+  const opponents = useMemo(
+    () =>
+      ready
+        ? other?.entries.filter((entry) => entry.army) || []
+        : scrim.databaseEntries || [],
+    [ready, other?.entries, scrim.databaseEntries],
+  );
+  const { submitted, rows } = useSubmittedArmies(team?.entries);
+  const base = useMemo(
+    () =>
+      matchupDatabase(
+        {
+          games: view.games,
+          savedArmies: view.savedArmies,
+          matrixLists: view.matrixLists,
+          matrixListHistory: view.matrixListHistory,
+          manualEstimates: view.manualEstimates,
+        },
+        scrim.patchId,
+      ),
+    [
+      view.games,
+      view.savedArmies,
+      view.matrixLists,
+      view.matrixListHistory,
+      view.manualEstimates,
+      scrim.patchId,
+    ],
+  );
+  const allColumns = useMemo(
+    () => opponents.map((entry) => ({ key: entry.id, army: entry.army! })),
+    [opponents],
+  );
   const columns = allColumns.filter(
     (column) =>
       (!activeFilter.factions.length ||
@@ -129,7 +211,7 @@ export default function ScrimMatrix({
       opponents={opponents}
     />
   );
-  const canEdit = !!team && onScrimTeam(team, view.me.id) && !scrim.cancelled;
+  const saveScore = useScoreSave(mutate, scrim.id, teamId);
   return (
     <section
       className={`matrix-compact ${styles.card} ${styles.compactMatrix} ${styles.mobileSurface}`}
@@ -205,7 +287,7 @@ export default function ScrimMatrix({
             showAverages={false}
             averageAxes
             patchId={scrim.patchId}
-            revision={view}
+            revision={view.savedArmies || view.matrixLists || view.patches}
             rows={rows}
             columns={columns}
             data={{ effective, manual, cells }}
@@ -217,43 +299,7 @@ export default function ScrimMatrix({
             markColumns={markColumns}
             averageBadge={averageBadge}
             key={`${team.id}:${ready}`}
-            onScore={
-              canEdit
-                ? async (row, column, layout, score) => {
-                    const scores = Object.fromEntries(
-                      layouts.map((l) => {
-                        const value = effective.get(
-                          cellKey(row.key, column.key),
-                        )?.[l];
-                        return [
-                          l,
-                          l === layout
-                            ? score
-                            : value?.count
-                              ? value.average
-                              : null,
-                        ];
-                      }),
-                    );
-                    let error = "Unable to save the estimate.";
-                    const ok = await mutate(
-                      {
-                        type: "scrimEstimate",
-                        scrimId: scrim.id,
-                        revision: scrim.revision,
-                        teamId: team.id,
-                        ownId: row.key,
-                        enemyId: column.key,
-                        scores,
-                      },
-                      (message) => {
-                        error = message;
-                      },
-                    );
-                    if (!ok) throw new Error(error);
-                  }
-                : undefined
-            }
+            onScore={canEdit ? saveScore : undefined}
             onCell={(row, column) => {
               const cell = team.estimates.find(
                 (c) => c.ownId === row.key && c.enemyId === column.key,

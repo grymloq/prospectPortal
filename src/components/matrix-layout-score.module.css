@@ -1,5 +1,6 @@
 .score {
   min-height: 28px;
+  height: 28px;
   min-width: 0;
   padding: 3px 1px;
   border: 0;
@@ -36,8 +37,13 @@
   width: 100%;
   min-width: 0;
   min-height: 28px;
+  height: 28px;
   padding: 3px 1px;
   font-size: 11px;
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+
+.score[aria-busy="true"] {
+  opacity: 0.65;
 }

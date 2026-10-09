@@ -131,6 +131,62 @@ export async function testScrimHttp({ request, check, admin, player }) {
   );
   assert.equal(response.status, 200, JSON.stringify(response.data));
   const cell = scrim.teams[0].estimates[0];
+  await run(
+    {
+      type: "scrimEstimate",
+      teamId: scrim.teams[0].id,
+      ownId: cell.ownId,
+      enemyId: cell.enemyId,
+      scores: { A: 4, B: 11, C: 0 },
+    },
+    player.cookie,
+  );
+  const ownArmy = scrim.teams[0].entries.find((e) => e.id === cell.ownId).army;
+  const enemyArmy = scrim.teams[1].entries.find(
+    (e) => e.id === cell.enemyId,
+  ).army;
+  const key = (army) =>
+    JSON.stringify([
+      army.faction,
+      [...army.detachments].sort(),
+      army.disposition,
+    ]);
+  const inline = {
+    type: "scrimLayoutEstimate",
+    scrimId: scrim.id,
+    revision: scrim.revision,
+    teamId: scrim.teams[0].id,
+    ownId: cell.ownId,
+    enemyId: cell.enemyId,
+    ownArmyKey: key(ownArmy),
+    enemyArmyKey: key(enemyArmy),
+    layout: "A",
+    score: null,
+    expectedScore: 4,
+  };
+  assert.equal((await request("/api/state", inline, other.cookie)).status, 400);
+  assert.equal((await request("/api/state", inline, admin.cookie)).status, 400);
+  const cleared = await request("/api/state", inline, player.cookie);
+  check(
+    "inline scrim clears return only the authorized cell and preserve other layouts and stale-write protection",
+    () => {
+      assert.equal(cleared.status, 200);
+      assert.equal(cleared.data.kind, "scrim-score");
+      assert.deepEqual(cleared.data.cell.scores, { A: null, B: 11, C: 0 });
+      assert.deepEqual(
+        Object.keys(cleared.data).sort(),
+        ["kind", "viewerId", "scrimId", "revision", "teamId", "cell"].sort(),
+      );
+      assert.equal(cleared.data.viewerId, "p1");
+    },
+  );
+  assert.equal(
+    (await request("/api/state", inline, player.cookie)).status,
+    400,
+  );
+  scrim = (await request("/api/state", null, player.cookie)).data.scrims.find(
+    (s) => s.id === scrim.id,
+  );
   response = await run(
     {
       type: "scrimPlanComment",

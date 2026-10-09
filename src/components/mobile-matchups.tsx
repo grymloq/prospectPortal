@@ -45,6 +45,7 @@ export default function MobileMatchups({
     column: MatrixArmy,
     layout: Layout,
     score: number | null,
+    expectedScore: number | null,
   ) => Promise<void>;
   onError: (message: string) => void;
 }) {
@@ -155,7 +156,14 @@ export default function MobileMatchups({
                           manual={data.manual.has(key + layout)}
                           onSave={
                             onScore
-                              ? (score) => onScore(row, column, layout, score)
+                              ? (score, expectedScore) =>
+                                  onScore(
+                                    row,
+                                    column,
+                                    layout,
+                                    score,
+                                    expectedScore,
+                                  )
                               : undefined
                           }
                           onError={onError}
