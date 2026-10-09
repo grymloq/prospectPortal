@@ -7,6 +7,7 @@ import {
   ArrowUpDown,
   ChevronDown,
   ChevronRight,
+  Star,
 } from "lucide-react";
 import type {
   ArmyLibraryDTO,
@@ -130,6 +131,7 @@ export function ArmyLibraryDataRow({
   writing?: boolean;
 }) {
   const list = "ownerName" in row;
+  const isDefault = list && row.norm?.isDefault;
   const level = list ? "list" : "archetype";
   const patchIds = list ? [row.patchId] : row.patchIds;
   const prefix = `${row.army.factionName} — `;
@@ -148,7 +150,7 @@ export function ArmyLibraryDataRow({
     );
   return (
     <tr
-      className={`${styles.row} ${list ? styles.list : styles.archetype}`}
+      className={`${styles.row} ${list ? styles.list : styles.archetype} ${isDefault ? styles.defaultRow : ""}`}
       data-level={level}
       aria-label={`${expanded ? "Collapse" : "Expand"} ${level}: ${row.name}`}
       {...rowEvents(onToggle)}
@@ -163,13 +165,20 @@ export function ArmyLibraryDataRow({
           >
             {label}
           </RowName>
-          <small>
-            {list
-              ? row.kind === "matrix"
-                ? "Configuration only"
-                : "List"
-              : "Archetype"}
-          </small>
+          {isDefault ? (
+            <span className={styles.defaultMarker}>
+              <Star size={12} fill="currentColor" aria-hidden="true" />
+              <span>Default for archetype</span>
+            </span>
+          ) : (
+            <small>
+              {list
+                ? row.kind === "matrix"
+                  ? "Configuration only"
+                  : "List"
+                : "Archetype"}
+            </small>
+          )}
           {list && (
             <button
               type="button"

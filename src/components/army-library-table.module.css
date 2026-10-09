@@ -76,6 +76,35 @@
   outline: 2px solid var(--navy);
   outline-offset: -2px;
 }
+.table .defaultRow td {
+  background: #fffdf3;
+}
+.table .defaultRow:hover td,
+.table .defaultRow:focus-within td {
+  background: #fff7d6;
+}
+.table .defaultRow td:first-child {
+  box-shadow:
+    inset 3px 0 0 var(--yellow),
+    1px 0 0 var(--border);
+}
+.defaultMarker {
+  display: inline-block;
+  margin: 5px 0 2px 19px;
+  padding: 3px 6px;
+  border: 1px solid #e5ce73;
+  border-radius: 5px;
+  background: #fff2b3;
+  color: #66500d;
+  font-size: var(--text-caption);
+  font-weight: 650;
+  line-height: 1.35;
+}
+.defaultMarker svg {
+  display: inline-block;
+  margin-right: 5px;
+  vertical-align: -2px;
+}
 .name,
 .sort,
 .details {
