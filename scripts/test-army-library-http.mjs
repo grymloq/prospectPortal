@@ -485,4 +485,63 @@ export async function testArmyLibraryHttp({ request, check, admin, player }) {
       .status,
     200,
   );
+
+  const metadataPatch = playerState.patches.find((patch) => patch.catalogue);
+  assert.ok(
+    metadataPatch,
+    "An isolated imported/snapshotted ruleset is required.",
+  );
+  const ids = [];
+  for (const imported of [false, true]) {
+    const army = {
+      ...inputArmy,
+      listName: `HTTP SCOPE ${imported ? "import" : "legacy"}`,
+    };
+    delete army.scope;
+    delete army.composition;
+    if (imported)
+      army.scope = { systemId: String(metadataPatch.catalogue.systemId) };
+    const result = await mutate({
+      type: "saveArmy",
+      patchId: metadataPatch.id,
+      army,
+    });
+    assert.equal(result.status, 200, JSON.stringify(result.data));
+    const created = result.data.savedArmies.find(
+      (row) => row.army.listName === army.listName,
+    );
+    ids.push(created.id);
+    assert.equal(
+      (await mutate({ type: "shareArmy", id: created.id, shared: true }))
+        .status,
+      200,
+    );
+  }
+  const grouped = await request(
+    `/api/army-library?patchId=${encodeURIComponent(metadataPatch.id)}&search=HTTP%20SCOPE`,
+    null,
+    player.cookie,
+  );
+  const archetypes = await request(
+    `/api/army-library?tab=archetypes&patchId=${encodeURIComponent(metadataPatch.id)}&search=HTTP%20SCOPE`,
+    null,
+    player.cookie,
+  );
+  check(
+    "matching imported system metadata consolidates with legacy configurations under the same saved ruleset",
+    () => {
+      assert.equal(grouped.status, 200);
+      assert.equal(grouped.data.library.lists.length, 2);
+      assert.equal(
+        grouped.data.library.lists[0].archetypeId,
+        grouped.data.library.lists[1].archetypeId,
+      );
+      assert.equal(archetypes.status, 200);
+      assert.equal(archetypes.data.library.archetypes.length, 1);
+      assert.equal(archetypes.data.library.archetypes[0].publicLists, 2);
+      assert.equal(archetypes.data.library.archetypes[0].variations, 0);
+    },
+  );
+  for (const id of ids)
+    assert.equal((await mutate({ type: "deleteArmy", id })).status, 200);
 }

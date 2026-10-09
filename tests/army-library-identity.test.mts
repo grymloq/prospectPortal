@@ -248,6 +248,34 @@ test("partial quantities, missing IDs, ambiguous provenance and unsupported game
   assert.equal(imported(input).composition?.status, "unavailable");
 });
 
+test("ruleset system metadata consolidates matching imports with legacy configurations without guessing other scope", () => {
+  const legacy = imported();
+  delete legacy.scope;
+  delete legacy.composition;
+  const newer = { ...legacy, scope: { systemId: String(catalogue.systemId) } };
+  const state = {
+    patches: [{ id: "patch", name: "Patch", date: "2026-10-09", catalogue }],
+  };
+  const stableLegacyId = archetypeId(legacy, "patch");
+  assert.equal(archetypeId(legacy, "patch", state), stableLegacyId);
+  assert.equal(archetypeId(newer, "patch", state), stableLegacyId);
+  assert.notEqual(archetypeId(newer, "patch"), stableLegacyId);
+  assert.notEqual(
+    archetypeId(newer, "unknown-patch", state),
+    archetypeId(legacy, "unknown-patch", state),
+  );
+  for (const scope of [
+    { systemId: "different" },
+    { systemId: String(catalogue.systemId), battleSize: "2000" },
+    { systemId: String(catalogue.systemId), edition: "other" },
+  ])
+    assert.notEqual(
+      archetypeId({ ...legacy, scope }, "patch", state),
+      stableLegacyId,
+    );
+  assert.equal(variationId(newer, "patch", state), undefined);
+});
+
 test("normalization recomputes hashes and rejects forged complete fingerprints", () => {
   const army = imported();
   army.composition!.fingerprint = "forged";
@@ -376,4 +404,41 @@ test("network importer bounds streamed payload and rejects malformed obfuscated 
   } finally {
     globalThis.fetch = fetchBefore;
   }
+});
+
+test("catalogue-backed system reconciliation preserves complete roster identity and invalidates changed-scope previews", () => {
+  const { state, admin } = fixture();
+  state.patches = [
+    { id: "patch", name: "Patch", date: "2026-10-09", catalogue },
+  ];
+  const legacy = structuredClone(state.armyVersions![0].army);
+  delete legacy.scope!.systemId;
+  state.armyVersions![0].army = legacy;
+  assert.equal(
+    variationId(legacy, "patch", state),
+    variationId(state.armyVersions![1].army, "patch", state),
+  );
+  const preview = consolidationPreview(state, admin);
+  assert.equal(preview.newVariations, 1);
+  state.patches[0].catalogue = {
+    ...catalogue,
+    systemId: catalogue.systemId + 1,
+  };
+  assert.throws(
+    () => applyConsolidation(state, admin, preview.sourceRevision),
+    /stale/,
+  );
+});
+
+test("consolidation change counts ignore Postgres JSON key ordering", () => {
+  const { state, admin } = fixture();
+  maintainLibraryMemberships(state);
+  state.libraryMemberships = state.libraryMemberships!.map((row) =>
+    Object.fromEntries(
+      Object.entries(row).sort(([a], [b]) => a.localeCompare(b)),
+    ),
+  ) as NonNullable<State["libraryMemberships"]>;
+  assert.equal(consolidationPreview(state, admin).membershipChanges, 0);
+  state.libraryMemberships![0].archetypeId = "damaged";
+  assert.equal(consolidationPreview(state, admin).membershipChanges, 1);
 });

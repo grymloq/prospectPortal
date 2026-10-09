@@ -9,11 +9,14 @@ import type {
   User,
 } from "../src/lib/types";
 import { libraryContextId, queryArmyLibrary } from "../src/server/army-library";
+import { catalogue } from "../src/lib/catalogue";
 import {
   archetypeId,
   classifyLibraryVersion,
   normalizeRosterIdentity,
   ROSTER_NORMALIZATION_VERSION,
+  consolidationPreview,
+  applyConsolidation,
 } from "../src/server/army-library-identity";
 import {
   libraryMetrics,
@@ -728,5 +731,51 @@ test("mission/deployment dimensions preserve pack/source/reference versions inst
     detail(state, a, "list-a", { missionId: libraryContextId(ref, pack) })
       .metrics.appearances,
     1,
+  );
+});
+
+test("legacy and newly imported same-patch configurations group together and retain authorized old links", () => {
+  const { state, a, admin } = fixture();
+  state.patches![0].catalogue = catalogue;
+  for (const version of state.armyVersions!) delete version.army.composition;
+  state.armyVersions![1].army.scope = { systemId: String(catalogue.systemId) };
+  state.libraryMemberships = state.armyVersions!.map((version) =>
+    classifyLibraryVersion(version),
+  );
+  const oldImportedId = state.libraryMemberships[1].archetypeId;
+  const originalSources = structuredClone({
+    versions: state.armyVersions,
+    lists: state.savedArmies,
+  });
+  const dto = queryArmyLibrary(state, a, { patchId: "p1", tab: "archetypes" });
+  assert.equal(dto.archetypes.length, 1);
+  assert.equal(dto.archetypes[0].publicLists, 2);
+  assert.equal(dto.archetypes[0].variations, 0);
+  assert.equal(dto.archetypes[0].unclassifiedLists, 2);
+  const oldDetail = queryArmyLibrary(state, a, {
+    patchId: "p1",
+    target: { kind: "archetype", id: oldImportedId },
+  });
+  assert.equal(oldDetail.detail!.target.id, dto.archetypes[0].id);
+  const preview = consolidationPreview(state, admin);
+  assert.equal(preview.membershipChanges, 1);
+  applyConsolidation(state, admin, preview.sourceRevision);
+  assert.equal(
+    state.libraryMemberships[0].archetypeId,
+    state.libraryMemberships[1].archetypeId,
+  );
+  assert.deepEqual(
+    { versions: state.armyVersions, lists: state.savedArmies },
+    originalSources,
+  );
+  assert.equal(consolidationPreview(state, admin).membershipChanges, 0);
+  state.savedArmies![1].shared = false;
+  assert.throws(
+    () =>
+      queryArmyLibrary(state, a, {
+        patchId: "p1",
+        target: { kind: "archetype", id: oldImportedId },
+      }),
+    /unavailable/,
   );
 });

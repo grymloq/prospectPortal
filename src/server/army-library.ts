@@ -17,7 +17,7 @@ import { createHash } from "node:crypto";
 import { defaultPatchId, initialPatch } from "@/lib/patches";
 import { armyKey } from "@/lib/matchups";
 import { scrimListsSubmitted } from "@/lib/scrims";
-import { archetypeId } from "./army-library-identity";
+import { archetypeId, libraryIdentityAliases } from "./army-library-identity";
 import { libraryDiscussionView } from "./library-discussions";
 import {
   filterLibraryObservations,
@@ -117,6 +117,7 @@ function matchesArmy(army: Army, name: string, filters: LibraryFilters) {
 }
 
 function publishedVersions(state: State) {
+  const aliases = libraryIdentityAliases(state);
   const users = new Map(state.users.map((user) => [user.id, user]));
   const shared = new Map(
     (state.savedArmies || [])
@@ -144,15 +145,19 @@ function publishedVersions(state: State) {
       version,
       membership: validMembership,
       archetypeId:
-        validMembership?.archetypeId ||
-        archetypeId(version.army, version.patchId),
+        (validMembership &&
+          (aliases.archetypes.get(validMembership.archetypeId) ||
+            validMembership.archetypeId)) ||
+        archetypeId(version.army, version.patchId, state),
       variationId:
         version.army.composition?.status === "complete"
-          ? validMembership?.variationId
+          ? validMembership?.variationId &&
+            (aliases.variations.get(validMembership.variationId) ||
+              validMembership.variationId)
           : undefined,
     });
   }
-  return { users, shared, versions };
+  return { users, shared, versions, aliases };
 }
 
 function publicRows(
@@ -191,7 +196,7 @@ function publicRows(
       army: compactArmy(army),
       patchId,
       versionId: selected?.version.id,
-      archetypeId: selected?.archetypeId || archetypeId(army, patchId),
+      archetypeId: selected?.archetypeId || archetypeId(army, patchId, state),
       variationId: selected?.variationId,
       compositionStatus: army.composition?.status || "unavailable",
       metrics: libraryMetrics([]),
@@ -230,7 +235,7 @@ function publicRows(
       ownerName: sources.users.get(matrix.userId)!.name,
       army,
       patchId: matrix.patchId,
-      archetypeId: archetypeId(army, matrix.patchId),
+      archetypeId: archetypeId(army, matrix.patchId, state),
       compositionStatus: "unavailable",
       metrics: libraryMetrics([]),
     });
@@ -252,13 +257,13 @@ function contributedObservations(
   for (const source of sources.shared.values())
     if (!source.currentVersionId)
       publicConfigurations.set(
-        archetypeId(source.army, source.patchId),
+        archetypeId(source.army, source.patchId, state),
         source.army,
       );
   for (const source of state.matrixLists || [])
     if (active(sources.users.get(source.userId)))
       publicConfigurations.set(
-        archetypeId(source.army, source.patchId),
+        archetypeId(source.army, source.patchId, state),
         source.army,
       );
   for (const game of state.games) {
@@ -350,7 +355,7 @@ function contributedObservations(
         ? publicEnemy
         : undefined;
     const independentlyPublicEnemy = publicConfigurations.get(
-      archetypeId(enemy, patchId),
+      archetypeId(enemy, patchId, state),
     );
     const observation: LibraryObservation = {
       matchId,
@@ -360,7 +365,7 @@ function contributedObservations(
       date,
       score,
       army: ownVersion?.version.army || own,
-      archetypeId: ownVersion?.archetypeId || archetypeId(own, patchId),
+      archetypeId: ownVersion?.archetypeId || archetypeId(own, patchId, state),
       listId: ownVersion?.version.listId,
       versionId: ownVersion?.version.id,
       variationId: ownVersion?.variationId,
@@ -369,7 +374,9 @@ function contributedObservations(
       opponentFactionName: enemy.factionName,
       opponentArchetypeId:
         enemyVersion?.archetypeId ||
-        (independentlyPublicEnemy ? archetypeId(enemy, patchId) : undefined),
+        (independentlyPublicEnemy
+          ? archetypeId(enemy, patchId, state)
+          : undefined),
       opponentArchetypeName: enemyVersion
         ? archetypeName(enemyVersion.version.army)
         : independentlyPublicEnemy
@@ -451,6 +458,7 @@ export function queryArmyLibrary(
 ): ArmyLibraryDTO {
   if (!active(state.users.find((user) => user.id === actor.id)))
     throw new Error("Confirmed membership required.");
+  const sources = publishedVersions(state);
   const filters: LibraryFilters = {
     patchId: query.patchId || defaultPatchId(state),
     search: query.search,
@@ -458,15 +466,20 @@ export function queryArmyLibrary(
     detachments: query.detachments,
     disposition: query.disposition,
     opponentFaction: query.opponentFaction,
-    opponentArchetypeId: query.opponentArchetypeId,
+    opponentArchetypeId:
+      query.opponentArchetypeId &&
+      (sources.aliases.archetypes.get(query.opponentArchetypeId) ||
+        query.opponentArchetypeId),
     opponentListId: query.opponentListId,
-    opponentVariationId: query.opponentVariationId,
+    opponentVariationId:
+      query.opponentVariationId &&
+      (sources.aliases.variations.get(query.opponentVariationId) ||
+        query.opponentVariationId),
     deploymentId: query.deploymentId,
     missionId: query.missionId,
     dateFrom: query.dateFrom,
     dateTo: query.dateTo,
   };
-  const sources = publishedVersions(state);
   const visibleRows = publicRows(state, filters, sources);
   const built = contributedObservations(state, sources);
   const observations = filterLibraryObservations(built.observations, filters);
@@ -568,7 +581,15 @@ export function queryArmyLibrary(
   rank(archetypes, query.sort);
   let detail: LibraryDetail | undefined;
   if (query.target) {
-    const target = query.target;
+    const target =
+      query.target.kind === "archetype"
+        ? {
+            ...query.target,
+            id:
+              sources.aliases.archetypes.get(query.target.id) ||
+              query.target.id,
+          }
+        : query.target;
     const list =
       target.kind === "list"
         ? rows.find((row) => row.id === target.id)

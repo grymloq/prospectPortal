@@ -94,16 +94,35 @@ export function normalizeRosterIdentity(
   return result;
 }
 
-export function archetypeId(army: Army, patchId: string): string {
+export function archetypeId(
+  army: Army,
+  patchId: string,
+  state?: Pick<State, "patches">,
+): string {
   const scope = army.scope;
   const continuity =
     scope?.systemId && scope.edition && scope.battleSize && scope.continuityKey
       ? ["verified", scope.continuityKey]
       : ["ruleset", patchId];
-  return `archetype-v1-${hash([scope?.systemId || "UNKNOWN", scope?.edition || "UNKNOWN", scope?.battleSize || "UNKNOWN", continuity, armyKey({ ...army, detachments: [...new Set(army.detachments)] })])}`;
+  const rulesetSystem = state?.patches?.find((patch) => patch.id === patchId)
+    ?.catalogue?.systemId;
+  // The saved ruleset already namespaces its system. Matching import metadata
+  // must not split a legacy configuration lacking that redundant field.
+  // Preserve explicit conflicts and fully verified cross-ruleset scope.
+  const system =
+    continuity[0] === "ruleset" &&
+    rulesetSystem !== undefined &&
+    scope?.systemId === String(rulesetSystem)
+      ? "UNKNOWN"
+      : scope?.systemId || "UNKNOWN";
+  return `archetype-v1-${hash([system, scope?.edition || "UNKNOWN", scope?.battleSize || "UNKNOWN", continuity, armyKey({ ...army, detachments: [...new Set(army.detachments)] })])}`;
 }
 
-export function variationId(army: Army, patchId: string): string | undefined {
+export function variationId(
+  army: Army,
+  patchId: string,
+  state?: Pick<State, "patches">,
+): string | undefined {
   const composition = army.composition;
   if (
     !composition ||
@@ -121,7 +140,7 @@ export function variationId(army: Army, patchId: string): string | undefined {
       composition.canonical !== canonicalRoster(composition)
     )
       return undefined;
-    return `variation-v1-${hash([archetypeId(army, patchId), fingerprint])}`;
+    return `variation-v1-${hash([archetypeId(army, patchId, state), fingerprint])}`;
   } catch {
     return undefined;
   }
@@ -129,14 +148,15 @@ export function variationId(army: Army, patchId: string): string | undefined {
 
 export function classifyLibraryVersion(
   version: ArmyListVersion,
+  state?: Pick<State, "patches">,
 ): LibraryMembership {
   return {
     id: `membership-v1-${hash([version.id, LIBRARY_CLASSIFICATION_VERSION])}`,
     listId: version.listId,
     versionId: version.id,
     patchId: version.patchId,
-    archetypeId: archetypeId(version.army, version.patchId),
-    variationId: variationId(version.army, version.patchId),
+    archetypeId: archetypeId(version.army, version.patchId, state),
+    variationId: variationId(version.army, version.patchId, state),
     classificationVersion: LIBRARY_CLASSIFICATION_VERSION,
     // Version creation is stable provenance, so repeated previews are deterministic.
     classifiedAt: version.createdAt,
@@ -163,7 +183,7 @@ export function maintainLibraryMemberships(
         !existing.has(version.id) &&
         (!affected || affected.has(version.listId)),
     )
-    .map(classifyLibraryVersion);
+    .map((version) => classifyLibraryVersion(version, state));
   if (additions.length)
     state.libraryMemberships = [...memberships, ...additions];
 }
@@ -200,9 +220,45 @@ function publicVersions(state: State): ArmyListVersion[] {
   );
 }
 
+/** Legacy links resolve only through sources independently visible now. */
+export function libraryIdentityAliases(state: State) {
+  const archetypes = new Map<string, string>();
+  const variations = new Map<string, string>();
+  const matrices = (state.matrixLists || []).filter((row) =>
+    state.users.some(
+      (user) =>
+        user.id === row.userId &&
+        user.confirmedMember &&
+        !user.removedAt &&
+        !user.accountDeletedAt,
+    ),
+  );
+  const sources = [
+    ...publicVersions(state).map((row) => ({
+      army: row.army,
+      patchId: row.patchId,
+    })),
+    ...matrices,
+  ];
+  for (const { army, patchId } of sources) {
+    const oldId = archetypeId(army, patchId);
+    const currentId = archetypeId(army, patchId, state);
+    if (oldId === currentId) continue;
+    archetypes.set(oldId, currentId);
+    const oldVariation = variationId(army, patchId);
+    const currentVariation = variationId(army, patchId, state);
+    if (oldVariation && currentVariation)
+      variations.set(oldVariation, currentVariation);
+  }
+  return { archetypes, variations };
+}
+
 function sourceRevision(state: State): string {
   // Include publication and classification inputs; changing privacy invalidates a preview.
   return hash({
+    rulesetSystems: (state.patches || [])
+      .map((patch) => [patch.id, patch.catalogue?.systemId])
+      .sort(),
     users: state.users
       .map((user) => [
         user.id,
@@ -236,7 +292,9 @@ export function consolidationPreview(
 ): ConsolidationPreview {
   requireAdmin(state, actor);
   const versions = publicVersions(state);
-  const memberships = versions.map(classifyLibraryVersion);
+  const memberships = versions.map((version) =>
+    classifyLibraryVersion(version, state),
+  );
   const publicIds = new Set(versions.map((version) => version.id));
   const existing = (state.libraryMemberships || []).filter((row) =>
     publicIds.has(row.versionId),
@@ -261,7 +319,18 @@ export function consolidationPreview(
     sourceRevision: sourceRevision(state),
     membershipChanges: memberships.filter((proposed) => {
       const prior = existing.find((row) => row.id === proposed.id);
-      return !prior || JSON.stringify(prior) !== JSON.stringify(proposed);
+      const fields = [
+        "id",
+        "listId",
+        "versionId",
+        "patchId",
+        "archetypeId",
+        "variationId",
+        "classificationVersion",
+        "classifiedAt",
+      ] as const;
+      // Postgres jsonb reorders object keys; ordering is not a membership edit.
+      return !prior || fields.some((field) => prior[field] !== proposed[field]);
     }).length,
     classificationVersion: LIBRARY_CLASSIFICATION_VERSION,
     newArchetypes: [...archetypes].filter((id) => !existingArchetypes.has(id))
@@ -276,7 +345,7 @@ export function consolidationPreview(
       0,
     ),
     unclassified: versions
-      .filter((version) => !variationId(version.army, version.patchId))
+      .filter((version) => !variationId(version.army, version.patchId, state))
       .map((version) => ({
         listId: version.listId,
         reason:

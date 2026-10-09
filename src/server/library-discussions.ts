@@ -9,7 +9,11 @@ import type {
   State,
   User,
 } from "@/lib/types";
-import { archetypeId, variationId } from "./army-library-identity";
+import {
+  archetypeId,
+  variationId,
+  libraryIdentityAliases,
+} from "./army-library-identity";
 
 const id = z.string().trim().min(1).max(200);
 const targetSchema = z.object({ kind: z.enum(["list", "archetype"]), id });
@@ -57,23 +61,72 @@ function publicSources(state: State) {
     active(users.get(matrix.userId)),
   );
   const archetypes = new Set([
-    ...versions.map((version) => archetypeId(version.army, version.patchId)),
-    ...matrices.map((matrix) => archetypeId(matrix.army, matrix.patchId)),
+    ...versions.map((version) =>
+      archetypeId(version.army, version.patchId, state),
+    ),
+    ...matrices.map((matrix) =>
+      archetypeId(matrix.army, matrix.patchId, state),
+    ),
   ]);
-  return { users, versions, matrices, archetypes };
+  return {
+    users,
+    versions,
+    matrices,
+    archetypes,
+    state,
+    aliases: libraryIdentityAliases(state),
+  };
 }
 type Sources = ReturnType<typeof publicSources>;
-function sameTarget(a: LibraryTarget, b: LibraryTarget) {
-  return a.kind === b.kind && a.id === b.id;
+function canonicalTarget(
+  sources: Sources,
+  target: LibraryTarget,
+): LibraryTarget {
+  return target.kind === "archetype"
+    ? { ...target, id: sources.aliases.archetypes.get(target.id) || target.id }
+    : target;
+}
+function canonicalContext(
+  sources: Sources,
+  context?: LibraryDiscussionContext,
+) {
+  if (!context) return context;
+  return {
+    ...(context.patchId ? { patchId: context.patchId } : {}),
+    ...(context.versionId ? { versionId: context.versionId } : {}),
+    ...(context.variationId
+      ? {
+          variationId:
+            sources.aliases.variations.get(context.variationId) ||
+            context.variationId,
+        }
+      : {}),
+    ...(context.opponentArchetypeId
+      ? {
+          opponentArchetypeId:
+            sources.aliases.archetypes.get(context.opponentArchetypeId) ||
+            context.opponentArchetypeId,
+        }
+      : {}),
+  };
+}
+function sameTarget(a: LibraryTarget, b: LibraryTarget, sources: Sources) {
+  return (
+    a.kind === b.kind &&
+    canonicalTarget(sources, a).id === canonicalTarget(sources, b).id
+  );
 }
 function targetVersions(sources: Sources, target: LibraryTarget) {
+  const { state } = sources;
+  target = canonicalTarget(sources, target);
   return sources.versions.filter((version) =>
     target.kind === "list"
       ? version.listId === target.id
-      : archetypeId(version.army, version.patchId) === target.id,
+      : archetypeId(version.army, version.patchId, state) === target.id,
   );
 }
 function visibleTarget(sources: Sources, target: LibraryTarget) {
+  target = canonicalTarget(sources, target);
   return target.kind === "archetype"
     ? sources.archetypes.has(target.id)
     : targetVersions(sources, target).length > 0 ||
@@ -84,6 +137,9 @@ function visibleContext(
   target: LibraryTarget,
   context?: LibraryDiscussionContext,
 ) {
+  const { state } = sources;
+  target = canonicalTarget(sources, target);
+  context = canonicalContext(sources, context);
   if (!visibleTarget(sources, target)) return false;
   if (!context) return true;
   const matrix =
@@ -110,7 +166,7 @@ function visibleContext(
       sources.matrices.some(
         (matrix) =>
           matrix.patchId === context.patchId &&
-          archetypeId(matrix.army, matrix.patchId) === target.id,
+          archetypeId(matrix.army, matrix.patchId, state) === target.id,
       )
     )
   )
@@ -126,7 +182,8 @@ function visibleContext(
     context.variationId &&
     !(referencedVersion ? [referencedVersion] : scopedVersions).some(
       (version) =>
-        variationId(version.army, version.patchId) === context.variationId,
+        variationId(version.army, version.patchId, state) ===
+        context.variationId,
     )
   )
     return false;
@@ -137,13 +194,13 @@ function visibleContext(
         !sources.versions.some(
           (version) =>
             version.patchId === context.patchId &&
-            archetypeId(version.army, version.patchId) ===
+            archetypeId(version.army, version.patchId, state) ===
               context.opponentArchetypeId,
         ) &&
         !sources.matrices.some(
           (entry) =>
             entry.patchId === context.patchId &&
-            archetypeId(entry.army, entry.patchId) ===
+            archetypeId(entry.army, entry.patchId, state) ===
               context.opponentArchetypeId,
         )))
   )
@@ -166,7 +223,8 @@ function discussionVisible(
     return false;
   if (!discussion.parentId) return true;
   const parent = rows.get(discussion.parentId);
-  if (!parent || !sameTarget(parent.target, discussion.target)) return false;
+  if (!parent || !sameTarget(parent.target, discussion.target, sources))
+    return false;
   visiting.add(discussion.id);
   return discussionVisible(sources, rows, parent, visiting);
 }
@@ -187,7 +245,7 @@ export function libraryDiscussionView(
   return [...rows.values()]
     .filter(
       (row) =>
-        sameTarget(row.target, target) &&
+        sameTarget(row.target, target, sources) &&
         discussionVisible(sources, rows, row) &&
         (!filters?.patchId ||
           filters.patchId === "all" ||
@@ -203,6 +261,10 @@ export function libraryDiscussionView(
     )
     .map((row) => ({
       ...structuredClone(row),
+      target: canonicalTarget(sources, row.target),
+      ...(row.context
+        ? { context: canonicalContext(sources, row.context) }
+        : {}),
       text: row.deletedAt ? "" : row.text,
     }));
 }
@@ -235,21 +297,25 @@ export function executeLibraryCommand(
       command.parentId &&
       (!parent ||
         parent.deletedAt ||
-        !sameTarget(parent.target, command.target) ||
+        !sameTarget(parent.target, command.target, sources) ||
         !discussionVisible(sources, rows, parent))
     )
       throw unavailable();
-    const context = parent?.context || command.context;
+    const context = canonicalContext(
+      sources,
+      parent?.context || command.context,
+    );
     if (
       parent &&
       command.context &&
-      JSON.stringify(command.context) !== JSON.stringify(parent.context)
+      JSON.stringify(canonicalContext(sources, command.context)) !==
+        JSON.stringify(canonicalContext(sources, parent.context))
     )
       throw unavailable();
     if (!visibleContext(sources, command.target, context)) throw unavailable();
     const row: LibraryDiscussion = {
       id: randomUUID(),
-      target: command.target,
+      target: canonicalTarget(sources, command.target),
       ...(parent ? { parentId: parent.id } : {}),
       ...(context ? { context: structuredClone(context) } : {}),
       authorId: current.id,

@@ -346,3 +346,52 @@ test("reply context cannot override ancestor context and validation bounds text"
     [],
   );
 });
+
+test("ruleset consolidation preserves old archetype discussion links and still revokes aliases with source visibility", () => {
+  const { state, owner, reader, post, army } = fixture();
+  army.scope = { systemId: String(catalogue.systemId) };
+  const oldTarget: LibraryTarget = {
+    kind: "archetype",
+    id: archetypeId(army, "patch"),
+  };
+  const original = post(owner, {
+    target: oldTarget,
+    context: { patchId: "patch", opponentArchetypeId: oldTarget.id },
+  });
+  original.context = { opponentArchetypeId: oldTarget.id, patchId: "patch" };
+  state.patches = [
+    { id: "patch", name: "Patch", date: "2026-10-09", catalogue },
+  ];
+  const target: LibraryTarget = {
+    kind: "archetype",
+    id: archetypeId(army, "patch", state),
+  };
+  assert.notEqual(target.id, oldTarget.id);
+  const visible = libraryDiscussionView(state, reader, target);
+  assert.equal(visible.length, 1);
+  assert.equal(visible[0].target.id, target.id);
+  assert.equal(visible[0].context!.opponentArchetypeId, target.id);
+  assert.equal(original.target.id, oldTarget.id);
+  executeLibraryCommand(state, reader, {
+    type: "libraryDiscussion",
+    target,
+    parentId: original.id,
+    context: visible[0].context,
+    text: "Reply after consolidation",
+  });
+  executeLibraryCommand(state, owner, {
+    type: "libraryDiscussionEdit",
+    id: original.id,
+    text: "Retained thread",
+  });
+  assert.equal(libraryDiscussionView(state, reader, oldTarget).length, 2);
+  state.savedArmies![0].shared = false;
+  assert.throws(
+    () => libraryDiscussionView(state, reader, oldTarget),
+    /unavailable/,
+  );
+  assert.throws(
+    () => libraryDiscussionView(state, reader, target),
+    /unavailable/,
+  );
+});
