@@ -1,4 +1,5 @@
 "use client";
+import { DetachmentNames } from "./detachment-name";
 import { FactionName } from "./faction-avatar";
 import { patchLabel } from "@/lib/patches";
 import { useState, useEffect, useId } from "react";
@@ -91,7 +92,7 @@ function GameArmyFields({
           <strong>{value.listName}</strong>
           <p>
             <FactionName name={saved.army.factionName} /> ·{" "}
-            {saved.army.detachmentNames.join(" + ")}
+            <DetachmentNames names={saved.army.detachmentNames} />
           </p>
           <Disposition name={saved.army.dispositionName} />
           <p>
@@ -630,7 +631,9 @@ export default function Journal({
                         <FactionName name={g.own.factionName} />
                       )}
                     </strong>
-                    <small>{g.own.detachmentNames.join(" + ")}</small>
+                    <small>
+                      <DetachmentNames names={g.own.detachmentNames} />
+                    </small>
                     <small>
                       <Disposition name={g.own.dispositionName} />
                     </small>
@@ -649,7 +652,9 @@ export default function Journal({
                         <FactionName name={g.enemy.factionName} />
                       )}
                     </small>
-                    <small>{g.enemy.detachmentNames.join(" + ")}</small>
+                    <small>
+                      <DetachmentNames names={g.enemy.detachmentNames} />
+                    </small>
                     <small>
                       <Disposition name={g.enemy.dispositionName} />
                     </small>
@@ -1082,7 +1087,12 @@ export default function Journal({
                 <h3>
                   <FactionName name={army.factionName} />
                 </h3>
-                <p>{army.detachmentNames.join(" · ")}</p>
+                <p>
+                  <DetachmentNames
+                    names={army.detachmentNames}
+                    separator=" · "
+                  />
+                </p>
                 <Badge>
                   <Disposition name={army.dispositionName} />
                 </Badge>

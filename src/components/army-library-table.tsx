@@ -15,6 +15,8 @@ import type {
 } from "@/lib/types";
 import { FactionName } from "./faction-avatar";
 import { Disposition } from "./disposition";
+import { ArmyUnitChange } from "./army-unit-change";
+import { DetachmentName, DetachmentNames } from "./detachment-name";
 import styles from "./army-library-table.module.css";
 
 type DataRow = LibraryListRow | LibraryArchetypeRow;
@@ -128,9 +130,18 @@ export function ArmyLibraryDataRow({
   const patchIds = list ? [row.patchId] : row.patchIds;
   const prefix = `${row.army.factionName} — `;
   const label =
-    !list && row.name.startsWith(prefix)
-      ? row.name.slice(prefix.length)
-      : row.name;
+    !list && row.name.startsWith(prefix) ? (
+      <>
+        <DetachmentNames
+          names={row.army.detachmentNames}
+          focusable={false}
+          fallback="No recorded detachments"
+        />{" "}
+        — {row.army.dispositionName}
+      </>
+    ) : (
+      row.name
+    );
   return (
     <tr
       className={`${styles.row} ${list ? styles.list : styles.archetype}`}
@@ -202,7 +213,7 @@ export function ArmyLibraryDataRow({
           (row.army.detachmentNames.length ? (
             row.army.detachmentNames.map((name, index) => (
               <span className={styles.line} key={`${index}:${name}`}>
-                {name}
+                <DetachmentName name={name} />
               </span>
             ))
           ) : (
@@ -233,21 +244,11 @@ export function ArmyLibraryDataRow({
             </span>
           ) : row.norm?.status === "different" ? (
             <>
-              {row.norm.addedUnits > 0 && (
-                <span className={styles.line}>
-                  +{row.norm.addedUnits} units
+              {row.norm.deviations.map((unit) => (
+                <span className={styles.line} key={unit.sourceId}>
+                  <ArmyUnitChange unit={unit} />
                 </span>
-              )}
-              {row.norm.removedUnits > 0 && (
-                <span className={styles.line}>
-                  −{row.norm.removedUnits} units
-                </span>
-              )}
-              {row.norm.changedUnits > 0 && (
-                <span className={styles.line}>
-                  {row.norm.changedUnits} unit types changed
-                </span>
-              )}
+              ))}
             </>
           ) : (
             <span className={styles.muted}>

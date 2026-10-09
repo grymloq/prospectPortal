@@ -1,4 +1,5 @@
 "use client";
+import { DetachmentNames } from "./detachment-name";
 import { FactionName } from "./faction-avatar";
 import { useState, useId, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -230,8 +231,11 @@ export default function MatchupTable({
                         <>
                           <FactionName name={a.army.factionName} />
                           <span>
-                            {a.army.detachmentNames.join(" + ") ||
-                              "No detachments"}
+                            <DetachmentNames
+                              names={a.army.detachmentNames}
+                              fallback="No detachments"
+                              focusable={false}
+                            />
                           </span>
                           <span className="matrix-army-heading">
                             <Disposition name={a.army.dispositionName} />

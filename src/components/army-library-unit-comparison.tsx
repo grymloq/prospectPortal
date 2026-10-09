@@ -1,4 +1,5 @@
 import type { LibraryNormComparison } from "@/lib/types";
+import { ArmyUnitChange } from "./army-unit-change";
 
 /** Render comparisons without creating a nested table in the library hierarchy. */
 export function ArmyLibraryUnitComparison({
@@ -38,16 +39,10 @@ export function ArmyLibraryUnitComparison({
               <ul>
                 {norm.deviations.map((unit) => (
                   <li key={unit.sourceId}>
-                    <strong>
-                      {unit.delta > 0
-                        ? `+${unit.delta}`
-                        : unit.delta < 0
-                          ? `−${Math.abs(unit.delta)}`
-                          : "Changed size"}{" "}
-                      {unit.name}
-                    </strong>{" "}
-                    · {unit.baselineQuantity} → {unit.listQuantity} units
-                    {unit.baselineModels !== unit.listModels &&
+                    <ArmyUnitChange unit={unit} /> · {unit.baselineQuantity} →{" "}
+                    {unit.listQuantity} units
+                    {unit.delta !== 0 &&
+                      unit.baselineModels !== unit.listModels &&
                       (unit.baselineModels !== undefined ||
                         unit.listModels !== undefined) &&
                       ` · ${unit.baselineModels ?? "unknown"} → ${unit.listModels ?? "unknown"} models`}
@@ -59,8 +54,9 @@ export function ArmyLibraryUnitComparison({
             )}
             {norm.compositionMatches === false && (
               <p>
-            The full roster composition differs from the standard. Expand the
-            roster below to inspect selected models, equipment and enhancements.
+                The full roster composition differs from the standard. Expand
+                the roster below to inspect selected models, equipment and
+                enhancements.
               </p>
             )}
           </>

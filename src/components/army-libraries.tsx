@@ -1,4 +1,5 @@
 "use client";
+import { DetachmentNames } from "./detachment-name";
 import { FactionName } from "./faction-avatar";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, RefreshCw, Search } from "lucide-react";
@@ -109,7 +110,10 @@ function Configuration({ army }: { army: Army }) {
         <FactionName name={army.factionName} />
       </strong>
       <span>
-        {army.detachmentNames.join(" + ") || "No recorded detachments"}
+        <DetachmentNames
+          names={army.detachmentNames}
+          fallback="No recorded detachments"
+        />
       </span>
       <Disposition name={army.dispositionName} />
     </div>

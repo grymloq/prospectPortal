@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { DetachmentNames } from "./detachment-name";
 import styles from "./multi-select-dropdown.module.css";
 
 export function MultiSelectDropdown({
@@ -87,7 +88,11 @@ export function MultiSelectDropdown({
         }}
       >
         <span id={`${id}-value`} className={styles.value} title={text}>
-          {text}
+          {names.length ? (
+            <DetachmentNames names={names} separator=", " focusable={false} />
+          ) : (
+            text
+          )}
         </span>
         <ChevronDown size={16} aria-hidden="true" />
       </button>

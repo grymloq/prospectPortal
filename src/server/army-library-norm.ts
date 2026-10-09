@@ -320,6 +320,7 @@ export function createLibraryNorms(
         0,
       ),
       changedUnits: comparison.deviations.length,
+      deviations: comparison.deviations,
       isDefault:
         !!versionId &&
         comparison.standard?.selection === "marked" &&

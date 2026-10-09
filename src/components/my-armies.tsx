@@ -1,4 +1,5 @@
 "use client";
+import { DetachmentNames } from "./detachment-name";
 import { FactionName } from "./faction-avatar";
 import { useEffect, useState } from "react";
 import {
@@ -215,8 +216,10 @@ export default function MyArmies({
                           <Disposition name={a.army.dispositionName} />
                         </div>
                         <p className={styles.detachments}>
-                          {a.army.detachmentNames.join(" + ") ||
-                            "No detachment"}
+                          <DetachmentNames
+                            names={a.army.detachmentNames}
+                            fallback="No detachment"
+                          />
                         </p>
                       </div>
                       <div className={styles.actions}>

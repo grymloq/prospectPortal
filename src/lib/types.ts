@@ -200,6 +200,8 @@ export type LibraryNormSummary = {
   addedUnits: number;
   removedUnits: number;
   changedUnits: number;
+  /** Public unit deltas only; equipment and complete rosters remain in details. */
+  deviations: LibraryUnitDeviation[];
   isDefault: boolean;
   canSetDefault: boolean;
   defaultRevision: number;

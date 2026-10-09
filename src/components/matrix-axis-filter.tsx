@@ -1,4 +1,5 @@
 "use client";
+import { DetachmentNames } from "./detachment-name";
 import { FactionName } from "./faction-avatar";
 import type { ReactNode } from "react";
 import type { MatrixArmy } from "@/lib/matchups";
@@ -88,7 +89,10 @@ export function AxisFilter({
               {a.army.listName && <>{a.army.listName} · </>}
               <FactionName name={a.army.factionName} />
               {a.army.detachmentNames.length > 0 && (
-                <> · {a.army.detachmentNames.join(" + ")}</>
+                <>
+                  {" "}
+                  · <DetachmentNames names={a.army.detachmentNames} />
+                </>
               )}{" "}
               · <Disposition name={a.army.dispositionName} />
             </>

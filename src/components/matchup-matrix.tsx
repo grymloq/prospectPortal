@@ -1,4 +1,5 @@
 "use client";
+import { DetachmentNames } from "./detachment-name";
 import { FactionName } from "./faction-avatar";
 import { useMemo, useState } from "react";
 import type { View } from "@/lib/types";
@@ -309,7 +310,7 @@ export default function MatchupMatrix({
             .map((c, i) => (
               <p key={i}>
                 {c.army.listName || c.army.factionName} ·{" "}
-                {c.army.detachmentNames.join(" + ")} ·{" "}
+                <DetachmentNames names={c.army.detachmentNames} /> ·{" "}
                 <Disposition name={c.army.dispositionName} /> · {c.authorName} ·{" "}
                 {new Date(c.updatedAt).toLocaleString()}
               </p>
@@ -330,8 +331,10 @@ export default function MatchupMatrix({
                 <FactionName name={detail.row.army.factionName} />
               </h3>
               <p>
-                {detail.row.army.detachmentNames.join(" + ") ||
-                  "No detachments"}{" "}
+                <DetachmentNames
+                  names={detail.row.army.detachmentNames}
+                  fallback="No detachments"
+                />{" "}
                 · <Disposition name={detail.row.army.dispositionName} />
               </p>
             </>

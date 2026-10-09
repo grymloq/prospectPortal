@@ -1,4 +1,5 @@
 "use client";
+import { DetachmentNames } from "./detachment-name";
 import { FactionName } from "./faction-avatar";
 import { useId, useState } from "react";
 import {
@@ -146,7 +147,9 @@ export default function MobileMatchups({
                         <FactionName name={column.army.factionName} />
                       </ArmyListLink>
                       <Disposition name={column.army.dispositionName} />
-                      <p>{column.army.detachmentNames.join(" + ")}</p>
+                      <p>
+                        <DetachmentNames names={column.army.detachmentNames} />
+                      </p>
                     </div>
                     <div className={styles.average}>
                       <strong>

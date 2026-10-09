@@ -331,6 +331,7 @@ test("unit deviations aggregate namespaced units and separate nested models and 
   assert.equal(summary.addedUnits, 3);
   assert.equal(summary.removedUnits, 1);
   assert.equal(summary.changedUnits, 3);
+  assert.deepEqual(summary.deviations, comparison.deviations);
 });
 
 test("model-size changes are visible even when unit count is unchanged", () => {
