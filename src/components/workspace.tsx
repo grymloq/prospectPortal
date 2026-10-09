@@ -1,4 +1,5 @@
 "use client";
+import { FactionCredits } from "./faction-avatar";
 import TeamLogo from "@/components/team-logo";
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
@@ -566,6 +567,7 @@ export default function Workspace({
                 settings={currentPage === "Settings"}
               />
             )}
+            <FactionCredits />
           </div>
         </main>
         <MobileNavigation

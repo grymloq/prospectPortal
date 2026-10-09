@@ -1,4 +1,5 @@
 "use client";
+import { FactionName } from "./faction-avatar";
 import { useEffect, useState } from "react";
 import {
   ChevronDown,
@@ -178,8 +179,10 @@ export default function MyArmies({
                 aria-label={faction.name}
               >
                 <h3 className={styles.factionHeading}>
-                  {faction.name}
-                  <span>{faction.entries.length}</span>
+                  <FactionName name={faction.name} />
+                  <span className={styles.factionCount}>
+                    {faction.entries.length}
+                  </span>
                 </h3>
                 {faction.entries.map((a) => {
                   const name = a.army.listName || a.army.factionName;

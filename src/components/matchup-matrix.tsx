@@ -1,4 +1,5 @@
 "use client";
+import { FactionName } from "./faction-avatar";
 import { useMemo, useState } from "react";
 import type { View } from "@/lib/types";
 import { cellKey, layouts, type MatrixArmy } from "@/lib/matchups";
@@ -325,7 +326,8 @@ export default function MatchupMatrix({
           {!detail.column && (
             <>
               <h3>
-                #{codes.get(detail.row.key)} · {detail.row.army.factionName}
+                #{codes.get(detail.row.key)} ·{" "}
+                <FactionName name={detail.row.army.factionName} />
               </h3>
               <p>
                 {detail.row.army.detachmentNames.join(" + ") ||

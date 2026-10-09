@@ -1,4 +1,5 @@
 "use client";
+import { FactionName } from "./faction-avatar";
 import { patchLabel } from "@/lib/patches";
 import { useState, useEffect, useId } from "react";
 import { Plus, Search, Pencil, Trash2, Check } from "lucide-react";
@@ -89,7 +90,8 @@ function GameArmyFields({
         <div className="army-summary">
           <strong>{value.listName}</strong>
           <p>
-            {saved.army.factionName} · {saved.army.detachmentNames.join(" + ")}
+            <FactionName name={saved.army.factionName} /> ·{" "}
+            {saved.army.detachmentNames.join(" + ")}
           </p>
           <Disposition name={saved.army.dispositionName} />
           <p>
@@ -622,10 +624,10 @@ export default function Journal({
                           url={g.own.listUrl}
                           name={g.own.listName || g.own.factionName}
                         >
-                          {g.own.factionName}
+                          <FactionName name={g.own.factionName} />
                         </ArmyListLink>
                       ) : (
-                        g.own.factionName
+                        <FactionName name={g.own.factionName} />
                       )}
                     </strong>
                     <small>{g.own.detachmentNames.join(" + ")}</small>
@@ -641,10 +643,10 @@ export default function Journal({
                           url={g.enemy.listUrl}
                           name={g.enemy.listName || g.enemy.factionName}
                         >
-                          {g.enemy.factionName}
+                          <FactionName name={g.enemy.factionName} />
                         </ArmyListLink>
                       ) : (
-                        g.enemy.factionName
+                        <FactionName name={g.enemy.factionName} />
                       )}
                     </small>
                     <small>{g.enemy.detachmentNames.join(" + ")}</small>
@@ -1077,7 +1079,9 @@ export default function Journal({
             ].map(({ title, army }) => (
               <section className="army-summary" key={title}>
                 <small>{title}</small>
-                <h3>{army.factionName}</h3>
+                <h3>
+                  <FactionName name={army.factionName} />
+                </h3>
                 <p>{army.detachmentNames.join(" · ")}</p>
                 <Badge>
                   <Disposition name={army.dispositionName} />

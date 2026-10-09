@@ -1,4 +1,5 @@
 "use client";
+import { FactionName } from "./faction-avatar";
 import { isScrimCaptain } from "@/lib/scrims";
 import { useState } from "react";
 import type { Layout, Scrim, ScrimPairing, View } from "@/lib/types";
@@ -63,7 +64,8 @@ export default function ScrimPairings({
                   {a.name} vs {b.name}
                 </strong>
                 <p>
-                  {a.army?.factionName} vs {b.army?.factionName} · Layout{" "}
+                  {a.army && <FactionName name={a.army.factionName} />} vs{" "}
+                  {b.army && <FactionName name={b.army.factionName} />} · Layout{" "}
                   {pair.layout}
                 </p>
                 <p>

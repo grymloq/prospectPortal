@@ -1,4 +1,5 @@
 "use client";
+import { FactionName } from "./faction-avatar";
 import { isScrimCaptain } from "@/lib/scrims";
 import { useState } from "react";
 import type { Scrim, ScrimEntry, ScrimTeam, View } from "@/lib/types";
@@ -126,7 +127,9 @@ export default function ScrimRoster({
               {player.name}
               {player.army && (
                 <>
-                  {` - ${player.army.factionName} - `}
+                  {" - "}
+                  <FactionName name={player.army.factionName} />
+                  {" - "}
                   <Disposition name={player.army.dispositionName} />
                 </>
               )}

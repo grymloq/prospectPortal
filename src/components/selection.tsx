@@ -1,4 +1,5 @@
 "use client";
+import { FactionName } from "./faction-avatar";
 import { useState } from "react";
 import {
   ArrowRight,
@@ -253,7 +254,9 @@ export default function Selection({
                         <Avatar name={u.name} />
                         <strong>{u.name}</strong>
                       </div>
-                      <p>{factionName(u.faction)}</p>
+                      <p>
+                        <FactionName name={factionName(u.faction)} />
+                      </p>
                       <div className="row between">
                         <small>
                           {view.games.filter((g) => g.userId === u.id).length}{" "}

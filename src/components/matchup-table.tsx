@@ -1,4 +1,5 @@
 "use client";
+import { FactionName } from "./faction-avatar";
 import { useState, useId, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -67,7 +68,7 @@ function MatchupTooltip({
             {[row, column].map((item, i) => (
               <div className="matrix-tooltip-army" key={i}>
                 <div className="matrix-tooltip-heading">
-                  {item.army.factionName} -{" "}
+                  <FactionName name={item.army.factionName} /> -{" "}
                   <Disposition name={item.army.dispositionName} />
                 </div>
                 <div>
@@ -227,7 +228,7 @@ export default function MatchupTable({
                     >
                       {opponentDetails ? (
                         <>
-                          <span>{a.army.factionName}</span>
+                          <FactionName name={a.army.factionName} />
                           <span>
                             {a.army.detachmentNames.join(" + ") ||
                               "No detachments"}
@@ -239,7 +240,8 @@ export default function MatchupTable({
                       ) : columnNames?.[a.key] ? (
                         <>
                           <span className="matrix-team-name">
-                            {columnNames[a.key]} - {a.army.factionName}
+                            {columnNames[a.key]} -{" "}
+                            <FactionName name={a.army.factionName} />
                           </span>
                           <span className="matrix-army-heading">
                             <Disposition name={a.army.dispositionName} />
@@ -249,7 +251,7 @@ export default function MatchupTable({
                         <>
                           {" "}
                           <span className="matrix-army-heading">
-                            {a.army.factionName} -{" "}
+                            <FactionName name={a.army.factionName} /> -{" "}
                             <Disposition name={a.army.dispositionName} />
                           </span>
                           <small>{a.army.listName || a.army.factionName}</small>
@@ -312,7 +314,8 @@ export default function MatchupTable({
                       {rowNames?.[row.key] ? (
                         <>
                           <span className="matrix-team-name">
-                            {rowNames[row.key]} - {row.army.factionName}
+                            {rowNames[row.key]} -{" "}
+                            <FactionName name={row.army.factionName} />
                           </span>
                           <span className="matrix-army-heading">
                             <Disposition name={row.army.dispositionName} />
@@ -322,7 +325,7 @@ export default function MatchupTable({
                         <>
                           {" "}
                           <span className="matrix-army-heading">
-                            {row.army.factionName} -{" "}
+                            <FactionName name={row.army.factionName} /> -{" "}
                             <Disposition name={row.army.dispositionName} />
                           </span>
                           <small>

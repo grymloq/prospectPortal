@@ -1,4 +1,5 @@
 "use client";
+import { FactionName } from "./faction-avatar";
 import { useState } from "react";
 import type { Scrim, View, RecordedGameContext } from "@/lib/types";
 import RecordedContextFields from "./game-context-fields";
@@ -86,7 +87,8 @@ export default function ScrimReport({
           <section key={entry.id}>
             <strong>{entry.name}</strong>
             <p>
-              {entry.army?.listName} · {entry.army?.factionName}
+              {entry.army?.listName} ·{" "}
+              {entry.army && <FactionName name={entry.army.factionName} />}
             </p>
             <p>{entry.army?.detachmentNames.join(" + ")}</p>
             <Disposition name={entry.army?.dispositionName || ""} />

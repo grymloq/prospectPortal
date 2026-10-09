@@ -1,4 +1,5 @@
 "use client";
+import { FactionName } from "./faction-avatar";
 import type { ReactNode } from "react";
 import type { MatrixArmy } from "@/lib/matchups";
 import { Disposition } from "./disposition";
@@ -65,7 +66,7 @@ export function AxisFilter({
     ...new Map(
       armies.map((a) => [a.army.faction, a.army.factionName]),
     ).entries(),
-  ].map(([id, label]) => ({ id, label }));
+  ].map(([id, label]) => ({ id, label: <FactionName name={label} /> }));
   const available = armies.filter(
     (a) => !value.factions.length || value.factions.includes(a.army.faction),
   );
@@ -84,13 +85,11 @@ export function AxisFilter({
           id: a.key,
           label: (
             <>
-              {[
-                a.army.listName,
-                a.army.factionName,
-                a.army.detachmentNames.join(" + "),
-              ]
-                .filter(Boolean)
-                .join(" · ")}{" "}
+              {a.army.listName && <>{a.army.listName} · </>}
+              <FactionName name={a.army.factionName} />
+              {a.army.detachmentNames.length > 0 && (
+                <> · {a.army.detachmentNames.join(" + ")}</>
+              )}{" "}
               · <Disposition name={a.army.dispositionName} />
             </>
           ),

@@ -1,4 +1,5 @@
 "use client";
+import { FactionName } from "./faction-avatar";
 import { useId, useState } from "react";
 import {
   cellKey,
@@ -109,7 +110,7 @@ export default function MobileMatchups({
               url={row.army.listUrl}
               name={name(row, rowNames)}
             >
-              <span>{row.army.factionName}</span>
+              <FactionName name={row.army.factionName} />
             </ArmyListLink>
             <Disposition name={row.army.dispositionName} />
           </div>
@@ -142,7 +143,7 @@ export default function MobileMatchups({
                         className={styles.listHeading}
                       >
                         <strong>{name(column, columnNames)}</strong>
-                        <span>{column.army.factionName}</span>
+                        <FactionName name={column.army.factionName} />
                       </ArmyListLink>
                       <Disposition name={column.army.dispositionName} />
                       <p>{column.army.detachmentNames.join(" + ")}</p>

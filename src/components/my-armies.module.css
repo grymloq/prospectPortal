@@ -66,7 +66,7 @@
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
 }
-.factionHeading span {
+.factionCount {
   color: var(--muted);
   font-weight: 400;
 }

@@ -1,4 +1,5 @@
 "use client";
+import { FactionName } from "./faction-avatar";
 import { useState } from "react";
 import {
   MapPin,
@@ -92,12 +93,16 @@ export default function Profile({
         <div className="profile-identity">
           <h2>{user.name}</h2>
           <p>
-            {preferredFactions
-              .map(
-                (id) =>
-                  armies.find((f) => f.id === id)?.name || factionName(id),
-              )
-              .join(", ") || "No preferred armies"}{" "}
+            {preferredFactions.length
+              ? preferredFactions.map((id) => (
+                  <FactionName
+                    key={id}
+                    name={
+                      armies.find((f) => f.id === id)?.name || factionName(id)
+                    }
+                  />
+                ))
+              : "No preferred armies"}{" "}
             <span>·</span> <MapPin size={14} />
             {user.city || "Location not set"}
           </p>
@@ -158,7 +163,7 @@ export default function Profile({
                       value={f.id}
                       defaultChecked={preferredFactions.includes(f.id)}
                     />
-                    <span>{f.name}</span>
+                    <FactionName name={f.name} />
                   </label>
                 ))}
               </div>
@@ -240,7 +245,8 @@ export default function Profile({
                     <div>
                       <strong>vs. {g.opponent}</strong>
                       <small>
-                        {g.enemy.factionName} · {dateLabel(g.date)}
+                        <FactionName name={g.enemy.factionName} /> ·{" "}
+                        {dateLabel(g.date)}
                       </small>
                     </div>
                     <Badge
@@ -295,7 +301,9 @@ export default function Profile({
                         );
                         return (
                           <tr key={name}>
-                            <td>{name}</td>
+                            <td>
+                              <FactionName name={name} />
+                            </td>
                             <td>{games.length}</td>
                             <td>
                               {games.filter((g) => g.outcome === "Win").length}{" "}

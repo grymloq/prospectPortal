@@ -1,4 +1,5 @@
 "use client";
+import { FactionName } from "./faction-avatar";
 import { useState } from "react";
 import {
   ArrowRight,
@@ -216,7 +217,9 @@ export default function Prospects({
                             </span>
                           </button>
                         </td>
-                        <td>{factionName(u.faction)}</td>
+                        <td>
+                          <FactionName name={factionName(u.faction)} />
+                        </td>
                         <td>
                           <Badge tone={phaseTone(view, u)}>
                             {phaseName(view, u)}

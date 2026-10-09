@@ -1,4 +1,5 @@
 "use client";
+import { FactionName } from "./faction-avatar";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, RefreshCw, Search } from "lucide-react";
 import type {
@@ -94,7 +95,9 @@ function Metrics({
 function Configuration({ army }: { army: Army }) {
   return (
     <div className={styles.configuration}>
-      <strong>{army.factionName}</strong>
+      <strong>
+        <FactionName name={army.factionName} />
+      </strong>
       <span>
         {army.detachmentNames.join(" + ") || "No recorded detachments"}
       </span>
@@ -919,7 +922,13 @@ export default function ArmyLibraries({
                             key={`${m.dimension}:${m.id}`}
                           >
                             <div>
-                              <strong>{m.label}</strong>
+                              <strong>
+                                {m.dimension === "faction" ? (
+                                  <FactionName name={m.label} />
+                                ) : (
+                                  m.label
+                                )}
+                              </strong>
                               <small>{m.dimension}</small>
                             </div>
                             <Metrics metrics={m.metrics} />
@@ -941,7 +950,13 @@ export default function ArmyLibraries({
                           className={styles.row}
                           key={`${m.dimension}:${m.id}`}
                         >
-                          <strong>{m.label}</strong>
+                          <strong>
+                            {m.dimension === "faction" ? (
+                              <FactionName name={m.label} />
+                            ) : (
+                              m.label
+                            )}
+                          </strong>
                           <Metrics metrics={m.metrics} />
                         </article>
                       ))}

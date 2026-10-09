@@ -1,0 +1,218 @@
+[
+  {
+    "name": "Adepta Sororitas",
+    "slug": "adepta-sororitas",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Adepta-Sororitas.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Adeptus Custodes",
+    "slug": "adeptus-custodes",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/08/Custodian.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Adeptus Mechanicus",
+    "slug": "adeptus-mechanicus",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Adeptus-Mechanicus.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Adeptus Titanicus",
+    "slug": "adeptus-titanicus",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/08/Adeptus-Titanicus.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Aeldari",
+    "slug": "aeldari",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Aeldari.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Agents of the Imperium",
+    "slug": "agents-of-the-imperium",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Inquisitors-V2.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Astra Militarum",
+    "slug": "astra-militarum",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Astra-Militarum.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Black Templars",
+    "slug": "black-templars",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/08/Black-Templars.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Blood Angels",
+    "slug": "blood-angels",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/08/Blood-Angels.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Chaos Daemons",
+    "slug": "chaos-daemons",
+    "sourceUrl": "https://artwork.40k.gallery/wp-content/uploads/2026/08/Chaos-Undivided.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Chaos Knights",
+    "slug": "chaos-knights",
+    "sourceUrl": "https://certseeds.github.io/wh40k-icon/assets/questor-traitoris.DHxaeBdD.svg",
+    "credit": "wh40k-icon"
+  },
+  {
+    "name": "Chaos Space Marines",
+    "slug": "chaos-space-marines",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Chaos-Space-Marines.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Dark Angels",
+    "slug": "dark-angels",
+    "sourceUrl": "https://artwork.40k.gallery/wp-content/uploads/2026/09/Dark-Angels.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Death Guard",
+    "slug": "death-guard",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Death-Guard.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Deathwatch",
+    "slug": "deathwatch",
+    "sourceUrl": "https://artwork.40k.gallery/wp-content/uploads/2026/09/Deathwatch.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Drukhari",
+    "slug": "drukhari",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Drukhari.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Emperor's Children",
+    "slug": "emperor-s-children",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Emperors-Children.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Genestealer Cults",
+    "slug": "genestealer-cults",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Genestealer-Cults.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Grey Knights",
+    "slug": "grey-knights",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Grey-Knights.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Imperial Fists",
+    "slug": "imperial-fists",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Imperial-Fists.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Imperial Knights",
+    "slug": "imperial-knights",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Imperial-Knights.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Iron Hands",
+    "slug": "iron-hands",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Iron-Hands.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Leagues of Votann",
+    "slug": "leagues-of-votann",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Leagues-of-Votann.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Necrons",
+    "slug": "necrons",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Necrons.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Orks",
+    "slug": "orks",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Orks.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Raven Guard",
+    "slug": "raven-guard",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Raven-Guard.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Salamanders",
+    "slug": "salamanders",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Salamanders.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Space Marines",
+    "slug": "space-marines",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Space-Marines.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Space Wolves",
+    "slug": "space-wolves",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Space-Wolves.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "T'au Empire",
+    "slug": "t-au-empire",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Tau-Empire.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Thousand Sons",
+    "slug": "thousand-sons",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Thousand-Sons.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Titanicus Traitoris",
+    "slug": "titanicus-traitoris",
+    "sourceUrl": "https://certseeds.github.io/wh40k-icon/assets/titanicus-traitoris.Dm0yr6g2.svg",
+    "credit": "wh40k-icon"
+  },
+  {
+    "name": "Tyranids",
+    "slug": "tyranids",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Tyranids.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "Ultramarines",
+    "slug": "ultramarines",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/Ultramarines.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "White Scars",
+    "slug": "white-scars",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/White-Scars.svg",
+    "credit": "40K Gallery"
+  },
+  {
+    "name": "World Eaters",
+    "slug": "world-eaters",
+    "sourceUrl": "https://40k.gallery/wp-content/uploads/2026/09/World-Eaters.svg",
+    "credit": "40K Gallery"
+  }
+]
