@@ -1212,6 +1212,8 @@ td small {
   margin-left: auto;
 }
 .army-summary {
+  min-width: 0;
+  overflow-wrap: anywhere;
   padding: 22px;
   background: #f4f7fb;
   border-radius: 7px;

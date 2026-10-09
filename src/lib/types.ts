@@ -54,6 +54,7 @@ export type RosterSelection = {
   name: string;
   kind: "unit" | "model" | "option" | "enhancement";
   quantity: number;
+  quantityKnown?: boolean;
   selections: RosterSelection[];
 };
 export type RosterComposition = {
@@ -287,6 +288,7 @@ export type ArmyLibraryDTO = {
   policy: { leadingMinimumMatches: number; uncertainty: string };
 };
 export type ConsolidationPreview = {
+  membershipChanges?: number;
   sourceRevision: string;
   classificationVersion: string;
   newArchetypes: number;

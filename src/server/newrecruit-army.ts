@@ -129,6 +129,9 @@ function selectedComposition(
       name: node.name || "Unknown selection",
       kind,
       quantity: node.amount ?? 1,
+      ...(node.amount === undefined && (!node.options?.length || unit)
+        ? { quantityKnown: false }
+        : {}),
       selections: (node.options || []).flatMap((child) => {
         const result = selection(child, false, catalogue);
         return result ? [result] : [];

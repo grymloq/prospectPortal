@@ -39,6 +39,7 @@ export function canonicalRoster(composition: RosterComposition): string {
         selection.sourceId,
         selection.kind,
         selections(selection.selections, depth + 1),
+        ...(selection.quantityKnown === false ? ["unknown-quantity"] : []),
       ];
       const key = JSON.stringify(identity);
       const previous = merged.get(key);
@@ -72,6 +73,20 @@ export function normalizeRosterIdentity(
   const result = structuredClone(composition);
   delete result.canonical;
   delete result.fingerprint;
+  const unknownQuantity = (nodes: RosterSelection[]): boolean =>
+    nodes.some(
+      (node) =>
+        node.quantityKnown === false || unknownQuantity(node.selections),
+    );
+  if (result.status === "complete" && unknownQuantity(result.selections)) {
+    result.status = "partial";
+    result.reasons = [
+      ...new Set([
+        ...result.reasons,
+        "A selected roster entry has an unknown quantity.",
+      ]),
+    ];
+  }
   if (result.status === "complete") {
     result.canonical = canonicalRoster(result);
     result.fingerprint = rosterFingerprint(result);
@@ -244,6 +259,10 @@ export function consolidationPreview(
     }
   return {
     sourceRevision: sourceRevision(state),
+    membershipChanges: memberships.filter((proposed) => {
+      const prior = existing.find((row) => row.id === proposed.id);
+      return !prior || JSON.stringify(prior) !== JSON.stringify(proposed);
+    }).length,
     classificationVersion: LIBRARY_CLASSIFICATION_VERSION,
     newArchetypes: [...archetypes].filter((id) => !existingArchetypes.has(id))
       .length,
@@ -278,5 +297,11 @@ export function applyConsolidation(
     throw new Error(
       "Consolidation preview is stale. Preview again before applying.",
     );
+  const proposed = new Map(
+    consolidationPreview(state, actor).memberships.map((row) => [row.id, row]),
+  );
+  state.libraryMemberships = (state.libraryMemberships || []).map(
+    (row) => proposed.get(row.id) || row,
+  );
   maintainLibraryMemberships(state);
 }

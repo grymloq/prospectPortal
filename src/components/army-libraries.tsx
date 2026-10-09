@@ -108,7 +108,8 @@ function Composition({ selections }: { selections: RosterSelection[] }) {
       {selections.map((s, i) => (
         <li key={`${s.sourceId}:${i}`}>
           <span>
-            {s.quantity} × {s.name}
+            {s.quantityKnown === false ? "Unknown quantity" : s.quantity} ×{" "}
+            {s.name}
           </span>
           {s.selections.length > 0 && <Composition selections={s.selections} />}
         </li>
@@ -1378,6 +1379,8 @@ export default function ArmyLibraries({
             {preview.existingArchetypes} existing archetypes ·{" "}
             {preview.newVariations} new variations ·{" "}
             {preview.duplicateCompositions} duplicate compositions
+            {" · "}
+            {preview.membershipChanges || 0} membership changes
           </p>
           <p>{preview.unclassified.length} unclassified list snapshots</p>
           {preview.unclassified.length > 0 && (

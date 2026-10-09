@@ -19,6 +19,7 @@ const selection: z.ZodType<RosterSelection> = z.lazy(() =>
     name: z.string().max(300),
     kind: z.enum(["unit", "model", "option", "enhancement"]),
     quantity: z.number().int().min(1).max(10000),
+    quantityKnown: z.boolean().optional(),
     selections: z.array(selection).max(500),
   }),
 );

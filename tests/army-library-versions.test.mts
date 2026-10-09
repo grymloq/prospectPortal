@@ -245,3 +245,61 @@ test("discussion pagination keeps ancestors visible while all authorized replies
   }
   assert.equal(seen.size, 41);
 });
+
+test("unknown roster quantities stay visibly unknown and cannot become exact variations", async () => {
+  const { normalizeRosterIdentity, variationId } =
+    await import("../src/server/army-library-identity");
+  const { army, source } = fixture();
+  const composition = normalizeRosterIdentity({
+    status: "complete",
+    normalizationVersion: "newrecruit-selected-v1",
+    reasons: [],
+    source: {
+      provider: "newrecruit",
+      systemId: "system",
+      catalogueId: "catalogue",
+    },
+    selections: [
+      {
+        sourceId: "newrecruit:system:catalogue:unit",
+        name: "Quantity unavailable",
+        kind: "unit",
+        quantity: 1,
+        quantityKnown: false,
+        selections: [],
+      },
+    ],
+  });
+  assert.equal(composition.status, "partial");
+  assert.equal(composition.selections[0].quantityKnown, false);
+  assert.equal(composition.fingerprint, undefined);
+  assert.equal(
+    variationId({ ...army, composition }, source.patchId!),
+    undefined,
+  );
+});
+
+test("admin consolidation repairs derived memberships without mutating original lists or history", async () => {
+  const { consolidationPreview, applyConsolidation } =
+    await import("../src/server/army-library-identity");
+  const { state, actor, source, army } = fixture();
+  execute(state, actor, { type: "saveArmy", patchId: source.patchId, army });
+  const saved = state.savedArmies![0];
+  execute(state, actor, { type: "shareArmy", id: saved.id, shared: true });
+  const expected = structuredClone(state.libraryMemberships![0]);
+  const originals = structuredClone({
+    lists: state.savedArmies,
+    versions: state.armyVersions,
+  });
+  state.libraryMemberships![0].archetypeId = "corrupted-derived-id";
+  const admin = state.users.find((u) => u.role === "admin")!;
+  const preview = consolidationPreview(state, admin);
+  assert.equal(preview.membershipChanges, 1);
+  applyConsolidation(state, admin, preview.sourceRevision);
+  assert.deepEqual(state.libraryMemberships![0], expected);
+  assert.deepEqual(
+    { lists: state.savedArmies, versions: state.armyVersions },
+    originals,
+  );
+  assert.equal(consolidationPreview(state, admin).membershipChanges, 0);
+});

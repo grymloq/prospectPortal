@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { mkdtemp, mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { testScrimHttp } from "./test-scrim-http.mjs";
+import { testArmyLibraryHttp } from "./test-army-library-http.mjs";
 await mkdir(".local", { recursive: true });
 const scratch = await mkdtemp(path.resolve(".local/http-qa-"));
 const origin = "http://127.0.0.1:3107";
@@ -662,6 +663,7 @@ try {
     assert.equal(readNotifications.status, 200);
     assert.ok(readNotifications.data.notifications.every((n) => n.readAt));
   });
+  await testArmyLibraryHttp({ request, check, admin, player });
   await testScrimHttp({ request, check, admin, player });
   const deniedPreview = await request(
     "/api/admin/view-as",
