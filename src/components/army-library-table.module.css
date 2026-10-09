@@ -1,0 +1,99 @@
+.scroll {
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.scroll:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+.table {
+  min-width: 1240px;
+  table-layout: fixed;
+}
+.table th,
+.table td {
+  padding: 12px 10px;
+}
+.table td {
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+.table th:first-child,
+.table td:first-child {
+  position: sticky;
+  left: 0;
+  width: 180px;
+  z-index: 1;
+  box-shadow: 1px 0 0 var(--border);
+}
+.table td:first-child {
+  background: white;
+}
+.row {
+  cursor: pointer;
+}
+.row:hover td,
+.row:focus-within td {
+  background: #fafcfe;
+}
+.row:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: -2px;
+}
+.name,
+.sort {
+  min-height: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--navy);
+  text-align: left;
+}
+.name {
+  display: block;
+  font-size: var(--text-small);
+  font-weight: 650;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.sort {
+  gap: 5px;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+.sort svg {
+  flex: none;
+}
+.line,
+.patch {
+  display: block;
+}
+.line + .line,
+.patch + .patch {
+  margin-top: 4px;
+}
+.table :global(.disposition-label) {
+  white-space: normal;
+}
+.number {
+  font-variant-numeric: tabular-nums;
+}
+.number,
+.trend {
+  min-width: 70px;
+}
+.muted {
+  color: var(--muted);
+}
+.note {
+  margin: 12px 0 0;
+  font-size: var(--text-small);
+}
+@media (max-width: 600px) {
+  .table th:first-child,
+  .table td:first-child {
+    width: 130px;
+  }
+}

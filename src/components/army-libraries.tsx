@@ -16,6 +16,7 @@ import type {
 import { PageHeading, Field, Badge, Empty, Modal, dateLabel } from "./ui";
 import { Disposition } from "./disposition";
 import { MultiSelectDropdown } from "./multi-select-dropdown";
+import { ArmyLibraryTable } from "./army-library-table";
 import { ArmyListLink } from "./army-list-drawer";
 import type { Mutate } from "./workspace";
 import styles from "./army-libraries.module.css";
@@ -582,52 +583,14 @@ export default function ArmyLibraries({
       {loading && <p role="status">Loading Army libraries…</p>}
       {!loading && library && !query.target && (
         <section className="panel padded">
-          {(query.tab === "lists" ? library.lists : library.archetypes).map(
-            (row) => (
-              <article className={styles.row} key={row.id}>
-                <div className={styles.rowInfo}>
-                  <button
-                    className={styles.name}
-                    onClick={() =>
-                      open({
-                        kind: query.tab === "lists" ? "list" : "archetype",
-                        id: row.id,
-                      })
-                    }
-                  >
-                    {"ownerName" in row ? row.name : row.army.factionName}
-                  </button>
-                  <Configuration army={row.army} />
-                  {"ownerName" in row ? (
-                    <small>
-                      {row.ownerName}
-                      {row.kind === "matrix"
-                        ? " · Configuration only"
-                        : ` · ${patchName(row.patchId)} · ${row.compositionStatus === "complete" ? "Complete roster" : "Unclassified roster"}`}
-                    </small>
-                  ) : (
-                    <small>
-                      {row.variations} variations · {row.publicLists} lists ·{" "}
-                      {row.unclassifiedLists} unclassified
-                    </small>
-                  )}
-                  {row.recentTrend && query.patchId !== "all" && (
-                    <small
-                      title={`Observed average score change from ${row.recentTrend.from} (${row.recentTrend.previousMatches} matches) to ${row.recentTrend.to} (${row.recentTrend.currentMatches} matches)`}
-                      aria-label={`Observed average score change ${row.recentTrend.change >= 0 ? "+" : ""}${row.recentTrend.change.toFixed(1)} out of 20, from ${row.recentTrend.from}, ${row.recentTrend.previousMatches} matches, to ${row.recentTrend.to}, ${row.recentTrend.currentMatches} matches`}
-                    >
-                      Observed {row.recentTrend.change >= 0 ? "+" : ""}
-                      {row.recentTrend.change.toFixed(1)} /20
-                    </small>
-                  )}
-                </div>
-                <Metrics
-                  metrics={row.metrics}
-                  compact
-                  segmented={query.patchId === "all"}
-                />
-              </article>
-            ),
+          {library.total > 0 && (
+            <ArmyLibraryTable
+              library={library}
+              sort={query.sort}
+              segmented={query.patchId === "all"}
+              onSort={(sort) => changeQuery({ sort })}
+              onOpen={open}
+            />
           )}
           {library.total === 0 && (
             <Empty
