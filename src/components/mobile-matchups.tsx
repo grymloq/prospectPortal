@@ -150,6 +150,7 @@ export default function MobileMatchups({
                       <div key={layout}>
                         <small>Layout {layout}</small>
                         <MatrixLayoutScore
+                          layout={layout}
                           label={`Layout ${layout}: ${name(row, rowNames)} versus ${name(column, columnNames)}`}
                           value={cell?.[layout]}
                           logged={data.cells?.get(key)?.[layout]}

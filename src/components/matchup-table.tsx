@@ -1,5 +1,5 @@
 "use client";
-import { useState, type ReactNode } from "react";
+import { useState, type KeyboardEvent, type ReactNode } from "react";
 import {
   armyKey,
   cellKey,
@@ -33,6 +33,41 @@ function tone(average: number, count: number) {
 }
 const toggle = (keys: string[], key: string) =>
   keys.includes(key) ? keys.filter((k) => k !== key) : [...keys, key];
+
+function tabThroughScores(event: KeyboardEvent<HTMLTableElement>) {
+  if (
+    event.key !== "Tab" ||
+    !(event.target instanceof HTMLElement) ||
+    !event.target.hasAttribute("data-matrix-layout") ||
+    event.target.matches('[aria-disabled="true"]')
+  )
+    return;
+  // Walk each player column down the currently visible opponent rows.
+  const rows = Array.from(event.currentTarget.tBodies[0]?.rows || []).map(
+    (row) => Array.from(row.querySelectorAll<HTMLElement>(".matrix-cell")),
+  );
+  const fields = (rows[0] || []).flatMap((_, column) =>
+    rows.flatMap((row) =>
+      Array.from(
+        row[column]?.querySelectorAll<HTMLElement>("[data-matrix-layout]") || [],
+      ),
+    ),
+  );
+  const direction = event.shiftKey ? -1 : 1;
+  const current = fields.indexOf(event.target);
+  if (current < 0) return;
+  for (
+    let next = current + direction;
+    next >= 0 && next < fields.length;
+    next += direction
+  ) {
+    const field = fields[next];
+    if (field.matches(':disabled, [aria-disabled="true"]')) continue;
+    event.preventDefault();
+    field.focus();
+    return;
+  }
+}
 export default function MatchupTable({
   rows,
   columns,
@@ -130,6 +165,7 @@ export default function MatchupTable({
               minWidth: 190 + (averageAxes ? 40 : 0) + visibleRows.length * 140,
             }}
             onMouseLeave={() => setHover({})}
+            onKeyDown={tabThroughScores}
             onBlur={(e) => {
               if (!e.currentTarget.contains(e.relatedTarget)) setHover({});
             }}

@@ -29,6 +29,7 @@ export default memo(
     return layouts.map((layout) => (
       <MatrixLayoutScore
         key={layout}
+        layout={layout}
         label={`Layout ${layout}: ${props.label}`}
         value={props.value?.[layout]}
         logged={props.logged?.[layout]}

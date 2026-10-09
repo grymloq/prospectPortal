@@ -2,10 +2,12 @@
 
 import { useRef, useState } from "react";
 import type { Estimate } from "@/lib/matchups";
+import type { Layout } from "@/lib/types";
 import styles from "./matrix-layout-score.module.css";
 
 export default function MatrixLayoutScore({
   label,
+  layout,
   value,
   logged,
   manual,
@@ -13,6 +15,7 @@ export default function MatrixLayoutScore({
   onError,
 }: {
   label: string;
+  layout: Layout;
   value?: Estimate;
   logged?: Estimate;
   manual: boolean;
@@ -98,6 +101,7 @@ export default function MatrixLayoutScore({
       onFocus={(event) => event.currentTarget.select()}
       className={styles.input}
       aria-label={label}
+      data-matrix-layout={layout}
       aria-invalid={invalid}
       type="text"
       inputMode="decimal"
@@ -133,6 +137,7 @@ export default function MatrixLayoutScore({
       type="button"
       aria-disabled={!onSave || busy}
       aria-busy={busy}
+      data-matrix-layout={layout}
       className={`${styles.score} ${tone}`}
       aria-label={`${label}: ${score === null ? "unknown" : score}${manual ? ", manual estimate" : ""}${delta ? `, ${delta} compared with logs` : ""}`}
       title={`${label}${logged?.count ? ` · Logged average ${logged.average.toFixed(1)} from ${logged.count} games` : " · No logged games"}${onSave ? " · Click to edit" : ""}`}
