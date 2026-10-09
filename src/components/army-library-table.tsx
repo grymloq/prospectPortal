@@ -97,11 +97,11 @@ export function ArmyLibraryFactionRow({
           {row.archetypes} {row.archetypes === 1 ? "archetype" : "archetypes"}
         </small>
       </td>
-      {Array.from({ length: 5 }, (_, i) => (
+      {Array.from({ length: 4 }, (_, i) => (
         <td key={i} />
       ))}
       <td className={styles.number}>{row.lists}</td>
-      {Array.from({ length: 5 }, (_, i) => (
+      {Array.from({ length: 2 }, (_, i) => (
         <td key={i} />
       ))}
     </tr>
@@ -208,7 +208,6 @@ export function ArmyLibraryDataRow({
           )}
         </div>
       </td>
-      <td>{list ? row.ownerName : null}</td>
       <td>
         {!list &&
           (row.army.detachmentNames.length ? (
@@ -272,7 +271,6 @@ export function ArmyLibraryDataRow({
           </>
         )}
       </td>
-      <td className={styles.number}>{!list && row.variations}</td>
       <td className={styles.number}>
         {segmented ? (
           <span className={styles.muted}>By ruleset</span>
@@ -286,11 +284,6 @@ export function ArmyLibraryDataRow({
         )}
       </td>
       <td className={styles.number}>
-        {row.metrics.recordedMatches}
-        <small>{row.metrics.appearances} appearances</small>
-      </td>
-      <td className={styles.number}>{row.metrics.contributors}</td>
-      <td className={styles.number}>
         {segmented ? (
           <span className={styles.muted}>By ruleset</span>
         ) : row.recentTrend ? (
@@ -301,10 +294,6 @@ export function ArmyLibraryDataRow({
             </strong>
             <small>
               {row.recentTrend.from} → {row.recentTrend.to}
-            </small>
-            <small>
-              {row.recentTrend.previousMatches} →{" "}
-              {row.recentTrend.currentMatches} matches
             </small>
           </>
         ) : (
@@ -317,7 +306,7 @@ export function ArmyLibraryDataRow({
 export function ArmyLibraryInlineRow({ children }: { children: ReactNode }) {
   return (
     <tr data-level="content">
-      <td colSpan={12} className={styles.expanded}>
+      <td colSpan={8} className={styles.expanded}>
         <div>{children}</div>
       </td>
     </tr>
@@ -372,16 +361,12 @@ export function ArmyLibraryTable({
           <thead>
             <tr>
               {sortable("Army", "name")}
-              <th scope="col">Owner</th>
               <th scope="col">Detachments</th>
               <th scope="col">Disposition</th>
               <th scope="col">Ruleset</th>
               <th scope="col">Unit changes</th>
               <th scope="col">Lists</th>
-              <th scope="col">Variations</th>
               {sortable("Average /20", "score")}
-              {sortable("Matches", "matches")}
-              <th scope="col">Contributors</th>
               <th scope="col">Recent trend</th>
             </tr>
           </thead>
@@ -389,8 +374,7 @@ export function ArmyLibraryTable({
         </table>
       </div>
       <p className={styles.note}>
-        Scroll horizontally to view all columns. Matches are distinct recorded
-        games; appearances count contributed army perspectives.{" "}
+        Scroll horizontally to view all columns.{" "}
         {segmented
           ? "Scores and trends are separated by ruleset."
           : "Trend shows the change in observed average score."}

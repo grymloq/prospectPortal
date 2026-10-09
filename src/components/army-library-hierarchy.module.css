@@ -7,19 +7,12 @@
   color: var(--muted);
   font-size: var(--text-small);
 }
-.actions,
 .configuration,
 .pages {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-}
-.actions {
-  margin-bottom: 12px;
-}
-.actions > button {
-  margin-left: auto;
 }
 .configuration {
   font-size: var(--text-small);
@@ -37,7 +30,4 @@
   font-size: var(--text-small);
   color: var(--muted);
   margin: 12px 0;
-}
-.preview h4 {
-  margin: 16px 0 8px;
 }

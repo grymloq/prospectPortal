@@ -9,7 +9,7 @@
   outline-offset: 2px;
 }
 .table {
-  min-width: 1510px;
+  min-width: 1100px;
   table-layout: fixed;
 }
 .table th,
@@ -37,7 +37,7 @@
 .table th:last-child {
   width: 130px;
 }
-.table th:nth-child(6) {
+.table th:nth-child(5) {
   width: 230px;
 }
 .row {

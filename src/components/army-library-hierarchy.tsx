@@ -13,8 +13,6 @@ import {
   ArmyLibraryFactionRow,
   ArmyLibraryInlineRow,
 } from "./army-library-table";
-import { ArmyListLink } from "./army-list-drawer";
-import { ArmyLibraryUnitComparison } from "./army-library-unit-comparison";
 import { ArmyRoster } from "./army-roster";
 import styles from "./army-library-hierarchy.module.css";
 
@@ -164,36 +162,11 @@ function ListPreview({
       className={styles.preview}
       aria-label={`List overview: ${row.name}`}
     >
-      <div className={styles.actions}>
-        <button
-          className="small"
-          onClick={() =>
-            navigation.onOpen({ kind: "list", id: row.id }, row.versionId)
-          }
-        >
-          View list details
-        </button>
-        {(detail.currentSourceUrl || detail.army.listUrl) && (
-          <ArmyListLink
-            url={detail.currentSourceUrl || detail.army.listUrl}
-            name={detail.name}
-          >
-            View current external source
-          </ArmyListLink>
-        )}
-      </div>
-      <p className={styles.status}>
-        Saved by {detail.ownerName || row.ownerName} ·{" "}
-        {data.patches.find((p) => p.id === row.patchId)?.name ||
-          "Unknown ruleset"}
-      </p>
-      <ArmyLibraryUnitComparison norm={detail.norm} />
       {detail.army.composition?.selections.length ? (
         <>
-          <h4>
-            Published roster
-            {detail.army.composition.status === "partial" ? " · Partial" : ""}
-          </h4>
+          {detail.army.composition.status === "partial" && (
+            <p className={styles.status}>Partial roster.</p>
+          )}
           <ArmyRoster composition={detail.army.composition} />
         </>
       ) : (
