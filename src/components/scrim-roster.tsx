@@ -1,7 +1,7 @@
 "use client";
 import { FactionName } from "./faction-avatar";
 import { isScrimCaptain } from "@/lib/scrims";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type {
   Scrim,
   ScrimEntry,
@@ -410,6 +410,7 @@ function ListEditor({
   const [textReview, setTextReview] = useState<NewRecruitTextReview | null>(
     null,
   );
+  const [textReading, setTextReading] = useState(false);
   const [textChoices, setTextChoices] = useState<{
     detachments: string[];
     disposition: string;
@@ -421,6 +422,32 @@ function ListEditor({
   const [error, setError] = useState("");
   const rules =
     view.patches.find((p) => p.id === scrim.patchId)?.catalogue || catalogue;
+  useEffect(() => {
+    if (method !== "own" || !listText.trim()) return;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setTextReading(true);
+      try {
+        const response = await fetch("/api/army-import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ listText, patchId: scrim.patchId }),
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+        if (!controller.signal.aborted) setTextReview(data.review);
+      } catch (error) {
+        if (!controller.signal.aborted) setError((error as Error).message);
+      } finally {
+        if (!controller.signal.aborted) setTextReading(false);
+      }
+    }, 400);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [method, listText, scrim.patchId]);
   const saved = (view.savedArmies || [])
     .filter((a) => a.userId === entry.userId && a.patchId === scrim.patchId)
     .sort((a, b) =>
@@ -453,6 +480,8 @@ function ListEditor({
           textChoices,
         },
         restore: (draft) => {
+          if (draft.method !== method || draft.listText !== listText)
+            setTextReading(draft.method === "own" && !!draft.listText.trim());
           setMethod(draft.method);
           setListText(draft.listText);
           setImportedArmy(draft.importedArmy);
@@ -489,8 +518,10 @@ function ListEditor({
             disabled={busy}
             aria-pressed={method === value}
             onClick={() => {
+              if (value === method) return;
               setMethod(value);
               setError("");
+              setTextReading(value === "own" && !!listText.trim());
             }}
           >
             {label}
@@ -652,18 +683,26 @@ function ListEditor({
                     placeholder="Paste your New Recruit list export here…"
                     value={listText}
                     onChange={(e) => {
+                      if (e.target.value === listText) return;
                       setListText(e.target.value);
                       setTextReview(null);
                       setTextChoices({ detachments: [], disposition: "" });
+                      setTextReading(!!e.target.value.trim());
                       setError("");
                     }}
                   />
                 </Field>
                 <p className={styles.muted}>
                   Paste a GW, Simple, NR, Short or Tournament export. If it
-                  omits required choices, only those choices are requested. Your
-                  text and line breaks are kept as entered.
+                  omits detachments or force disposition, their inputs appear
+                  automatically below. Your text and line breaks are kept as
+                  entered.
                 </p>
+                {textReading && (
+                  <p className={styles.muted} role="status">
+                    Reading list…
+                  </p>
+                )}
                 {textReview && (
                   <p>
                     {textReview.format} format · {textReview.unitCount} units ·{" "}
@@ -805,7 +844,8 @@ function ListEditor({
                 (method !== "own" && !army) ||
                 (method === "saved" && !selected) ||
                 (method === "own" &&
-                  (!listText.trim() ||
+                  (textReading ||
+                    !listText.trim() ||
                     (textReview?.missing.includes("detachments") &&
                       !textChoices.detachments.length) ||
                     (textReview?.missing.includes("disposition") &&
