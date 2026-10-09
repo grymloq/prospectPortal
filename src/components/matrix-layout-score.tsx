@@ -25,6 +25,7 @@ export default function MatrixLayoutScore({
   const button = useRef<HTMLButtonElement>(null);
   const saving = useRef(false);
   const cancelled = useRef(false);
+  const restoringFocus = useRef(false);
   // Capture the edited value for conflict checks; queued saves advance their revisions.
   const [edit, setEdit] = useState<{
     text: string;
@@ -52,6 +53,13 @@ export default function MatrixLayoutScore({
         : score < 10
           ? "matrix-loss"
           : "matrix-draw";
+  function startEditing() {
+    if (!onSave || busy || saving.current) return;
+    cancelled.current = false;
+    onError("");
+    const initial = score === null ? "" : String(score);
+    setEdit({ text: initial, initial, expectedScore: score, save: onSave });
+  }
   async function save() {
     if (!edit || saving.current || cancelled.current) return;
     const raw = edit.text.trim();
@@ -111,7 +119,11 @@ export default function MatrixLayoutScore({
           cancelled.current = true;
           onError("");
           setEdit(null);
-          queueMicrotask(() => button.current?.focus());
+          queueMicrotask(() => {
+            restoringFocus.current = true;
+            button.current?.focus();
+            restoringFocus.current = false;
+          });
         }
       }}
     />
@@ -124,21 +136,14 @@ export default function MatrixLayoutScore({
       className={`${styles.score} ${tone}`}
       aria-label={`${label}: ${score === null ? "unknown" : score}${manual ? ", manual estimate" : ""}${delta ? `, ${delta} compared with logs` : ""}`}
       title={`${label}${logged?.count ? ` · Logged average ${logged.average.toFixed(1)} from ${logged.count} games` : " · No logged games"}${onSave ? " · Click to edit" : ""}`}
-      onClick={
-        onSave && !busy
-          ? () => {
-              cancelled.current = false;
-              onError("");
-              const initial = score === null ? "" : String(score);
-              setEdit({
-                text: initial,
-                initial,
-                expectedScore: score,
-                save: onSave,
-              });
-            }
-          : undefined
-      }
+      onFocus={(event) => {
+        if (
+          !restoringFocus.current &&
+          event.currentTarget.matches(":focus-visible")
+        )
+          startEditing();
+      }}
+      onClick={onSave && !busy ? startEditing : undefined}
     >
       {score === null ? "—" : score.toFixed(1)}
       {manual && !delta ? "*" : ""}
