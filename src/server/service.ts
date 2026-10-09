@@ -10,6 +10,7 @@ import { z } from "zod";
 import type { State, User, View, Army } from "@/lib/types";
 import { armySnapshot, catalogue } from "@/lib/catalogue";
 import { publicUser } from "./public-user";
+import { armyFromNewRecruitText } from "./newrecruit-text";
 import { armyKey, outcomeForScore } from "@/lib/matchups";
 import { ensurePatches, defaultPatchId } from "@/lib/patches";
 import { ensureMembership, requireMember } from "./membership";
@@ -92,7 +93,14 @@ const commands = z.discriminatedUnion("type", [
     type: z.literal("saveArmy"),
     id: id.optional(),
     patchId: id,
-    army,
+    army: army.optional(),
+    listText: z.string().min(1).max(100000).optional(),
+    textConfiguration: z
+      .object({
+        detachments: z.array(id).max(3).optional(),
+        disposition: id.optional(),
+      })
+      .optional(),
     expectedRevision: z.number().int().min(1).optional(),
   }),
   z.object({
@@ -472,8 +480,24 @@ function executeCommand(s: State, actor: User, input: unknown) {
         throw new Error("You can edit only your own army lists.");
       const patch = s.patches!.find((p) => p.id === c.patchId && !p.removedAt);
       if (!patch) throw new Error("Choose an available rules patch.");
-      if (!c.army.listName?.trim()) throw new Error("Name your army list.");
-      const snapshot = armySnapshot(c.army, patch.catalogue || catalogue, 3);
+      if (!!c.army === (c.listText !== undefined))
+        throw new Error(
+          "Choose either an army configuration or pasted list text.",
+        );
+      if (c.textConfiguration && c.listText === undefined)
+        throw new Error(
+          "Missing choices are only available for pasted list text.",
+        );
+      if (c.army && !c.army.listName?.trim())
+        throw new Error("Name your army list.");
+      const snapshot =
+        c.listText !== undefined
+          ? armyFromNewRecruitText(
+              c.listText,
+              patch.catalogue || catalogue,
+              c.textConfiguration,
+            )
+          : armySnapshot(c.army!, patch.catalogue || catalogue, 3);
       if (snapshot.composition)
         snapshot.composition = normalizeRosterIdentity(snapshot.composition);
       s.savedArmies ||= [];

@@ -604,6 +604,110 @@ try {
     (await request("/api/state", null, player.cookie)).data.savedArmies.length,
     0,
   );
+  const armyText = `HTTP pasted army (75 Points)\n${game.own.factionName}\n${game.own.detachmentNames.join(", ")}\n${game.own.dispositionName}\n\nCHARACTERS\nFixture leader (75 Points)\n  • 1x Fixture weapon\n`;
+  const textCommand = {
+    type: "saveArmy",
+    patchId: game.patchId,
+    listText: armyText,
+  };
+  const textSaved = await request("/api/state", textCommand, registered.cookie);
+  assert.equal(textSaved.status, 200, JSON.stringify(textSaved.data));
+  const pastedArmy = textSaved.data.savedArmies.find(
+    (a) => a.army.listText === armyText,
+  );
+  const textReload = await request("/api/state", null, registered.cookie);
+  check(
+    "My armies saves pasted text with a summary privately and rejects conflicting configuration",
+    () => {
+      assert.equal(pastedArmy.shared, false);
+      assert.equal(pastedArmy.army.summary.units[0].name, "Fixture leader");
+      assert.ok(pastedArmy.army.summary.archetypeId);
+      assert.equal(
+        textReload.data.savedArmies.find((a) => a.id === pastedArmy.id).army
+          .listText,
+        armyText,
+      );
+    },
+  );
+  assert.equal(
+    (await request("/api/state", null, player.cookie)).data.savedArmies.length,
+    0,
+  );
+  assert.equal(
+    (
+      await request(
+        "/api/state",
+        {
+          ...textCommand,
+          id: pastedArmy.id,
+          expectedRevision: pastedArmy.listRevision,
+        },
+        player.cookie,
+      )
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await request(
+        "/api/state",
+        { ...textCommand, army: game.own },
+        registered.cookie,
+      )
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await request(
+        "/api/state",
+        {
+          ...textCommand,
+          textConfiguration: { disposition: game.own.disposition },
+        },
+        registered.cookie,
+      )
+    ).status,
+    400,
+  );
+  const incompleteText = `HTTP missing choices (75 Points)\n${game.own.factionName}\n\nCHARACTERS\nFixture leader (75 Points)\n  • 1x Fixture weapon\n`;
+  const missingCommand = { ...textCommand, listText: incompleteText };
+  const missingReview = await request(
+    "/api/army-import",
+    { patchId: game.patchId, listText: incompleteText },
+    registered.cookie,
+  );
+  assert.equal(missingReview.status, 200, JSON.stringify(missingReview.data));
+  assert.deepEqual(missingReview.data.review.missing, [
+    "detachments",
+    "disposition",
+  ]);
+  assert.equal(
+    (await request("/api/state", missingCommand, registered.cookie)).status,
+    400,
+  );
+  const completedText = await request(
+    "/api/state",
+    {
+      ...missingCommand,
+      textConfiguration: {
+        detachments: game.own.detachments,
+        disposition: game.own.disposition,
+      },
+    },
+    registered.cookie,
+  );
+  assert.equal(completedText.status, 200, JSON.stringify(completedText.data));
+  check(
+    "pasted armies require only absent detachment and disposition choices",
+    () => {
+      const army = completedText.data.savedArmies.find(
+        (a) => a.army.listText === incompleteText,
+      ).army;
+      assert.deepEqual(army.detachments, game.own.detachments);
+      assert.equal(army.disposition, game.own.disposition);
+    },
+  );
   const goal = await request(
     "/api/state",
     {

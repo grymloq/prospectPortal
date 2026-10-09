@@ -9,12 +9,12 @@ import type {
   View,
   NewRecruitTextReview,
 } from "@/lib/types";
-import { catalogue, dispositionsFor } from "@/lib/catalogue";
+import { catalogue } from "@/lib/catalogue";
 import { onScrimTeam, rosterWarnings } from "@/lib/scrims";
 import { ArmyFields, type Choice } from "./journal";
 import { ArmyListLink } from "./army-list-drawer";
 import { Disposition } from "./disposition";
-import { DispositionPicker } from "./disposition-picker";
+import { ArmyTextEntry } from "./army-text-entry";
 import { Badge, Field, Modal } from "./ui";
 import type { Mutate } from "./workspace";
 import styles from "./scrims.module.css";
@@ -673,103 +673,22 @@ function ListEditor({
         >
           <fieldset className={styles.listFields} disabled={busy}>
             {method === "own" ? (
-              <>
-                <Field label="Army-list text">
-                  <textarea
-                    autoFocus
-                    required
-                    rows={14}
-                    maxLength={100000}
-                    className={styles.listText}
-                    placeholder="Paste your New Recruit list export here…"
-                    value={listText}
-                    onChange={(e) => {
-                      if (e.target.value === listText) return;
-                      setListText(e.target.value);
-                      setTextReview(null);
-                      setTextChoices({ detachments: [], disposition: "" });
-                      setTextReading(!!e.target.value.trim());
-                      setError("");
-                    }}
-                  />
-                </Field>
-                <p className={styles.muted}>
-                  Paste a GW, Simple, NR, Short or Tournament export. If it
-                  omits detachments or force disposition, their inputs appear
-                  automatically below. Your text and line breaks are kept as
-                  entered.
-                </p>
-                {textReading && (
-                  <p className={styles.muted} role="status">
-                    Reading list…
-                  </p>
-                )}
-                {textReview && (
-                  <p>
-                    {textReview.format} format · {textReview.unitCount} units ·{" "}
-                    {textReview.factionName}
-                  </p>
-                )}
-                {textReview?.missing.includes("detachments") && (
-                  <fieldset className={styles.choices}>
-                    <legend>Detachments missing from this export</legend>
-                    {rules.factions
-                      .find((f) => f.id === textReview.faction)
-                      ?.detachments.map((detachment) => (
-                        <label key={detachment.id}>
-                          <input
-                            type="checkbox"
-                            disabled={
-                              !textChoices.detachments.includes(
-                                detachment.id,
-                              ) &&
-                              (textChoices.detachments.length >= 3 ||
-                                textChoices.detachments.reduce(
-                                  (total, id) =>
-                                    total +
-                                    (rules.factions
-                                      .find((f) => f.id === textReview.faction)
-                                      ?.detachments.find((d) => d.id === id)
-                                      ?.points || 0),
-                                  0,
-                                ) +
-                                  detachment.points >
-                                  3)
-                            }
-                            checked={textChoices.detachments.includes(
-                              detachment.id,
-                            )}
-                            onChange={(e) =>
-                              setTextChoices({
-                                detachments: e.target.checked
-                                  ? [...textChoices.detachments, detachment.id]
-                                  : textChoices.detachments.filter(
-                                      (id) => id !== detachment.id,
-                                    ),
-                                disposition: "",
-                              })
-                            }
-                          />
-                          {detachment.name} ({detachment.points} DP)
-                        </label>
-                      ))}
-                  </fieldset>
-                )}
-                {textReview?.missing.includes("disposition") && (
-                  <DispositionPicker
-                    legend="Force disposition missing from this export"
-                    available={dispositionsFor(
-                      textReview.faction,
-                      textReview.detachments || textChoices.detachments,
-                      rules,
-                    )}
-                    value={textChoices.disposition}
-                    onChange={(disposition) =>
-                      setTextChoices({ ...textChoices, disposition })
-                    }
-                  />
-                )}
-              </>
+              <ArmyTextEntry
+                listText={listText}
+                onTextChange={(value) => {
+                  if (value === listText) return;
+                  setListText(value);
+                  setTextReview(null);
+                  setTextChoices({ detachments: [], disposition: "" });
+                  setTextReading(!!value.trim());
+                  setError("");
+                }}
+                review={textReview}
+                reading={textReading}
+                choices={textChoices}
+                onChoicesChange={setTextChoices}
+                rules={rules}
+              />
             ) : method === "import" && importedArmy ? (
               <>
                 <Field label="Army-list name">

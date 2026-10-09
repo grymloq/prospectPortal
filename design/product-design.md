@@ -18,6 +18,8 @@ The player profile is the central workspace: game history and statistics, develo
 
 **Confirmed:** Players can import a New Recruit shared-list link into the army editor for a selected ruleset. Import fills the list name, faction, detachments, disposition, and source link; players review and save it. The import must match the selected ruleset and obey the 3-DP limit.
 
+**Confirmed — army text entry (10 October 2026):** Add army list in My armies offers Import (New Recruit shared-list link) and Enter own (paste a GW, Simple, NR, Short or Tournament export). Text is read automatically; only missing detachments and force disposition require form inputs, using the shared disposition selector. Complete text exports do not require the manual army configuration or name fields. Every created list receives the army library's summary and archetype classification and remains private by default.
+
 **Confirmed:** Players can choose a personal default saved army. New games prefill that army and its ruleset when available. Opponent names support @ player selection from a directory exposing only active player IDs and names; that player's shared armies appear first for the selected ruleset. Private armies remain private.
 
 **Proposed:** Selection remains a human decision. Evaluation scores and game statistics support discussion; they never automatically accept, advance, or reject a player.

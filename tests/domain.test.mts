@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test, after } from "node:test";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, readFileSync } from "node:fs";
 import path from "node:path";
 mkdirSync(path.join(process.cwd(), ".local"), { recursive: true });
 const scratch = mkdtempSync(path.join(process.cwd(), ".local", "qa-"));
@@ -10,6 +10,114 @@ const { execute, viewState } = await import("../src/server/service");
 const { armySnapshot, catalogue, dispositionsFor, defaultDisposition } =
   await import("../src/lib/catalogue");
 const baseline = readState();
+
+for (const format of ["GW", "Simple", "NR", "Short", "Tournament"])
+  test(`My armies saves ${format} text with a private version, summary and archetype`, () => {
+    const s = structuredClone(baseline);
+    const owner = s.users.find((u) => u.id === "p1")!;
+    const other = s.users.find((u) => u.id === "p2")!;
+    const rules = structuredClone(catalogue);
+    const faction = rules.factions.find((f) => f.name === "World Eaters")!;
+    const warband = faction.detachments.find(
+      (d) => d.name === "Berzerker Warband",
+    )!;
+    warband.points = 2;
+    const engines = faction.detachments.find(
+      (d) => d.name === "Brazen Engines",
+    )!;
+    const disposition = rules.dispositions.find(
+      (d) => d.name === "Purge the Foe",
+    )!;
+    s.patches!.push({
+      id: "text-format",
+      name: "Text export rules",
+      date: "2026-10-10",
+      catalogue: rules,
+    });
+    const listText = readFileSync(
+      new URL(`./fixtures/newrecruit-text/${format}.txt`, import.meta.url),
+      "utf8",
+    );
+    const choices =
+      format === "Simple"
+        ? { detachments: [warband.id, engines.id], disposition: disposition.id }
+        : format === "Short"
+          ? { disposition: disposition.id }
+          : undefined;
+    const command = {
+      type: "saveArmy",
+      patchId: "text-format",
+      listText,
+      ...(choices ? { textConfiguration: choices } : {}),
+    };
+    if (choices)
+      assert.throws(
+        () => execute(s, owner, { ...command, textConfiguration: undefined }),
+        /omits/,
+      );
+    execute(s, owner, command);
+    const saved = s.savedArmies!.at(-1)!;
+    assert.equal(saved.userId, owner.id);
+    assert.equal(saved.shared, false);
+    assert.equal(saved.army.listText, listText);
+    assert.ok(saved.army.listName);
+    assert.equal(
+      saved.army.summary!.units.reduce((sum, unit) => sum + unit.quantity, 0),
+      13,
+    );
+    const version = s.armyVersions!.find(
+      (v) => v.id === saved.currentVersionId,
+    )!;
+    assert.equal(version.published, false);
+    assert.equal(version.army.listText, listText);
+    const membership = s.libraryMemberships!.find(
+      (m) => m.versionId === version.id,
+    )!;
+    assert.equal(membership.archetypeId, saved.army.summary!.archetypeId);
+    assert.equal(membership.variationId, undefined);
+    assert.ok(!viewState(s, other).savedArmies!.some((a) => a.id === saved.id));
+    assert.throws(
+      () =>
+        execute(s, other, {
+          ...command,
+          id: saved.id,
+          expectedRevision: saved.listRevision,
+        }),
+      /only your own/,
+    );
+    assert.throws(
+      () => execute(s, owner, { ...command, army: saved.army }),
+      /either/,
+    );
+    if (!choices)
+      assert.throws(
+        () =>
+          execute(s, owner, {
+            ...command,
+            textConfiguration: { disposition: disposition.id },
+          }),
+        /cannot be overridden/,
+      );
+    const oldArmy = structuredClone(version.army);
+    const oldRevision = saved.listRevision!;
+    execute(s, owner, {
+      ...command,
+      id: saved.id,
+      listText: listText + "\n",
+      expectedRevision: oldRevision,
+    });
+    assert.equal(saved.listRevision, oldRevision + 1);
+    assert.deepEqual(version.army, oldArmy);
+    assert.throws(
+      () =>
+        execute(s, owner, {
+          ...command,
+          id: saved.id,
+          expectedRevision: oldRevision,
+        }),
+      /changed|revision|conflict/i,
+    );
+  });
 
 test("admins manage feedback read status and reversible deletion", async () => {
   const s = structuredClone(baseline);

@@ -178,3 +178,20 @@
     gap: 4px 8px;
   }
 }
+.editor {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+.methods button[aria-pressed="true"] {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: white;
+  box-shadow: inset 0 -3px 0 var(--yellow);
+}

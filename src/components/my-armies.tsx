@@ -19,6 +19,11 @@ import { ArmyFields, blank, type Choice } from "./journal";
 import { Disposition } from "./disposition";
 import { ArmyListLink } from "./army-list-drawer";
 import { ArmySummary } from "./army-summary";
+import {
+  ArmyTextEntry,
+  useArmyTextReview,
+  type TextArmyChoices,
+} from "./army-text-entry";
 import { PageHeading, Field, Modal, Empty, dateLabel } from "./ui";
 import type { Mutate } from "./workspace";
 export default function MyArmies({
@@ -35,6 +40,15 @@ export default function MyArmies({
   const [importUrl, setImportUrl] = useState("");
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState("");
+  const [method, setMethod] = useState<"import" | "own" | "">("");
+  const [imported, setImported] = useState(false);
+  const [listText, setListText] = useState("");
+  const [textChoices, setTextChoices] = useState<TextArmyChoices>({
+    detachments: [],
+    disposition: "",
+  });
+  const textEntry = editing === "new" && method === "own";
+  const text = useArmyTextReview(textEntry, listText, patchId);
   const [expectedRevision, setExpectedRevision] = useState<
     number | undefined
   >();
@@ -86,6 +100,7 @@ export default function MyArmies({
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       setArmy(data.army);
+      setImported(true);
     } catch (error) {
       setImportError((error as Error).message);
     } finally {
@@ -128,6 +143,10 @@ export default function MyArmies({
     setExpectedRevision(saved?.listRevision);
     setImportUrl("");
     setImportError("");
+    setMethod("");
+    setImported(false);
+    setListText("");
+    setTextChoices({ detachments: [], disposition: "" });
   }
   return (
     <>
@@ -320,105 +339,241 @@ export default function MyArmies({
           draftKey={`army:${editing}`}
           busy={saving || importing}
           draft={{
-            value: { patchId, army, importUrl, expectedRevision },
+            value: {
+              patchId,
+              army,
+              importUrl,
+              expectedRevision,
+              method,
+              imported,
+              listText,
+              textChoices,
+            },
             restore: (saved) => {
               setPatchId(saved.patchId);
               setArmy(saved.army);
               setImportUrl(saved.importUrl);
               setExpectedRevision(saved.expectedRevision);
+              setMethod(saved.method || "");
+              setImported(saved.imported || false);
+              setListText(saved.listText || "");
+              setTextChoices(
+                saved.textChoices || { detachments: [], disposition: "" },
+              );
             },
           }}
         >
           <form
             onSubmit={async (e) => {
               e.preventDefault();
+              if (
+                textEntry &&
+                (!text.review ||
+                  text.reading ||
+                  text.review.missing.some(
+                    (field) => !textChoices[field].length,
+                  ))
+              )
+                return;
+              if (
+                editing === "new" &&
+                (!method || (method === "import" && !imported))
+              )
+                return;
               setSaving(true);
               const ok = await mutate({
                 type: "saveArmy",
                 id: editing === "new" ? undefined : editing,
                 patchId,
-                army,
+                ...(textEntry
+                  ? {
+                      listText,
+                      ...(text.review?.missing.length
+                        ? {
+                            textConfiguration: Object.fromEntries(
+                              text.review.missing.map((field) => [
+                                field,
+                                textChoices[field],
+                              ]),
+                            ),
+                          }
+                        : {}),
+                    }
+                  : { army }),
                 expectedRevision,
               });
               setSaving(false);
               if (ok) setEditing(null);
             }}
           >
-            <Field label="Ruleset">
-              <select
-                required
-                disabled={importing}
-                value={patchId}
-                onChange={(e) => {
-                  setPatchId(e.target.value);
-                  setArmy({ ...blank(army.faction), listName: army.listName });
-                }}
-              >
-                <option value="" disabled>
-                  Choose a ruleset
-                </option>
-                {view.patches
-                  .filter((p) => !p.removedAt)
-                  .map((p) => (
-                    <option value={p.id} key={p.id}>
-                      {patchLabel(p)}
-                    </option>
-                  ))}
-              </select>
-            </Field>
-            <div className="panel padded">
-              <Field label="Import from New Recruit">
-                <input
-                  type="url"
-                  value={importUrl}
-                  onChange={(e) => setImportUrl(e.target.value)}
-                  placeholder="https://www.newrecruit.eu/app/list/…"
-                />
-              </Field>
-              <button
-                type="button"
-                disabled={importing || saving || !importUrl || !patchId}
-                onClick={() => void importList()}
-              >
-                {importing ? "Importing…" : "Import army list"}
-              </button>
-              {importError && <p role="alert">{importError}</p>}
-            </div>
-            <Field label="Army-list name">
-              <input
-                required
-                maxLength={100}
-                value={army.listName || ""}
-                onChange={(e) => setArmy({ ...army, listName: e.target.value })}
-              />
-            </Field>
-            <ArmyFields
-              title="Army configuration"
-              value={army}
-              onChange={(c) =>
-                setArmy({ ...c, listName: c.listName ?? army.listName })
-              }
-              rules={rules}
-              maxDP={3}
-              preferredFactions={view.me.preferredFactions ?? [view.me.faction]}
-              hideListName
-            />
-            {army.listText !== undefined && (
-              <Field label="Army-list text">
-                <textarea
+            <fieldset className={styles.editor} disabled={saving || importing}>
+              <Field label="Ruleset">
+                <select
                   required
-                  rows={14}
-                  maxLength={100000}
-                  value={army.listText}
-                  onChange={(e) =>
-                    setArmy({ ...army, listText: e.target.value })
-                  }
-                />
+                  disabled={importing}
+                  value={patchId}
+                  onChange={(e) => {
+                    setPatchId(e.target.value);
+                    setArmy({
+                      ...blank(army.faction),
+                      listName: army.listName,
+                    });
+                    setImported(false);
+                    setTextChoices({ detachments: [], disposition: "" });
+                  }}
+                >
+                  <option value="" disabled>
+                    Choose a ruleset
+                  </option>
+                  {view.patches
+                    .filter((p) => !p.removedAt)
+                    .map((p) => (
+                      <option value={p.id} key={p.id}>
+                        {patchLabel(p)}
+                      </option>
+                    ))}
+                </select>
               </Field>
-            )}
-            <button className="primary" disabled={saving || importing}>
-              {saving ? "Saving…" : "Save army list"}
-            </button>
+              {editing === "new" && (
+                <div
+                  className={styles.methods}
+                  role="group"
+                  aria-label="Choose how to add your list"
+                >
+                  {(
+                    [
+                      ["import", "Import"],
+                      ["own", "Enter own"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={method === value}
+                      onClick={() => {
+                        setMethod(value);
+                        setImportError("");
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {textEntry ? (
+                <>
+                  <ArmyTextEntry
+                    listText={listText}
+                    onTextChange={(value) => {
+                      if (value === listText) return;
+                      setListText(value);
+                      setTextChoices({ detachments: [], disposition: "" });
+                    }}
+                    review={text.review}
+                    reading={text.reading}
+                    choices={textChoices}
+                    onChoicesChange={setTextChoices}
+                    rules={rules}
+                  />
+                  {text.error && (
+                    <p role="alert">
+                      {text.error}{" "}
+                      <button type="button" onClick={text.retry}>
+                        Retry reading list
+                      </button>
+                    </p>
+                  )}
+                </>
+              ) : (
+                (editing !== "new" || method === "import") && (
+                  <>
+                    <div className="panel padded">
+                      <Field label="Import from New Recruit">
+                        <input
+                          type="url"
+                          value={importUrl}
+                          onChange={(e) => {
+                            setImportUrl(e.target.value);
+                            setImported(false);
+                            setImportError("");
+                          }}
+                          placeholder="https://www.newrecruit.eu/app/list/…"
+                        />
+                      </Field>
+                      <button
+                        type="button"
+                        disabled={importing || saving || !importUrl || !patchId}
+                        onClick={() => void importList()}
+                      >
+                        {importing ? "Importing…" : "Import army list"}
+                      </button>
+                      {importError && <p role="alert">{importError}</p>}
+                    </div>
+                    {(editing !== "new" || imported) && (
+                      <>
+                        <Field label="Army-list name">
+                          <input
+                            required
+                            maxLength={100}
+                            value={army.listName || ""}
+                            onChange={(e) =>
+                              setArmy({ ...army, listName: e.target.value })
+                            }
+                          />
+                        </Field>
+                        <ArmyFields
+                          title="Army configuration"
+                          value={army}
+                          onChange={(c) =>
+                            setArmy({
+                              ...c,
+                              listName: c.listName ?? army.listName,
+                            })
+                          }
+                          rules={rules}
+                          maxDP={3}
+                          preferredFactions={
+                            view.me.preferredFactions ?? [view.me.faction]
+                          }
+                          hideListName
+                        />
+                        {army.listText !== undefined && (
+                          <Field label="Army-list text">
+                            <textarea
+                              required
+                              rows={14}
+                              maxLength={100000}
+                              value={army.listText}
+                              onChange={(e) =>
+                                setArmy({ ...army, listText: e.target.value })
+                              }
+                            />
+                          </Field>
+                        )}
+                      </>
+                    )}
+                  </>
+                )
+              )}
+              <button
+                className="primary"
+                disabled={
+                  saving ||
+                  importing ||
+                  (editing === "new" &&
+                    (!method ||
+                      (method === "import" && !imported) ||
+                      (textEntry &&
+                        (text.reading ||
+                          !text.review ||
+                          text.review.missing.some(
+                            (field) => !textChoices[field].length,
+                          )))))
+                }
+              >
+                {saving ? "Saving…" : "Save army list"}
+              </button>
+            </fieldset>
           </form>
         </Modal>
       )}
