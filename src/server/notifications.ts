@@ -56,13 +56,14 @@ export function notificationVisible(
       if (
         scrim.cancelled ||
         scrim.completedAt ||
-        !scrim.teams.some(
-          (t) =>
-            t.captainId === actor.id ||
-            t.entries.some((e) => e.userId === actor.id) ||
-            t.additionalCaptains?.some((c) => c.userId === actor.id) ||
-            t.coaches?.some((c) => c.userId === actor.id),
-        )
+        (!scrim.organizers?.some((p) => p.userId === actor.id) &&
+          !scrim.teams.some(
+            (t) =>
+              t.captainId === actor.id ||
+              t.entries.some((e) => e.userId === actor.id) ||
+              t.additionalCaptains?.some((c) => c.userId === actor.id) ||
+              t.coaches?.some((c) => c.userId === actor.id),
+          ))
       )
         return false;
     } else if (

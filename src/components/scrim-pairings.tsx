@@ -1,6 +1,6 @@
 "use client";
 import { FactionName } from "./faction-avatar";
-import { isScrimCaptain } from "@/lib/scrims";
+import { canAdministerScrim, isScrimCaptain } from "@/lib/scrims";
 import { useState } from "react";
 import type { Layout, Scrim, ScrimPairing, View } from "@/lib/types";
 import { layouts } from "@/lib/matchups";
@@ -20,7 +20,7 @@ export default function ScrimPairings({
   mutate: Mutate;
 }) {
   const manage =
-    view.me.role === "admin" ||
+    canAdministerScrim(scrim, view.me) ||
     scrim.teams.some((t) => isScrimCaptain(t, view.me.id));
   const event = view.events.find((e) => e.id === scrim.eventId)!;
   const [editing, setEditing] = useState(false);

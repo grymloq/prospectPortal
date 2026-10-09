@@ -1,5 +1,5 @@
 "use client";
-import { isScrimCaptain } from "@/lib/scrims";
+import { canAdministerScrim, isScrimCaptain } from "@/lib/scrims";
 import { useState } from "react";
 import { ArrowLeft, Plus } from "lucide-react";
 import type { View } from "@/lib/types";
@@ -10,6 +10,7 @@ import { PageHeading, Badge, Empty, Field, Modal } from "./ui";
 import ScrimRoster from "./scrim-roster";
 import ScrimMatrix from "./scrim-matrix";
 import ScrimPairings from "./scrim-pairings";
+import ScrimOrganizers, { OrganizerChoices } from "./scrim-organizers";
 import type { Mutate } from "./workspace";
 import styles from "./scrims.module.css";
 
@@ -33,7 +34,9 @@ export default function Scrims({
   const event = view.events.find((e) => e.id === scrim?.eventId);
   const [busy, setBusy] = useState(false);
   const [cancel, setCancel] = useState(false);
+  const [organizers, setOrganizers] = useState(false);
   const admin = view.me.role === "admin";
+  const scrimAdmin = !!scrim && canAdministerScrim(scrim, view.me);
   const score = scrim ? scrimScore(scrim) : null;
   const ownTeam = scrim?.teams.find(
     (team) => !team.external && onScrimTeam(team, view.me.id),
@@ -41,7 +44,7 @@ export default function Scrims({
   const opposingTeams =
     scrim?.teams.filter((team) => !ownTeam || team.id !== ownTeam.id) || [];
   const canManageTeams =
-    admin ||
+    scrimAdmin ||
     (scrim?.kind === "external" && isScrimCaptain(scrim.teams[0], view.me.id));
   const opposingUnlocked = !!scrim?.listsRevealed;
   const sections = [
@@ -160,6 +163,27 @@ export default function Scrims({
               </button>
             ))}
           </div>
+          <div className={styles.heading}>
+            <p className={styles.muted}>
+              Scrim organizers:{" "}
+              {scrim.organizers?.map((p) => p.name).join(", ") ||
+                "None assigned"}
+            </p>
+            {admin && !scrim.cancelled && !scrim.completedAt && (
+              <button type="button" onClick={() => setOrganizers(true)}>
+                Manage organizers
+              </button>
+            )}
+          </div>
+          {organizers && admin && (
+            <ScrimOrganizers
+              key={scrim.id}
+              view={view}
+              scrim={scrim}
+              mutate={mutate}
+              onClose={() => setOrganizers(false)}
+            />
+          )}
           {!opposingUnlocked && (
             <p className={styles.muted}>
               Opposing Team unlocks after list lock, once both teams have
@@ -200,7 +224,7 @@ export default function Scrims({
           {activeSection === "Manage teams" && canManageTeams && (
             <div className={styles.teams}>
               {scrim.teams
-                .filter((team) => admin || team.external)
+                .filter((team) => scrimAdmin || team.external)
                 .map((team) => (
                   <ScrimRoster
                     key={team.id}
@@ -228,7 +252,7 @@ export default function Scrims({
               mutate={mutate}
             />
           )}
-          {admin && !scrim.cancelled && !scrim.completedAt && (
+          {scrimAdmin && !scrim.cancelled && !scrim.completedAt && (
             <div>
               <button onClick={() => setCancel(true)}>Cancel scrim</button>
             </div>
@@ -324,6 +348,7 @@ function CreateScrim({
 }) {
   const [kind, setKind] = useState("internal");
   const [online, setOnline] = useState(true);
+  const [organizerIds, setOrganizerIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const players = [
@@ -338,10 +363,11 @@ function CreateScrim({
       draftKey="scrim:new"
       busy={busy}
       draft={{
-        value: { kind, online },
+        value: { kind, online, organizerIds },
         restore: (saved) => {
           setKind(saved.kind);
           setOnline(saved.online);
+          setOrganizerIds(saved.organizerIds || []);
         },
       }}
     >
@@ -355,6 +381,7 @@ function CreateScrim({
             const ok = await mutate(
               {
                 type: "scrimCreate",
+                organizerIds,
                 title: f.get("title"),
                 kind,
                 teamSize: Number(f.get("teamSize")),
@@ -502,6 +529,11 @@ function CreateScrim({
           <textarea name="description" rows={3} maxLength={5000} />
         </Field>
         {error && <p role="alert">{error}</p>}
+        <OrganizerChoices
+          view={view}
+          selected={organizerIds}
+          onChange={setOrganizerIds}
+        />
         <button className="primary" disabled={busy}>
           Create scrim in calendar
         </button>

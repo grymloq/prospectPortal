@@ -12,6 +12,8 @@ const { catalogue, armySnapshot } = await import("../src/lib/catalogue");
 const { armyKey, buildMatchups } = await import("../src/lib/matchups");
 const { matchupDatabase } = await import("../src/lib/matchup-database");
 const { scrimScore } = await import("../src/lib/scrims");
+const { generateDeadlineNotifications, notificationView } =
+  await import("../src/server/notifications");
 const { ensureMembership } = await import("../src/server/membership");
 const { stockholmLocal } = await import("../src/lib/stockholm");
 const { validateGameVersion } =
@@ -156,6 +158,189 @@ function fixture(size = 2, kind: "internal" | "external" = "internal") {
     start,
   };
 }
+
+test("admins assign validated organizers at creation and later with revision checks", () => {
+  const f = fixture();
+  execute(f.s, f.admin, {
+    ...f.create,
+    organizerIds: [f.member(13).id, f.member(14).id],
+  });
+  assert.deepEqual(
+    f.s.scrims!.at(-1)!.organizers?.map((p) => p.userId),
+    ["p13", "p14"],
+  );
+  assert.equal(f.scrim.organizers?.length, 0); // Old callers need no new field.
+  const command = { type: "scrimOrganizers", organizerIds: ["p13"] };
+  assert.throws(() => f.run(f.member(1), command), /Only admins/);
+  assert.throws(
+    () => f.run(f.admin, { ...command, organizerIds: ["p13", "p13"] }),
+    /only once/,
+  );
+  for (const user of [
+    { id: "missing" },
+    { ...f.member(14), confirmedMember: false },
+    { ...f.member(15), removedAt: new Date().toISOString() },
+  ]) {
+    if (user.id !== "missing")
+      Object.assign(
+        f.s.users.find((u) => u.id === user.id)!,
+        user,
+      );
+    assert.throws(
+      () => f.run(f.admin, { ...command, organizerIds: [user.id] }),
+      /confirmed member/,
+    );
+  }
+  f.run(f.admin, command);
+  assert.throws(() => f.run(f.admin, { ...command, revision: 0 }), /changed/);
+  assert.throws(() => f.run(f.member(13), command), /Only admins/);
+  assert.ok(f.s.audit.some((a) => a.text.includes("changed scrim organizers")));
+});
+
+test("organizers manage both sides, staff, pairings and results while keeping private data private", () => {
+  const f = fixture();
+  const organizer = f.member(13);
+  f.run(f.admin, { type: "scrimOrganizers", organizerIds: [organizer.id] });
+  for (const [index, team] of f.scrim.teams.entries()) {
+    f.run(organizer, {
+      type: "scrimRoster",
+      teamId: team.id,
+      entries: [
+        { userId: f.member(index * 2 + 1).id },
+        { userId: f.member(index * 2 + 2).id },
+      ],
+    });
+    for (const [i, entry] of team.entries.entries())
+      f.run(organizer, {
+        type: "scrimSubmit",
+        teamId: team.id,
+        entryId: entry.id,
+        army: armyFor(i),
+      });
+    f.run(organizer, {
+      type: "scrimFinalize",
+      teamId: team.id,
+      finalized: true,
+    });
+    f.run(organizer, {
+      type: "scrimTeamName",
+      teamId: team.id,
+      name: `Organizer team ${index}`,
+    });
+  }
+  const view = viewState(f.s, organizer);
+  assert.ok(view.scrims![0].teams.every((t) => t.entries.length === 2));
+  assert.ok(view.scrims![0].teams.every((t) => t.estimates.length === 0));
+  assert.ok(
+    view.scrims![0].teams.every((t) => t.entries.every((e) => !e.savedArmyId)),
+  );
+  assert.equal(view.users.length, 1);
+  assert.equal(view.games.length, 0);
+  assert.equal(view.savedArmies?.length, 0);
+  assert.equal(view.evaluations.length, 0);
+  assert.equal(view.evaluationHistory?.length, 0);
+  assert.equal(view.audit.length, 0);
+  assert.ok(
+    view.messages.every((m) => m.userId === organizer.id && !m.internal),
+  );
+  assert.throws(
+    () =>
+      f.run(organizer, {
+        type: "scrimPlanComment",
+        teamId: f.scrim.teams[0].id,
+        ownId: f.scrim.teams[0].entries[0].id,
+        enemyId: "db:test",
+        text: "Private plan",
+      }),
+    /Only team members/,
+  );
+  execute(f.s, f.admin, f.create);
+  assert.throws(
+    () =>
+      execute(f.s, organizer, {
+        type: "scrimRoster",
+        scrimId: f.s.scrims!.at(-1)!.id,
+        revision: 0,
+        teamId: f.s.scrims!.at(-1)!.teams[0].id,
+        entries: [],
+      }),
+    /captain/,
+  );
+  assert.throws(() => execute(f.s, organizer, f.create), /Admin access/);
+  at(f.deadline + 1, () => {
+    assert.throws(
+      () =>
+        f.run(organizer, {
+          type: "scrimRoster",
+          teamId: f.scrim.teams[0].id,
+          entries: [],
+        }),
+      /locked/,
+    );
+    f.run(organizer, {
+      type: "scrimStaff",
+      teamId: f.scrim.teams[0].id,
+      captainId: "p1",
+      additionalCaptainIds: ["p14"],
+      coachIds: ["p15"],
+    });
+    f.run(organizer, {
+      type: "scrimPairings",
+      pairings: f.scrim.teams[0].entries.map((e, i) => ({
+        aId: e.id,
+        bId: f.scrim.teams[1].entries[i].id,
+        layout: "A",
+      })),
+    });
+  });
+  f.report(0, 12, organizer);
+  f.report(1, 14, organizer);
+  f.report(0, 10, organizer); // Corrections retain both private journals.
+  assert.equal(f.s.games.filter((g) => g.scrimId === f.scrim.id).length, 4);
+  assert.ok(f.scrim.completedAt);
+  assert.throws(
+    () => f.run(f.admin, { type: "scrimOrganizers", organizerIds: [] }),
+    /complete/,
+  );
+  assert.throws(() => f.run(organizer, { type: "scrimCancel" }), /completed/);
+});
+
+test("organizer removal revokes access immediately and assigned organizers can cancel", () => {
+  const f = fixture();
+  f.fill();
+  f.run(f.admin, { type: "scrimOrganizers", organizerIds: ["p13"] });
+  generateDeadlineNotifications(f.s);
+  assert.ok(
+    notificationView(f.s, f.member(13)).some((n) => n.scrimId === f.scrim.id),
+  );
+  assert.equal(
+    viewState(f.s, f.member(13)).scrims![0].teams[1].entries.length,
+    2,
+  );
+  f.run(f.admin, { type: "scrimOrganizers", organizerIds: [] });
+  assert.ok(
+    notificationView(f.s, f.member(13)).every((n) => n.scrimId !== f.scrim.id),
+  );
+  assert.equal(
+    viewState(f.s, f.member(13)).scrims![0].teams[1].entries.length,
+    0,
+  );
+  assert.throws(
+    () => f.run(f.member(13), { type: "scrimCancel" }),
+    /access required/,
+  );
+  f.run(f.admin, { type: "scrimOrganizers", organizerIds: ["p13"] });
+  f.run(f.member(13), { type: "scrimCancel" });
+  assert.equal(f.scrim.cancelled, true);
+  assert.equal(
+    f.s.events.find((e) => e.id === f.scrim.eventId)!.cancelled,
+    true,
+  );
+  assert.throws(
+    () => f.run(f.admin, { type: "scrimOrganizers", organizerIds: [] }),
+    /cancelled/,
+  );
+});
 
 test("team names are validated and revision-protected; captains rename only their own side", () => {
   const f = fixture();

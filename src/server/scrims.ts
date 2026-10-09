@@ -17,6 +17,7 @@ import {
   normalizeRosterIdentity,
 } from "./army-library-identity";
 import {
+  canAdministerScrim,
   onScrimTeam,
   isScrimCaptain,
   rosterWarnings,
@@ -60,6 +61,11 @@ const army = z.object({
 });
 export const scrimCommands = [
   z.object({
+    type: z.literal("scrimOrganizers"),
+    ...ref,
+    organizerIds: z.array(id).max(20),
+  }),
+  z.object({
     type: z.literal("scrimStaff"),
     ...ref,
     teamId: id,
@@ -69,6 +75,7 @@ export const scrimCommands = [
   }),
   z.object({
     type: z.literal("scrimCreate"),
+    organizerIds: z.array(id).max(20).default([]),
     title: label,
     kind: z.enum(["internal", "external"]),
     teamSize: z.number().int().min(1).max(64),
@@ -189,7 +196,7 @@ const schema = z.discriminatedUnion("type", scrimCommands);
 
 function manage(actor: User, scrim: Scrim, team?: ScrimTeam) {
   return (
-    actor.role === "admin" ||
+    canAdministerScrim(scrim, actor) ||
     (team
       ? isScrimCaptain(team, actor.id) ||
         (team.external && isScrimCaptain(scrim.teams[0], actor.id))
@@ -349,7 +356,7 @@ export function scrimView(state: State, scrim: Scrim, actor: User): Scrim {
       team.estimates = team.estimates.filter(
         (e) => !e.enemyId.startsWith("db:"),
       );
-    if (!revealed && !ownTeam && actor.role !== "admin") {
+    if (!revealed && !ownTeam && !canAdministerScrim(scrim, actor)) {
       team.entries = [];
     }
     // Library identifiers are private and unnecessary outside a player's own submission.
@@ -369,6 +376,18 @@ export function executeScrim(state: State, actor: User, input: unknown) {
       text: `${actor.name} ${text}`,
       createdAt: now,
     });
+  const organizersFor = (ids: string[]) => {
+    if (new Set(ids).size !== ids.length)
+      throw new Error("Assign each scrim organizer only once.");
+    return ids.map((userId) => {
+      const user = state.users.find(
+        (u) => u.id === userId && u.confirmedMember && !u.removedAt,
+      );
+      if (!user)
+        throw new Error("Choose a confirmed member as scrim organizer.");
+      return { userId, name: user.name };
+    });
+  };
   state.scrims ||= [];
   if (command.type === "scrimJournalNotes") {
     const game = state.games.find(
@@ -434,6 +453,7 @@ export function executeScrim(state: State, actor: User, input: unknown) {
       teamSize: command.teamSize,
       patchId: patch.id,
       submissionDeadline: command.submissionDeadline,
+      organizers: organizersFor(command.organizerIds),
       teams,
       pairings: [],
     });
@@ -450,7 +470,14 @@ export function executeScrim(state: State, actor: User, input: unknown) {
       description: command.description,
       cancelled: false,
     });
-    audit(`created scrim ${command.title}.`);
+    audit(
+      `created scrim ${command.title}; organizers: ${
+        state.scrims
+          .at(-1)!
+          .organizers!.map((p) => p.name)
+          .join(", ") || "none"
+      }.`,
+    );
     return;
   }
   const scrim = state.scrims.find((s) => s.id === command.scrimId);
@@ -475,9 +502,23 @@ export function executeScrim(state: State, actor: User, input: unknown) {
       throw new Error("Reopen the team submission before editing it.");
   };
   switch (command.type) {
-    case "scrimStaff": {
+    case "scrimOrganizers": {
       if (actor.role !== "admin")
-        throw new Error("Only admins can change team captains and coaches.");
+        throw new Error("Only admins can change scrim organizers.");
+      if (scrim.completedAt) throw new Error("This scrim is complete.");
+      const previous =
+        scrim.organizers?.map((p) => p.name).join(", ") || "none";
+      scrim.organizers = organizersFor(command.organizerIds);
+      audit(
+        `changed scrim organizers for ${event.title} from ${previous} to ${scrim.organizers.map((p) => p.name).join(", ") || "none"}.`,
+      );
+      break;
+    }
+    case "scrimStaff": {
+      if (!canAdministerScrim(scrim, actor))
+        throw new Error(
+          "Only admins or scrim organizers can change team captains and coaches.",
+        );
       if (team!.external)
         throw new Error("Staff assignments require an internal team.");
       if (scrim.completedAt) throw new Error("This scrim is complete.");
@@ -923,7 +964,8 @@ export function executeScrim(state: State, actor: User, input: unknown) {
       break;
     }
     case "scrimCancel": {
-      if (actor.role !== "admin") throw new Error("Admin access required.");
+      if (!canAdministerScrim(scrim, actor))
+        throw new Error("Admin or scrim organizer access required.");
       if (scrim.completedAt)
         throw new Error("A completed scrim cannot be cancelled.");
       scrim.cancelled = true;

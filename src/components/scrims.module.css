@@ -3,6 +3,44 @@
   gap: var(--space-5);
   min-width: 0;
 }
+.staffChoices {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 16px 0;
+  padding: 8px 12px;
+  min-width: 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.staffChoices legend {
+  padding: 0 4px;
+  font-weight: 600;
+}
+.staffChoices label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+.staffChoices input[type="checkbox"] {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--navy);
+}
+.staffChoices span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.staffChoices label:has(input:disabled) {
+  color: #526277;
+  cursor: default;
+}
 .listMethods {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

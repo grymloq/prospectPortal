@@ -725,6 +725,7 @@ export type Scrim = {
   teamSize: number;
   patchId: string;
   submissionDeadline: string;
+  organizers?: { userId: string; name: string }[];
   teams: [ScrimTeam, ScrimTeam];
   pairings: ScrimPairing[];
   pairedAt?: string;

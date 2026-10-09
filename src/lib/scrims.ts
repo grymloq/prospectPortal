@@ -1,4 +1,14 @@
-import type { Scrim, ScrimTeam } from "./types";
+import type { Scrim, ScrimTeam, User } from "./types";
+
+export function canAdministerScrim(
+  scrim: Scrim,
+  actor: Pick<User, "id" | "role">,
+) {
+  return (
+    actor.role === "admin" ||
+    !!scrim.organizers?.some((p) => p.userId === actor.id)
+  );
+}
 
 export function isScrimCaptain(team: ScrimTeam, userId: string) {
   return (

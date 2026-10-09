@@ -1,6 +1,6 @@
 "use client";
 import { FactionName } from "./faction-avatar";
-import { isScrimCaptain } from "@/lib/scrims";
+import { canAdministerScrim, isScrimCaptain } from "@/lib/scrims";
 import { useEffect, useState } from "react";
 import type {
   Scrim,
@@ -38,7 +38,7 @@ export default function ScrimRoster({
     view.patches.find((p) => p.id === scrim.patchId)?.catalogue || catalogue;
   const manage =
     !readOnly &&
-    (view.me.role === "admin" ||
+    (canAdministerScrim(scrim, view.me) ||
       isScrimCaptain(team, view.me.id) ||
       (team.external && isScrimCaptain(scrim.teams[0], view.me.id)));
   const now = useScrimClock();
@@ -89,7 +89,7 @@ export default function ScrimRoster({
             </p>
           ) : null}
           {!readOnly &&
-            view.me.role === "admin" &&
+            canAdministerScrim(scrim, view.me) &&
             !team.external &&
             !scrim.cancelled &&
             !scrim.completedAt && (

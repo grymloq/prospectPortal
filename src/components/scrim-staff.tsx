@@ -5,6 +5,7 @@ import type { Scrim, ScrimTeam, View } from "@/lib/types";
 import { onScrimTeam } from "@/lib/scrims";
 import { Field, Modal } from "./ui";
 import type { Mutate } from "./workspace";
+import styles from "./scrims.module.css";
 
 export default function ScrimStaff({
   view,
@@ -29,9 +30,9 @@ export default function ScrimStaff({
   const [busy, setBusy] = useState(false);
   const [revision] = useState(scrim.revision);
   const other = scrim.teams.find((t) => t.id !== team.id)!;
-  const people = view.users.filter(
-    (p) => p.confirmedMember && !p.removedAt && !onScrimTeam(other, p.id),
-  );
+  const people = [{ id: view.me.id, name: view.me.name }, ...view.playerOptions]
+    .filter((p) => !onScrimTeam(other, p.id))
+    .sort((a, b) => a.name.localeCompare(b.name));
   const toggle = (list: string[], id: string) =>
     list.includes(id) ? list.filter((value) => value !== id) : [...list, id];
   return (
@@ -84,46 +85,46 @@ export default function ScrimStaff({
             ))}
           </select>
         </Field>
-        <fieldset>
+        <fieldset className={styles.staffChoices}>
           <legend>Additional captains</legend>
           {team.additionalCaptains
             ?.filter((p) => !people.some((user) => user.id === p.userId))
             .map((p) => (
-              <label key={p.userId} style={{ display: "block" }}>
+              <label key={p.userId}>
                 <input
                   type="checkbox"
                   checked={captains.includes(p.userId)}
                   onChange={() => setCaptains(toggle(captains, p.userId))}
-                />{" "}
-                {p.name} · unavailable — remove assignment
+                />
+                <span>{p.name} · unavailable — remove assignment</span>
               </label>
             ))}
           {people
             .filter((p) => p.id !== captain)
             .map((p) => (
-              <label key={p.id} style={{ display: "block" }}>
+              <label key={p.id}>
                 <input
                   type="checkbox"
                   checked={captains.includes(p.id)}
                   disabled={coaches.includes(p.id)}
                   onChange={() => setCaptains(toggle(captains, p.id))}
-                />{" "}
-                {p.name}
+                />
+                <span>{p.name}</span>
               </label>
             ))}
         </fieldset>
-        <fieldset>
+        <fieldset className={styles.staffChoices}>
           <legend>Non-playing coaches</legend>
           {team.coaches
             ?.filter((p) => !people.some((user) => user.id === p.userId))
             .map((p) => (
-              <label key={p.userId} style={{ display: "block" }}>
+              <label key={p.userId}>
                 <input
                   type="checkbox"
                   checked={coaches.includes(p.userId)}
                   onChange={() => setCoaches(toggle(coaches, p.userId))}
-                />{" "}
-                {p.name} · unavailable — remove assignment
+                />
+                <span>{p.name} · unavailable — remove assignment</span>
               </label>
             ))}
           {people
@@ -133,14 +134,14 @@ export default function ScrimStaff({
                 !team.entries.some((entry) => entry.userId === p.id),
             )
             .map((p) => (
-              <label key={p.id} style={{ display: "block" }}>
+              <label key={p.id}>
                 <input
                   type="checkbox"
                   checked={coaches.includes(p.id)}
                   disabled={captains.includes(p.id)}
                   onChange={() => setCoaches(toggle(coaches, p.id))}
-                />{" "}
-                {p.name}
+                />
+                <span>{p.name}</span>
               </label>
             ))}
         </fieldset>

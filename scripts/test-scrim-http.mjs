@@ -164,6 +164,70 @@ export async function testScrimHttp({ request, check, admin, player }) {
     response = await run({ type: "scrimFinalize", teamId, finalized: true });
     assert.equal(response.status, 200);
   }
+  response = await run({ type: "scrimOrganizers", organizerIds: ["p5"] });
+  assert.equal(response.status, 200, JSON.stringify(response.data));
+  const organizerView = await request("/api/state", null, outsider.cookie);
+  const organizerScrim = organizerView.data.scrims.find(
+    (s) => s.id === scrim.id,
+  );
+  assert.ok(
+    organizerScrim.teams.every(
+      (t) => t.entries.length === 2 && t.estimates.length === 0,
+    ),
+  );
+  assert.equal(organizerView.data.users.length, 1);
+  assert.equal(organizerView.data.evaluations.length, 0);
+  assert.equal(organizerView.data.audit.length, 0);
+  assert.equal(
+    (
+      await run(
+        { type: "scrimOrganizers", organizerIds: ["p1"] },
+        outsider.cookie,
+      )
+    ).status,
+    400,
+  );
+  response = await run(
+    {
+      type: "scrimTeamName",
+      teamId: scrim.teams[1].id,
+      name: "Organizer renamed Yellow",
+    },
+    outsider.cookie,
+  );
+  assert.equal(response.status, 200, JSON.stringify(response.data));
+  response = await run(
+    {
+      type: "scrimStaff",
+      teamId: scrim.teams[0].id,
+      captainId: "p1",
+      additionalCaptainIds: [],
+      coachIds: [],
+    },
+    outsider.cookie,
+  );
+  assert.equal(response.status, 200, JSON.stringify(response.data));
+  response = await run({ type: "scrimOrganizers", organizerIds: [] });
+  assert.equal(response.status, 200);
+  assert.equal(
+    (
+      await run(
+        {
+          type: "scrimStaff",
+          teamId: scrim.teams[0].id,
+          captainId: "p1",
+          additionalCaptainIds: [],
+          coachIds: [],
+        },
+        outsider.cookie,
+      )
+    ).status,
+    400,
+  );
+  check(
+    "scrim organizers manage both teams without broader admin access; assignment and revocation are server-enforced",
+    () => {},
+  );
   const privateView = await request("/api/state", null, player.cookie);
   const privateScrim = privateView.data.scrims.find((s) => s.id === scrim.id);
   check(
@@ -214,7 +278,7 @@ export async function testScrimHttp({ request, check, admin, player }) {
     "captains rename their own team after the deadline and other members are blocked",
     () => {
       assert.equal(scrim.teams[0].name, "HTTP renamed Blue");
-      assert.equal(scrim.teams[1].name, "HTTP Yellow");
+      assert.equal(scrim.teams[1].name, "Organizer renamed Yellow");
     },
   );
   response = await run(
