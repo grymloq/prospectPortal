@@ -7,16 +7,22 @@ import { cloudView } from "@/server/cloud-store";
 import { catalogue } from "@/lib/catalogue";
 import { fetchNewRecruitArmy } from "@/server/newrecruit-army";
 import { summarizeLibraryArmy } from "@/server/army-library-summary";
+import { inspectNewRecruitText } from "@/server/newrecruit-text";
 export const runtime = "nodejs";
 export async function POST(req: NextRequest) {
   const headers = { "Cache-Control": "private, no-store" };
   try {
     sameOrigin(req);
-    const { url, patchId } = z
+    const { url, listText, patchId } = z
       .object({
-        url: z.string().max(2000),
+        url: z.string().max(2000).optional(),
+        listText: z.string().min(1).max(100000).optional(),
         patchId: z.string().min(1).max(100),
       })
+      .refine(
+        (input) => (input.url !== undefined) !== (input.listText !== undefined),
+        "Choose one import method.",
+      )
       .parse(await req.json());
     let view;
     if (localMode()) {
@@ -48,7 +54,15 @@ export async function POST(req: NextRequest) {
     }
     const patch = view.patches.find((p) => p.id === patchId && !p.removedAt);
     if (!patch) throw new Error("Choose an available ruleset.");
-    const army = await fetchNewRecruitArmy(url, patch.catalogue || catalogue);
+    if (listText !== undefined)
+      return NextResponse.json(
+        {
+          review: inspectNewRecruitText(listText, patch.catalogue || catalogue)
+            .review,
+        },
+        { headers },
+      );
+    const army = await fetchNewRecruitArmy(url!, patch.catalogue || catalogue);
     army.summary = summarizeLibraryArmy(army, patchId, view);
     return NextResponse.json({ army }, { headers });
   } catch (error) {

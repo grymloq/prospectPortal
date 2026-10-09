@@ -46,7 +46,12 @@ test("text summary recognizes GW, NR/Discord and WTC units without counting nest
       ],
     );
     assert.equal(summary.rosterStatus, "partial");
-    assert.ok(summary.units.every((u) => u.modelCount === undefined));
+    assert.ok(
+      summary.units.every(
+        (u) =>
+          u.modelCount === (/Char1:/.test(listText) ? u.quantity : undefined),
+      ),
+    );
     const composition = textRosterSummary(listText);
     assert.equal(
       variationId({ ...configuration, composition }, "p", state),
@@ -122,7 +127,7 @@ test("summaries use the library classifier and count complete units/models with 
   );
 });
 
-test("missing text roster and ambiguous multipliers keep quantities unknown", () => {
+test("missing text roster remains unknown and export root multipliers count models, not squads", () => {
   const empty = summarizeLibraryArmy(configuration, "p", state);
   assert.equal(empty.rosterStatus, "unavailable");
   assert.deepEqual(empty.units, []);
@@ -131,8 +136,9 @@ test("missing text roster and ambiguous multipliers keep quantities unknown", ()
     "p",
     state,
   );
-  assert.equal(partial.units[0].quantityKnown, false);
-  assert.equal(partial.units[0].modelCount, undefined);
+  assert.notEqual(partial.units[0].quantityKnown, false);
+  assert.equal(partial.units[0].quantity, 1);
+  assert.equal(partial.units[0].modelCount, 10);
 });
 
 test("persisted summaries remain idempotent when cloud JSON object keys are reordered", () => {

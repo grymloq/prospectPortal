@@ -30,6 +30,41 @@ export async function testScrimHttp({ request, check, admin, player }) {
   );
   const pastedList = `HTTP scrim list (2000 Points)\n${pastedFaction.name}\n${pastedDetachment.name} (${pastedDetachment.points} Detachment Points)\n${pastedDisposition.name}\n\nCHARACTERS\nFixture leader (75 Points)\n  • 1x Fixture weapon\n\nBATTLELINE\nFixture unit (80 Points)\n  10x Fixture models\n`;
   armies[0] = { ...armies[0], listUrl: "", listText: pastedList };
+  const simpleList = `${pastedFaction.sourceName} - Text army - [75 pts]\nFixture leader [75 pts]\n`;
+  const reviewBody = { patchId: "2026-09-02", listText: simpleList };
+  assert.equal((await request("/api/army-import", reviewBody)).status, 401);
+  assert.equal(
+    (
+      await request("/api/army-import", reviewBody, player.cookie, "POST", {
+        Origin: "https://other.example",
+      })
+    ).status,
+    400,
+  );
+  const review = await request("/api/army-import", reviewBody, player.cookie);
+  assert.equal(review.status, 200, JSON.stringify(review.data));
+  assert.deepEqual(review.data.review.missing, ["detachments", "disposition"]);
+  assert.equal(review.data.review.unitCount, 1);
+  const completeReview = await request(
+    "/api/army-import",
+    { ...reviewBody, listText: pastedList },
+    player.cookie,
+  );
+  assert.deepEqual(completeReview.data.review.missing, []);
+  assert.equal(
+    (
+      await request(
+        "/api/army-import",
+        { ...reviewBody, url: "https://www.newrecruit.eu/app/list/test" },
+        player.cookie,
+      )
+    ).status,
+    400,
+  );
+  check(
+    "text reviews require authentication and origin and request only missing configuration",
+    () => {},
+  );
   const other = await request("/api/session", {
     email: "player3@teamsweden.local",
     password: "Sweden40k!",
@@ -85,6 +120,38 @@ export async function testScrimHttp({ request, check, admin, player }) {
       entries: [{ userId: `p${t * 2 + 1}` }, { userId: `p${t * 2 + 2}` }],
     });
     assert.equal(response.status, 200);
+    if (t === 0) {
+      const command = {
+        type: "scrimSubmit",
+        teamId,
+        entryId: scrim.teams[t].entries[0].id,
+        listText: simpleList,
+      };
+      assert.equal((await run(command)).status, 400);
+      response = await run({
+        ...command,
+        textConfiguration: {
+          detachments: armies[0].detachments,
+          disposition: armies[0].disposition,
+        },
+      });
+      assert.equal(response.status, 200, JSON.stringify(response.data));
+      assert.equal(scrim.teams[0].entries[0].army.listText, simpleList);
+      assert.equal(
+        (
+          await run({
+            ...command,
+            listText: pastedList,
+            textConfiguration: { disposition: armies[0].disposition },
+          })
+        ).status,
+        400,
+      );
+      check(
+        "text submissions recheck missing choices and reject overriding decoded configuration",
+        () => {},
+      );
+    }
     for (let i = 0; i < 2; i++) {
       response = await run({
         type: "scrimSubmit",

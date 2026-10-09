@@ -26,7 +26,8 @@ test("text-only import reads New Recruit GW, NR, Discord and tournament configur
     assert.equal(army.disposition, disposition.id);
     assert.equal(army.listText, listText);
     assert.equal(army.listUrl, "");
-    assert.equal(army.composition, undefined);
+    assert.equal(army.composition?.status, "partial");
+    assert.equal(army.composition?.selections[0].name, "Warboss");
     assert.ok(army.listName);
   }
   assert.equal(

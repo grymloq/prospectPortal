@@ -113,6 +113,12 @@ export const scrimCommands = [
     savedArmyId: id.optional(),
     army: army.optional(),
     listText: z.string().min(1).max(100000).optional(),
+    textConfiguration: z
+      .object({
+        detachments: z.array(id).max(3).optional(),
+        disposition: id.optional(),
+      })
+      .optional(),
   }),
   z.object({
     type: z.literal("scrimFinalize"),
@@ -585,6 +591,8 @@ export function executeScrim(state: State, actor: User, input: unknown) {
           "Submit only your own list or a list for a team you captain.",
         );
       drafting();
+      if (command.textConfiguration && command.listText === undefined)
+        throw new Error("Missing text choices belong to a text submission.");
       let snapshot: Army;
       if (
         command.listText !== undefined &&
@@ -610,6 +618,7 @@ export function executeScrim(state: State, actor: User, input: unknown) {
           snapshot = armyFromNewRecruitText(
             command.listText,
             rulesFor(state, scrim),
+            command.textConfiguration,
           );
         else {
           if (!command.army) throw new Error("Enter an army list.");

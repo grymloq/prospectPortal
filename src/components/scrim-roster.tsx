@@ -2,8 +2,14 @@
 import { FactionName } from "./faction-avatar";
 import { isScrimCaptain } from "@/lib/scrims";
 import { useState } from "react";
-import type { Scrim, ScrimEntry, ScrimTeam, View } from "@/lib/types";
-import { catalogue } from "@/lib/catalogue";
+import type {
+  Scrim,
+  ScrimEntry,
+  ScrimTeam,
+  View,
+  NewRecruitTextReview,
+} from "@/lib/types";
+import { catalogue, dispositionsFor } from "@/lib/catalogue";
 import { onScrimTeam, rosterWarnings } from "@/lib/scrims";
 import { ArmyFields, type Choice } from "./journal";
 import { ArmyListLink } from "./army-list-drawer";
@@ -401,6 +407,13 @@ function ListEditor({
   const [revision] = useState(scrim.revision);
   const [method, setMethod] = useState<"saved" | "import" | "own" | "">("");
   const [listText, setListText] = useState(entry.army?.listText || "");
+  const [textReview, setTextReview] = useState<NewRecruitTextReview | null>(
+    null,
+  );
+  const [textChoices, setTextChoices] = useState<{
+    detachments: string[];
+    disposition: string;
+  }>({ detachments: [], disposition: "" });
   const [importedArmy, setImportedArmy] = useState<Choice | null>(null);
   const [savedId, setSavedId] = useState(entry.savedArmyId || "");
   const [busy, setBusy] = useState(false);
@@ -430,13 +443,25 @@ function ListEditor({
       draftKey={`scrim:${scrim.id}:list:${entry.id}`}
       busy={busy}
       draft={{
-        value: { method, listText, importedArmy, savedId, url },
+        value: {
+          method,
+          listText,
+          importedArmy,
+          savedId,
+          url,
+          textReview,
+          textChoices,
+        },
         restore: (draft) => {
           setMethod(draft.method);
           setListText(draft.listText);
           setImportedArmy(draft.importedArmy);
           setSavedId(draft.savedId);
           setUrl(draft.url);
+          setTextReview(draft.textReview || null);
+          setTextChoices(
+            draft.textChoices || { detachments: [], disposition: "" },
+          );
         },
       }}
     >
@@ -563,6 +588,26 @@ function ListEditor({
             if (method === "own" ? !listText.trim() : !army) return;
             setBusy(true);
             setError("");
+            if (method === "own" && !textReview) {
+              try {
+                const response = await fetch("/api/army-import", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ listText, patchId: scrim.patchId }),
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+                setTextReview(data.review);
+                if (data.review.missing.length) {
+                  setBusy(false);
+                  return;
+                }
+              } catch (error) {
+                setError((error as Error).message);
+                setBusy(false);
+                return;
+              }
+            }
             const ok = await mutate(
               {
                 type: "scrimSubmit",
@@ -573,7 +618,19 @@ function ListEditor({
                 ...(method === "saved"
                   ? { savedArmyId: savedId }
                   : method === "own"
-                    ? { listText }
+                    ? {
+                        listText,
+                        ...(textReview?.missing.length
+                          ? {
+                              textConfiguration: Object.fromEntries(
+                                textReview.missing.map((field) => [
+                                  field,
+                                  textChoices[field],
+                                ]),
+                              ),
+                            }
+                          : {}),
+                      }
                     : { army }),
               },
               setError,
@@ -594,14 +651,95 @@ function ListEditor({
                     className={styles.listText}
                     placeholder="Paste your New Recruit list export here…"
                     value={listText}
-                    onChange={(e) => setListText(e.target.value)}
+                    onChange={(e) => {
+                      setListText(e.target.value);
+                      setTextReview(null);
+                      setTextChoices({ detachments: [], disposition: "" });
+                      setError("");
+                    }}
                   />
                 </Field>
                 <p className={styles.muted}>
-                  Paste the complete New Recruit export, including its faction,
-                  detachments and force disposition. Your text and line breaks
-                  are kept as entered.
+                  Paste a GW, Simple, NR, Short or Tournament export. If it
+                  omits required choices, only those choices are requested. Your
+                  text and line breaks are kept as entered.
                 </p>
+                {textReview && (
+                  <p>
+                    {textReview.format} format · {textReview.unitCount} units ·{" "}
+                    {textReview.factionName}
+                  </p>
+                )}
+                {textReview?.missing.includes("detachments") && (
+                  <fieldset className={styles.choices}>
+                    <legend>Detachments missing from this export</legend>
+                    {rules.factions
+                      .find((f) => f.id === textReview.faction)
+                      ?.detachments.map((detachment) => (
+                        <label key={detachment.id}>
+                          <input
+                            type="checkbox"
+                            disabled={
+                              !textChoices.detachments.includes(
+                                detachment.id,
+                              ) &&
+                              (textChoices.detachments.length >= 3 ||
+                                textChoices.detachments.reduce(
+                                  (total, id) =>
+                                    total +
+                                    (rules.factions
+                                      .find((f) => f.id === textReview.faction)
+                                      ?.detachments.find((d) => d.id === id)
+                                      ?.points || 0),
+                                  0,
+                                ) +
+                                  detachment.points >
+                                  3)
+                            }
+                            checked={textChoices.detachments.includes(
+                              detachment.id,
+                            )}
+                            onChange={(e) =>
+                              setTextChoices({
+                                detachments: e.target.checked
+                                  ? [...textChoices.detachments, detachment.id]
+                                  : textChoices.detachments.filter(
+                                      (id) => id !== detachment.id,
+                                    ),
+                                disposition: "",
+                              })
+                            }
+                          />
+                          {detachment.name} ({detachment.points} DP)
+                        </label>
+                      ))}
+                  </fieldset>
+                )}
+                {textReview?.missing.includes("disposition") && (
+                  <Field label="Force disposition missing from this export">
+                    <select
+                      required
+                      value={textChoices.disposition}
+                      onChange={(e) =>
+                        setTextChoices({
+                          ...textChoices,
+                          disposition: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="">Choose force disposition</option>
+                      {dispositionsFor(
+                        textReview.faction,
+                        textReview.detachments || textChoices.detachments,
+                        rules,
+                      ).map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                )}
               </>
             ) : method === "import" && importedArmy ? (
               <>
@@ -666,7 +804,12 @@ function ListEditor({
                 busy ||
                 (method !== "own" && !army) ||
                 (method === "saved" && !selected) ||
-                (method === "own" && !listText.trim())
+                (method === "own" &&
+                  (!listText.trim() ||
+                    (textReview?.missing.includes("detachments") &&
+                      !textChoices.detachments.length) ||
+                    (textReview?.missing.includes("disposition") &&
+                      !textChoices.disposition)))
               }
             >
               {busy ? "Saving…" : "Save submitted list"}

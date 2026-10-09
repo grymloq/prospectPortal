@@ -477,6 +477,53 @@ test("text-only scrim submission reads configuration on the server and rejects f
   assert.throws(() => f.run(f.member(3), command), /own list|captain/);
 });
 
+test("scrim text submissions accept only missing choices and preserve server privacy and history", () => {
+  const f = fixture();
+  f.fill();
+  const team = f.scrim.teams[0];
+  const entry = team.entries[1];
+  const owner = f.member(2);
+  f.run(f.admin, { type: "scrimFinalize", teamId: team.id, finalized: false });
+  const config = armySnapshot(armyFor(1));
+  const textConfiguration = {
+    detachments: config.detachments,
+    disposition: config.disposition,
+  };
+  const sourceName = catalogue.factions.find(
+    (f) => f.id === config.faction,
+  )!.sourceName;
+  const listText = `${sourceName} - My army - [100 pts]\n\nFixture unit [100 pts]\n• 3x Fixture model\n`;
+  const command = {
+    type: "scrimSubmit",
+    teamId: team.id,
+    entryId: entry.id,
+    listText,
+    textConfiguration,
+  };
+  f.run(owner, command);
+  assert.equal(entry.army!.listText, listText);
+  assert.equal(entry.army!.disposition, config.disposition);
+  assert.equal(entry.army!.summary!.units[0].quantity, 1);
+  assert.equal(entry.army!.summary!.units[0].modelCount, undefined);
+  const version = f.s.armyVersions!.find((v) => v.id === entry.listVersionId)!;
+  assert.equal(version.army.listText, listText);
+  assert.equal(
+    viewState(f.s, f.member(3)).scrims![0].teams[0].entries.length,
+    0,
+  );
+  const before = JSON.stringify(entry);
+  assert.throws(
+    () => f.run(owner, { ...command, textConfiguration: {} }),
+    /omits detachments/,
+  );
+  assert.throws(
+    () => f.run(owner, { ...command, listText: undefined, army: armyFor(1) }),
+    /text submission/,
+  );
+  assert.throws(() => f.run(f.member(3), command), /own list|captain/);
+  assert.equal(JSON.stringify(entry), before);
+});
+
 test("pasted scrim exports retain formatting, privacy and independent list versions", () => {
   const f = fixture();
   f.fill();

@@ -2,72 +2,29 @@ import type {
   Army,
   LibraryArmySummary,
   RosterComposition,
-  RosterSelection,
   State,
 } from "@/lib/types";
-import { createHash } from "node:crypto";
+import { decodeNewRecruitText } from "./newrecruit-text-decode";
 import { archetypeId, archetypeName } from "./army-library-identity";
 import { libraryUnitCounts } from "./army-library-norm";
 
-/** Display evidence only. Text labels never become verified catalogue identities. */
+/** Shared format decoders supply display evidence, never exact variations. */
 export function textRosterSummary(listText: string): RosterComposition {
-  const selections: RosterSelection[] = [];
-  let inRoster = false;
-  for (const raw of listText
-    .slice(0, 100000)
-    .replace(/\r\n?/g, "\n")
-    .split("\n")) {
-    const line = raw.trim().replace(/[*`]/g, "");
-    if (
-      /^(?:#+\s*)?(?:characters?|battleline|dedicated transports|other datasheets|allied units|infantry|vehicles|monsters|attached units)(?:\s*[\[(].*)?$/i.test(
-        line,
-      )
-    ) {
-      inRoster = true;
-      continue;
-    }
-    // GW/NR root units carry points; WTC identifies CharN/UnitN explicitly.
-    // Indented equipment/model entries and header totals are never parent units.
-    const wtc =
-      /^(?:char|unit)\d+\s*:\s*(?:(\d+)\s*x\s*)?(.+?)\s*(?:\([\d,]+\s*(?:points?|pts)\)|\[[\d,]+\s*(?:points?|pts)\])/i.exec(
-        line,
-      );
-    const root =
-      !/^\s/.test(raw) && inRoster
-        ? /^(?:-\s*)?(?:(\d+)\s*x\s*)?(.+?)\s*(?:\([\d,]+\s*(?:points?|pts)\)|\[[\d,]+\s*(?:points?|pts)\])/i.exec(
-            line,
-          )
-        : null;
-    const match = wtc || root;
-    if (!match) continue;
-    const name = match[2].trim().replace(/:\s*$/, "");
-    if (
-      !name ||
-      name.length > 300 ||
-      /^(?:exported with|attached unit\s*\d|total|configuration)\b/i.test(name)
-    )
-      continue;
-    // Multipliers may describe models or repeated units. Keep them unknown
-    // rather than turning a model count into an invented unit count.
-    selections.push({
-      sourceId: `newrecruit:text:${createHash("sha256").update(name.toLowerCase()).digest("hex")}`,
-      name,
-      kind: "unit",
-      quantity: 1,
-      ...(Number(match[1]) > 1 ? { quantityKnown: false } : {}),
+  try {
+    return decodeNewRecruitText(listText).composition;
+  } catch {
+    // Existing manually recorded text remains readable even if it is not a
+    // supported export. Strict text submissions validate through the decoder.
+    return {
+      status: "unavailable",
+      normalizationVersion: "newrecruit-text-v2",
       selections: [],
-    });
-    if (selections.length >= 500) break;
+      reasons: [
+        "This recorded text could not be decoded as a New Recruit roster.",
+      ],
+      source: { provider: "newrecruit" },
+    };
   }
-  return {
-    status: selections.length ? "partial" : "unavailable",
-    normalizationVersion: "newrecruit-text-summary-v1",
-    selections,
-    reasons: [
-      "Text export unit labels are display evidence; catalogue IDs, model counts and loadouts are not verified.",
-    ],
-    source: { provider: "newrecruit" },
-  };
 }
 
 /** Exactly the unit counting and configuration identity used by Army libraries. */

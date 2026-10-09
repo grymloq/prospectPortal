@@ -45,6 +45,17 @@ export type Army = {
   detachmentNames: string[];
   dispositionName: string;
 };
+export type NewRecruitTextFormat =
+  "GW" | "Simple" | "NR" | "Short" | "Tournament";
+export type NewRecruitTextReview = {
+  format: NewRecruitTextFormat;
+  faction: string;
+  factionName: string;
+  detachments?: string[];
+  disposition?: string;
+  missing: ("detachments" | "disposition")[];
+  unitCount: number;
+};
 export type LibraryArmySummary = {
   version: "army-library-summary-v1";
   archetypeId: string;
