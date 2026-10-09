@@ -162,6 +162,8 @@ export type LibraryUnitCount = {
   quantity: number;
   quantityKnown?: boolean;
   modelCount?: number;
+  /** Recorded sizes per unit, never an average across different squads. */
+  modelSizes?: { models: number; quantity: number }[];
 };
 export type LibraryUnitDeviation = {
   sourceId: string;
@@ -171,6 +173,23 @@ export type LibraryUnitDeviation = {
   delta: number;
   baselineModels?: number;
   listModels?: number;
+  baselineModelSizes?: LibraryUnitCount["modelSizes"];
+  listModelSizes?: LibraryUnitCount["modelSizes"];
+};
+export type LibraryLoadoutItem = {
+  sourceId: string;
+  name: string;
+  kind: "option" | "enhancement";
+  quantity: number;
+};
+export type LibraryLoadoutDeviation = {
+  unitSourceId: string;
+  unitName: string;
+  added: LibraryLoadoutItem[];
+  removed: LibraryLoadoutItem[];
+  /** With changed unit counts, show group totals without guessing which instance changed. */
+  before?: LibraryLoadoutItem[];
+  after?: LibraryLoadoutItem[];
 };
 export type LibraryArchetypeStandard = {
   archetypeId: string;
@@ -190,6 +209,7 @@ export type LibraryNormComparison = {
   standard?: LibraryArchetypeStandard;
   units: LibraryUnitCount[];
   deviations: LibraryUnitDeviation[];
+  loadoutDeviations: LibraryLoadoutDeviation[];
   /** Exact composition includes loadouts, independently of unit-count differences. */
   compositionMatches?: boolean;
 };
@@ -200,8 +220,9 @@ export type LibraryNormSummary = {
   addedUnits: number;
   removedUnits: number;
   changedUnits: number;
-  /** Public unit deltas only; equipment and complete rosters remain in details. */
+  /** Named public differences only; complete selection trees remain in details. */
   deviations: LibraryUnitDeviation[];
+  loadoutDeviations: LibraryLoadoutDeviation[];
   isDefault: boolean;
   canSetDefault: boolean;
   defaultRevision: number;

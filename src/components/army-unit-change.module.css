@@ -4,3 +4,9 @@
 .removed {
   color: #b42332;
 }
+.line {
+  display: block;
+}
+.loadout + .loadout {
+  margin-top: 4px;
+}

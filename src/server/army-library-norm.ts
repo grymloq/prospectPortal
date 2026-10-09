@@ -15,6 +15,7 @@ import {
   libraryIdentityAliases,
   variationId,
 } from "./army-library-identity";
+import { libraryLoadoutChanges } from "./army-library-loadouts";
 
 export type PublicRosterVersion = {
   version: ArmyListVersion;
@@ -85,6 +86,21 @@ export function libraryUnitCounts(army: Army): LibraryUnitCount[] {
           : {
               modelCount:
                 (previous?.modelCount || 0) + modelCount * node.quantity,
+              modelSizes: [
+                ...new Set([
+                  ...(previous?.modelSizes?.map((size) => size.models) || []),
+                  modelCount,
+                ]),
+              ]
+                .sort((a, b) => a - b)
+                .map((models) => ({
+                  models,
+                  quantity:
+                    (previous?.modelSizes?.find(
+                      (size) => size.models === models,
+                    )?.quantity || 0) +
+                    (models === modelCount ? node.quantity : 0),
+                })),
             }),
       });
     }
@@ -187,6 +203,7 @@ export function createLibraryNorms(
     groups.set(cohort, variants);
   }
   const standards = new Map<string, LibraryArchetypeStandard>();
+  const standardArmies = new Map<string, Army>();
   const cohorts = new Set([...groups.keys(), ...records.keys()]);
   for (const cohort of cohorts) {
     const record = records.get(cohort);
@@ -216,6 +233,7 @@ export function createLibraryNorms(
         )[0];
     if (!representative) continue;
     const version = representative.version;
+    standardArmies.set(cohort, version.army);
     const exact = variationId(version.army, version.patchId, state)!;
     const list = state.savedArmies?.find(
       (entry) => entry.id === version.listId,
@@ -256,10 +274,23 @@ export function createLibraryNorms(
         standard: baseline,
         units,
         deviations: [],
+        loadoutDeviations: [],
       };
     if (!exact)
-      return { status: "partial", standard: baseline, units, deviations: [] };
-    if (!baseline) return { status: "no-standard", units, deviations: [] };
+      return {
+        status: "partial",
+        standard: baseline,
+        units,
+        deviations: [],
+        loadoutDeviations: [],
+      };
+    if (!baseline)
+      return {
+        status: "no-standard",
+        units,
+        deviations: [],
+        loadoutDeviations: [],
+      };
     const current = new Map(units.map((unit) => [unit.sourceId, unit]));
     const previous = new Map(
       baseline.units.map((unit) => [unit.sourceId, unit]),
@@ -273,7 +304,9 @@ export function createLibraryNorms(
         const modelsChanged =
           base?.modelCount !== undefined &&
           list?.modelCount !== undefined &&
-          base.modelCount !== list.modelCount;
+          (base.modelCount !== list.modelCount ||
+            JSON.stringify(base.modelSizes) !==
+              JSON.stringify(list.modelSizes));
         if (baselineQuantity === listQuantity && !modelsChanged) return [];
         return [
           {
@@ -282,8 +315,24 @@ export function createLibraryNorms(
             baselineQuantity,
             listQuantity,
             delta: listQuantity - baselineQuantity,
-            baselineModels: base?.modelCount,
-            listModels: list?.modelCount,
+            baselineModels: base ? base.modelCount : 0,
+            listModels: list ? list.modelCount : 0,
+            baselineModelSizes: base?.modelSizes?.filter(
+              (size) =>
+                listQuantity >= baselineQuantity ||
+                size.quantity >
+                  (list?.modelSizes?.find(
+                    (current) => current.models === size.models,
+                  )?.quantity || 0),
+            ),
+            listModelSizes: list?.modelSizes?.filter(
+              (size) =>
+                listQuantity <= baselineQuantity ||
+                size.quantity >
+                  (base?.modelSizes?.find(
+                    (previous) => previous.models === size.models,
+                  )?.quantity || 0),
+            ),
           },
         ];
       })
@@ -292,11 +341,16 @@ export function createLibraryNorms(
           a.name.localeCompare(b.name) || a.sourceId.localeCompare(b.sourceId),
       );
     const compositionMatches = exact === baseline.variationId;
+    const loadoutDeviations = libraryLoadoutChanges(
+      standardArmies.get(key(canonical(archetype), patch))!,
+      army,
+    );
     return {
       status: deviations.length ? "different" : "same",
       standard: baseline,
       units,
       deviations,
+      loadoutDeviations,
       compositionMatches,
     };
   }
@@ -321,6 +375,7 @@ export function createLibraryNorms(
       ),
       changedUnits: comparison.deviations.length,
       deviations: comparison.deviations,
+      loadoutDeviations: comparison.loadoutDeviations,
       isDefault:
         !!versionId &&
         comparison.standard?.selection === "marked" &&

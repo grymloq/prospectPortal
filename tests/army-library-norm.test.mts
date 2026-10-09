@@ -355,6 +355,14 @@ test("loadout-only changes differ in exact composition without invented unit del
   assert.equal(comparison.compositionMatches, false);
   assert.deepEqual(comparison.deviations, []);
   assert.equal(comparison.units[0].modelCount, undefined);
+  assert.deepEqual(
+    comparison.loadoutDeviations[0].removed.map((item) => item.name),
+    ["Gun A"],
+  );
+  assert.deepEqual(
+    comparison.loadoutDeviations[0].added.map((item) => item.name),
+    ["Gun B"],
+  );
 });
 
 test("partial and unavailable rosters never receive definite deltas or default eligibility", () => {
@@ -370,6 +378,7 @@ test("partial and unavailable rosters never receive definite deltas or default e
     );
     assert.equal(comparison.status, status);
     assert.deepEqual(comparison.deviations, []);
+    assert.deepEqual(comparison.loadoutDeviations, []);
     assert.equal(
       norms().summary(changed, archetypeId(base.army, "p"), "p", "v")
         .canSetDefault,
@@ -386,6 +395,157 @@ test("unit source namespaces remain distinct and descendant units are not double
   );
   assert.equal(counts.length, 2);
   assert.deepEqual(counts.map((unit) => unit.quantity).sort(), [1, 3]);
+});
+
+test("unit deltas retain the recorded sizes of added and removed squads", () => {
+  const { add, norms } = fixture();
+  const squad = (size: number) =>
+    unit("Eightbound", 1, [unit("Eightbound model", size, [], "model")]);
+  const base = army([squad(3)]);
+  add("base", base);
+  const comparison = norms().compare(
+    army([squad(3), squad(6)]),
+    archetypeId(base, "p"),
+    "p",
+  );
+  assert.equal(comparison.deviations[0].delta, 1);
+  assert.deepEqual(comparison.deviations[0].listModelSizes, [
+    { models: 6, quantity: 1 },
+  ]);
+  const removed = norms().compare(army([unit("Other")]), archetypeId(base, "p"), "p");
+  assert.deepEqual(removed.deviations[0].baselineModelSizes, [
+    { models: 3, quantity: 1 },
+  ]);
+  assert.equal(removed.deviations[0].listModels, 0);
+});
+
+test("mixed and unknown squad sizes never turn into an invented average", () => {
+  const known = unit("Eightbound", 2, [unit("Model", 3, [], "model")]);
+  const large = unit("Eightbound", 1, [unit("Model", 6, [], "model")]);
+  assert.deepEqual(libraryUnitCounts(army([known, large]))[0].modelSizes, [
+    { models: 3, quantity: 2 },
+    { models: 6, quantity: 1 },
+  ]);
+  assert.equal(
+    libraryUnitCounts(army([known, unit("Eightbound")]))[0].modelSizes,
+    undefined,
+  );
+  assert.equal(
+    libraryUnitCounts(army([unit("Eightbound"), known]))[0].modelSizes,
+    undefined,
+  );
+});
+
+test("changed squad-size distribution is visible even with identical total units and models", () => {
+  const { add, norms } = fixture();
+  const squad = (size: number) =>
+    unit("Troops", 1, [unit("Model", size, [], "model")]);
+  const base = army([squad(3), squad(9)]);
+  add("base", base);
+  const comparison = norms().compare(
+    army([squad(6), squad(6)]),
+    archetypeId(base, "p"),
+    "p",
+  );
+  assert.equal(comparison.deviations[0].baselineModels, 12);
+  assert.equal(comparison.deviations[0].listModels, 12);
+  assert.deepEqual(comparison.deviations[0].listModelSizes, [
+    { models: 6, quantity: 2 },
+  ]);
+});
+
+test("character enhancements and nested upgrades change independently of unit counts", () => {
+  const { add, norms } = fixture();
+  const character = (enhancement: string, weapon: string) =>
+    unit("Captain", 1, [
+      unit("Captain model", 1, [unit(weapon, 1, [], "option")], "model"),
+      unit(
+        "Enhancement choices",
+        1,
+        [unit(enhancement, 1, [], "enhancement")],
+        "option",
+      ),
+    ]);
+  const base = army([character("Old enhancement", "Old weapon")]);
+  add("base", base);
+  const changed = army([character("New enhancement", "New weapon")]);
+  const comparison = norms().compare(changed, archetypeId(base, "p"), "p");
+  assert.deepEqual(comparison.deviations, []);
+  assert.deepEqual(
+    comparison.loadoutDeviations[0].added.map((item) => [
+      item.name,
+      item.kind,
+      item.quantity,
+    ]),
+    [
+      ["New enhancement", "enhancement", 1],
+      ["New weapon", "option", 1],
+    ],
+  );
+  assert.deepEqual(
+    comparison.loadoutDeviations[0].removed.map((item) => item.name),
+    ["Old enhancement", "Old weapon"],
+  );
+  assert.deepEqual(
+    norms().summary(changed, archetypeId(base, "p"), "p").loadoutDeviations,
+    comparison.loadoutDeviations,
+  );
+});
+
+test("extra copies of an identical loadout do not invent equipment changes", () => {
+  const { add, norms } = fixture();
+  const base = army([unit("Captain", 1, [unit("Sword", 1, [], "option")])]);
+  add("base", base);
+  const more = army([unit("Captain", 2, [unit("Sword", 1, [], "option")])]);
+  assert.deepEqual(
+    norms().compare(more, archetypeId(base, "p"), "p").loadoutDeviations,
+    [],
+  );
+});
+
+test("changed unit-group counts use before/after loadouts without guessing a surviving character", () => {
+  const { add, norms } = fixture();
+  const base = army([unit("Captain", 2, [unit("Sword", 1, [], "option")])]);
+  add("base", base);
+  const changed = army([unit("Captain", 1, [unit("Hammer", 1, [], "option")])]);
+  const comparison = norms().compare(changed, archetypeId(base, "p"), "p");
+  const loadout = comparison.loadoutDeviations[0];
+  assert.deepEqual(loadout.added, []);
+  assert.deepEqual(loadout.removed, []);
+  assert.equal(loadout.before![0].quantity, 2);
+  assert.equal(loadout.after![0].name, "Hammer");
+});
+
+test("loadout renaming/order/instance IDs do not change gear and source namespaces stay distinct", () => {
+  const { add, norms } = fixture();
+  const base = army([
+    unit("Captain", 1, [
+      unit("Sword", 1, [], "option"),
+      unit("Shield", 1, [], "option"),
+    ]),
+  ]);
+  add("base", base);
+  const reordered = army([
+    unit("Captain", 1, [
+      unit("Shield", 1, [], "option"),
+      {
+        ...unit("Sword", 1, [], "option"),
+        name: "Renamed sword",
+        instanceId: "volatile",
+      },
+    ]),
+  ]);
+  assert.deepEqual(
+    norms().compare(reordered, archetypeId(base, "p"), "p").loadoutDeviations,
+    [],
+  );
+  const different = structuredClone(reordered);
+  different.composition!.selections[0].selections[1].sourceId =
+    "newrecruit:system:other:Sword";
+  different.composition = normalizeRosterIdentity(different.composition!);
+  const change = norms().compare(different, archetypeId(base, "p"), "p")
+    .loadoutDeviations[0];
+  assert.notEqual(change.added[0].sourceId, change.removed[0].sourceId);
 });
 
 test("standards remain separate for rulesets and ignore public matrix frequency", () => {

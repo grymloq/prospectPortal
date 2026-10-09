@@ -1,5 +1,6 @@
 import type { LibraryNormComparison } from "@/lib/types";
 import { ArmyUnitChange } from "./army-unit-change";
+import { ArmyLoadoutChanges } from "./army-loadout-changes";
 
 /** Render comparisons without creating a nested table in the library hierarchy. */
 export function ArmyLibraryUnitComparison({
@@ -52,6 +53,7 @@ export function ArmyLibraryUnitComparison({
             ) : (
               <p>Same unit counts and known squad sizes as the standard.</p>
             )}
+            <ArmyLoadoutChanges changes={norm.loadoutDeviations} />
             {norm.compositionMatches === false && (
               <p>
                 The full roster composition differs from the standard. Expand

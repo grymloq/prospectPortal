@@ -16,6 +16,7 @@ import type {
 import { FactionName } from "./faction-avatar";
 import { Disposition } from "./disposition";
 import { ArmyUnitChange } from "./army-unit-change";
+import { ArmyLoadoutChanges } from "./army-loadout-changes";
 import { DetachmentName, DetachmentNames } from "./detachment-name";
 import styles from "./army-library-table.module.css";
 
@@ -236,19 +237,22 @@ export function ArmyLibraryDataRow({
         {list &&
           (row.norm?.isDefault ? (
             <strong>Default</strong>
-          ) : row.norm?.status === "same" ? (
+          ) : row.norm?.status === "same" &&
+            !row.norm.loadoutDeviations.length ? (
             <span>
               {row.norm.compositionMatches === false
                 ? "Loadout differs"
                 : "Standard units"}
             </span>
-          ) : row.norm?.status === "different" ? (
+          ) : row.norm?.status === "different" ||
+            row.norm?.status === "same" ? (
             <>
               {row.norm.deviations.map((unit) => (
                 <span className={styles.line} key={unit.sourceId}>
                   <ArmyUnitChange unit={unit} />
                 </span>
               ))}
+              <ArmyLoadoutChanges changes={row.norm.loadoutDeviations} />
             </>
           ) : (
             <span className={styles.muted}>
