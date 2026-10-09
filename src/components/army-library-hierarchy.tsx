@@ -230,7 +230,7 @@ function ArchetypeLists({
               }
             />
             {open && (
-              <ArmyLibraryInlineRow>
+              <ArmyLibraryInlineRow roster>
                 <ListPreview row={list} navigation={navigation} />
               </ArmyLibraryInlineRow>
             )}

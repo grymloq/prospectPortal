@@ -1,5 +1,6 @@
 "use client";
 import type { ReactNode, KeyboardEvent } from "react";
+import { createContext, useContext } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -22,6 +23,7 @@ import styles from "./army-library-table.module.css";
 
 type DataRow = LibraryListRow | LibraryArchetypeRow;
 type FactionRow = ArmyLibraryDTO["factionGroups"][number];
+const RulesetColumn = createContext(false);
 
 function RowName({
   name,
@@ -77,6 +79,7 @@ export function ArmyLibraryFactionRow({
   expanded: boolean;
   onToggle: () => void;
 }) {
+  const showRuleset = useContext(RulesetColumn);
   return (
     <tr
       className={`${styles.row} ${styles.faction}`}
@@ -97,7 +100,7 @@ export function ArmyLibraryFactionRow({
           {row.archetypes} {row.archetypes === 1 ? "archetype" : "archetypes"}
         </small>
       </td>
-      {Array.from({ length: 4 }, (_, i) => (
+      {Array.from({ length: showRuleset ? 4 : 3 }, (_, i) => (
         <td key={i} />
       ))}
       <td className={styles.number}>{row.lists}</td>
@@ -221,17 +224,19 @@ export function ArmyLibraryDataRow({
           ))}
       </td>
       <td>{!list && <Disposition name={row.army.dispositionName} />}</td>
-      <td>
-        {patchIds.map((id) => {
-          const patch = patches.find((p) => p.id === id);
-          return (
-            <span className={styles.line} key={id}>
-              {patch?.name || "Unknown ruleset"}
-              {patch && <small>{patch.date}</small>}
-            </span>
-          );
-        })}
-      </td>
+      {segmented && (
+        <td>
+          {patchIds.map((id) => {
+            const patch = patches.find((p) => p.id === id);
+            return (
+              <span className={styles.line} key={id}>
+                {patch?.name || "Unknown ruleset"}
+                {patch && <small>{patch.date}</small>}
+              </span>
+            );
+          })}
+        </td>
+      )}
       <td>
         {list &&
           (row.norm?.isDefault ? (
@@ -303,11 +308,20 @@ export function ArmyLibraryDataRow({
     </tr>
   );
 }
-export function ArmyLibraryInlineRow({ children }: { children: ReactNode }) {
+export function ArmyLibraryInlineRow({
+  children,
+  roster = false,
+}: {
+  children: ReactNode;
+  roster?: boolean;
+}) {
+  const showRuleset = useContext(RulesetColumn);
   return (
     <tr data-level="content">
-      <td colSpan={8} className={styles.expanded}>
-        <div>{children}</div>
+      <td colSpan={showRuleset ? 8 : 7} className={styles.expanded}>
+        <div className={roster ? styles.rosterContent : undefined}>
+          {children}
+        </div>
       </td>
     </tr>
   );
@@ -346,24 +360,37 @@ export function ArmyLibraryTable({
     );
   }
   return (
-    <>
+    <RulesetColumn.Provider value={segmented}>
       <div
         className={`table-scroll ${styles.scroll}`}
         tabIndex={0}
         role="region"
         aria-label="Army library table"
       >
-        <table className={styles.table}>
+        <table
+          className={styles.table}
+          data-rulesets={segmented ? "all" : "single"}
+        >
           <caption className="sr-only">
             Shared army library. Expand factions, archetypes and lists to browse
             their contents.
           </caption>
+          <colgroup>
+            <col className={styles.armyColumn} />
+            <col className={styles.detachmentColumn} />
+            <col className={styles.dispositionColumn} />
+            {segmented && <col className={styles.rulesetColumn} />}
+            <col />
+            <col className={styles.listsColumn} />
+            <col className={styles.scoreColumn} />
+            <col className={styles.trendColumn} />
+          </colgroup>
           <thead>
             <tr>
               {sortable("Army", "name")}
               <th scope="col">Detachments</th>
               <th scope="col">Disposition</th>
-              <th scope="col">Ruleset</th>
+              {segmented && <th scope="col">Ruleset</th>}
               <th scope="col">Unit changes</th>
               <th scope="col">Lists</th>
               {sortable("Average /20", "score")}
@@ -379,6 +406,6 @@ export function ArmyLibraryTable({
           ? "Scores and trends are separated by ruleset."
           : "Trend shows the change in observed average score."}
       </p>
-    </>
+    </RulesetColumn.Provider>
   );
 }

@@ -9,8 +9,33 @@
   outline-offset: 2px;
 }
 .table {
+  --hierarchy-step: 12px;
   min-width: 1100px;
   table-layout: fixed;
+}
+.table[data-rulesets="all"] {
+  min-width: 1220px;
+}
+.armyColumn {
+  width: 240px;
+}
+.detachmentColumn {
+  width: 100px;
+}
+.dispositionColumn {
+  width: 110px;
+}
+.rulesetColumn {
+  width: 120px;
+}
+.listsColumn {
+  width: 100px;
+}
+.scoreColumn {
+  width: 90px;
+}
+.trendColumn {
+  width: 120px;
 }
 .table th,
 .table td {
@@ -33,12 +58,6 @@
 }
 .table td:first-child {
   background: white;
-}
-.table th:last-child {
-  width: 130px;
-}
-.table th:nth-child(5) {
-  width: 230px;
 }
 .row {
   cursor: pointer;
@@ -85,10 +104,10 @@
   min-width: 0;
 }
 .archetypeLabel {
-  padding-left: 12px;
+  padding-left: var(--hierarchy-step);
 }
 .listLabel {
-  padding-left: 24px;
+  padding-left: calc(2 * var(--hierarchy-step));
 }
 .details {
   margin: 4px 0 0 19px;
@@ -112,6 +131,11 @@
   position: sticky;
   left: 12px;
   width: calc(100cqw - 24px);
+}
+.rosterContent {
+  /* One level below list text: three hierarchy steps, plus its 19px toggle space,
+     accounting for the expanded cell's 2px larger horizontal padding. */
+  padding-left: calc(3 * var(--hierarchy-step) + 17px);
 }
 .sort {
   gap: 5px;
@@ -142,17 +166,17 @@
   font-size: var(--text-small);
 }
 @media (max-width: 600px) {
+  .table {
+    --hierarchy-step: 7px;
+  }
+  .armyColumn {
+    width: 130px;
+  }
   .table th:first-child,
   .table td:first-child {
     width: 130px;
   }
-  .table th:last-child {
+  .trendColumn {
     width: 100px;
-  }
-  .archetypeLabel {
-    padding-left: 7px;
-  }
-  .listLabel {
-    padding-left: 14px;
   }
 }
