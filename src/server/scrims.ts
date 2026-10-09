@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
+import { armyFromNewRecruitText } from "./newrecruit-text";
 import type { Army, Layout, Scrim, ScrimTeam, State, User } from "@/lib/types";
 import { matchupDatabase } from "@/lib/matchup-database";
 import { armySnapshot, catalogue } from "@/lib/catalogue";
@@ -111,6 +112,7 @@ export const scrimCommands = [
     entryId: id,
     savedArmyId: id.optional(),
     army: army.optional(),
+    listText: z.string().min(1).max(100000).optional(),
   }),
   z.object({
     type: z.literal("scrimFinalize"),
@@ -584,6 +586,11 @@ export function executeScrim(state: State, actor: User, input: unknown) {
         );
       drafting();
       let snapshot: Army;
+      if (
+        command.listText !== undefined &&
+        (command.savedArmyId || command.army)
+      )
+        throw new Error("Choose one list submission method.");
       let savedArmyId = command.savedArmyId;
       if (savedArmyId) {
         const saved = state.savedArmies?.find(
@@ -599,8 +606,15 @@ export function executeScrim(state: State, actor: User, input: unknown) {
           );
         snapshot = structuredClone(saved.army);
       } else {
-        if (!command.army) throw new Error("Enter an army list.");
-        snapshot = armySnapshot(command.army, rulesFor(state, scrim), 3);
+        if (command.listText !== undefined)
+          snapshot = armyFromNewRecruitText(
+            command.listText,
+            rulesFor(state, scrim),
+          );
+        else {
+          if (!command.army) throw new Error("Enter an army list.");
+          snapshot = armySnapshot(command.army, rulesFor(state, scrim), 3);
+        }
         if (snapshot.composition)
           snapshot.composition = normalizeRosterIdentity(snapshot.composition);
         if (entry.userId) {

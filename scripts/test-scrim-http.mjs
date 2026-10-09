@@ -21,8 +21,14 @@ export async function testScrimHttp({ request, check, admin, player }) {
     }
     throw new Error("Missing disposition fixture");
   });
-  const pastedList =
-    "HTTP scrim list\n\nCHARACTERS\n  • 1x Fixture leader\n\nBATTLELINE\n  10x Fixture models\n";
+  const pastedFaction = rules.factions.find((f) => f.id === armies[0].faction);
+  const pastedDetachment = pastedFaction.detachments.find(
+    (d) => d.id === armies[0].detachments[0],
+  );
+  const pastedDisposition = rules.dispositions.find(
+    (d) => d.id === armies[0].disposition,
+  );
+  const pastedList = `HTTP scrim list (2000 Points)\n${pastedFaction.name}\n${pastedDetachment.name} (${pastedDetachment.points} Detachment Points)\n${pastedDisposition.name}\n\nCHARACTERS\n  • 1x Fixture leader\n\nBATTLELINE\n  10x Fixture models\n`;
   armies[0] = { ...armies[0], listUrl: "", listText: pastedList };
   const other = await request("/api/session", {
     email: "player3@teamsweden.local",
@@ -84,7 +90,7 @@ export async function testScrimHttp({ request, check, admin, player }) {
         type: "scrimSubmit",
         teamId,
         entryId: scrim.teams[t].entries[i].id,
-        army: armies[i],
+        ...(i === 0 ? { listText: pastedList } : { army: armies[i] }),
       });
       assert.equal(response.status, 200, JSON.stringify(response.data));
     }

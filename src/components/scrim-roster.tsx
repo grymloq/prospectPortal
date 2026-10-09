@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { Scrim, ScrimEntry, ScrimTeam, View } from "@/lib/types";
 import { catalogue } from "@/lib/catalogue";
 import { onScrimTeam, rosterWarnings } from "@/lib/scrims";
-import { ArmyFields, blank, type Choice } from "./journal";
+import { ArmyFields, type Choice } from "./journal";
 import { ArmyListLink } from "./army-list-drawer";
 import { Disposition } from "./disposition";
 import { Badge, Field, Modal } from "./ui";
@@ -397,11 +397,7 @@ function ListEditor({
 }) {
   const [revision] = useState(scrim.revision);
   const [method, setMethod] = useState<"saved" | "import" | "own" | "">("");
-  const [ownArmy, setOwnArmy] = useState<Choice>(() => ({
-    ...(entry.army || blank(view.me.faction)),
-    // Pasted exports do not supply verified structured roster selections.
-    composition: undefined,
-  }));
+  const [listText, setListText] = useState(entry.army?.listText || "");
   const [importedArmy, setImportedArmy] = useState<Choice | null>(null);
   const [savedId, setSavedId] = useState(entry.savedArmyId || "");
   const [busy, setBusy] = useState(false);
@@ -422,7 +418,7 @@ function ListEditor({
       ? selected?.army
       : method === "import"
         ? importedArmy
-        : ownArmy;
+        : null;
   return (
     <Modal
       wide
@@ -431,10 +427,10 @@ function ListEditor({
       draftKey={`scrim:${scrim.id}:list:${entry.id}`}
       busy={busy}
       draft={{
-        value: { method, ownArmy, importedArmy, savedId, url },
+        value: { method, listText, importedArmy, savedId, url },
         restore: (draft) => {
           setMethod(draft.method);
-          setOwnArmy(draft.ownArmy);
+          setListText(draft.listText);
           setImportedArmy(draft.importedArmy);
           setSavedId(draft.savedId);
           setUrl(draft.url);
@@ -561,7 +557,7 @@ function ListEditor({
         <form
           onSubmit={async (e) => {
             e.preventDefault();
-            if (!army || (method === "saved" && !selected)) return;
+            if (method === "own" ? !listText.trim() : !army) return;
             setBusy(true);
             setError("");
             const ok = await mutate(
@@ -571,7 +567,11 @@ function ListEditor({
                 revision,
                 teamId: team.id,
                 entryId: entry.id,
-                ...(method === "saved" ? { savedArmyId: savedId } : { army }),
+                ...(method === "saved"
+                  ? { savedArmyId: savedId }
+                  : method === "own"
+                    ? { listText }
+                    : { army }),
               },
               setError,
             );
@@ -590,34 +590,15 @@ function ListEditor({
                     maxLength={100000}
                     className={styles.listText}
                     placeholder="Paste your New Recruit list export here…"
-                    value={ownArmy.listText || ""}
-                    onChange={(e) =>
-                      setOwnArmy({ ...ownArmy, listText: e.target.value })
-                    }
+                    value={listText}
+                    onChange={(e) => setListText(e.target.value)}
                   />
                 </Field>
                 <p className={styles.muted}>
-                  Paste any New Recruit text export format. Your text and line
-                  breaks are kept as entered. Choose the army details below.
+                  Paste the complete New Recruit export, including its faction,
+                  detachments and force disposition. Your text and line breaks
+                  are kept as entered.
                 </p>
-                <Field label="Army-list name">
-                  <input
-                    required
-                    maxLength={100}
-                    value={ownArmy.listName || ""}
-                    onChange={(e) =>
-                      setOwnArmy({ ...ownArmy, listName: e.target.value })
-                    }
-                  />
-                </Field>
-                <ArmyFields
-                  title="Submitted army"
-                  value={ownArmy}
-                  onChange={setOwnArmy}
-                  rules={rules}
-                  maxDP={3}
-                  hideListName
-                />
               </>
             ) : method === "import" && importedArmy ? (
               <>
@@ -679,9 +660,9 @@ function ListEditor({
               className="primary"
               disabled={
                 busy ||
-                !army ||
+                (method !== "own" && !army) ||
                 (method === "saved" && !selected) ||
-                (method === "own" && !ownArmy.listText?.trim())
+                (method === "own" && !listText.trim())
               }
             >
               {busy ? "Saving…" : "Save submitted list"}

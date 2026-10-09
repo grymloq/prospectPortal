@@ -428,6 +428,48 @@ test("captain submissions save into the player's own library, without granting p
   });
   assert.equal(entry.army!.listName, oldName);
 });
+test("text-only scrim submission reads configuration on the server and rejects forged mixed inputs", () => {
+  const f = fixture();
+  f.fill();
+  const team = f.scrim.teams[0];
+  const entry = team.entries[1];
+  const owner = f.member(2);
+  f.run(f.admin, { type: "scrimFinalize", teamId: team.id, finalized: false });
+  const config = armySnapshot(armyFor(1));
+  const listText = `Text-only army (2000 Points)\n${config.factionName}\n${config.detachmentNames.join(" and ")} (3 Detachment Points)\n${config.dispositionName}\n\nCHARACTERS\n  • Fixture leader\n`;
+  const command = {
+    type: "scrimSubmit",
+    teamId: team.id,
+    entryId: entry.id,
+    listText,
+  };
+  f.run(owner, command);
+  assert.equal(entry.army!.listText, listText);
+  assert.equal(entry.army!.faction, config.faction);
+  assert.equal(entry.army!.disposition, config.disposition);
+  assert.equal(entry.army!.listUrl, "");
+  assert.equal(entry.army!.listName, "Text-only army");
+  assert.equal(
+    f.s.savedArmies!.find((a) => a.id === entry.savedArmyId)!.army.listText,
+    listText,
+  );
+  const before = JSON.stringify(entry);
+  assert.throws(
+    () => f.run(owner, { ...command, listText: "Missing export header" }),
+    /faction/,
+  );
+  assert.throws(
+    () => f.run(owner, { ...command, army: armyFor(0) }),
+    /one list submission method/,
+  );
+  assert.throws(
+    () => f.run(owner, { ...command, savedArmyId: entry.savedArmyId }),
+    /one list submission method/,
+  );
+  assert.equal(JSON.stringify(entry), before);
+  assert.throws(() => f.run(f.member(3), command), /own list|captain/);
+});
+
 test("pasted scrim exports retain formatting, privacy and independent list versions", () => {
   const f = fixture();
   f.fill();
