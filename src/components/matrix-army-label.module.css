@@ -1,0 +1,76 @@
+.target {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+.label {
+  width: 100%;
+  min-width: 0;
+}
+.line {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.identity {
+  display: flex !important;
+  align-items: center;
+  gap: 3px;
+}
+.playerName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 0 1 auto;
+}
+.label [data-faction-label],
+.label :global(.disposition-label) {
+  display: inline-flex !important;
+  max-width: 100%;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+.label [data-faction-text],
+.label :global(.disposition-label) > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.label :global(.disposition-label) img {
+  flex-shrink: 0;
+}
+.preview {
+  position: fixed;
+  z-index: 1000;
+  width: min(360px, calc(100vw - 16px));
+  max-height: min(360px, calc(100vh - 24px));
+  overflow: hidden;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+  color: var(--navy);
+  box-shadow: 0 6px 24px #102a4326;
+  pointer-events: none;
+  font-size: var(--text-small);
+}
+.preview ul {
+  list-style: none;
+  margin: 6px 0;
+  padding: 0;
+}
+.preview li {
+  margin: 0;
+  padding: 0;
+}
+.preview small {
+  color: var(--muted);
+}
+.preview p {
+  margin: 6px 0 0;
+}

@@ -40,10 +40,7 @@ export default function ScrimMatrix({
   const base = matchupDatabase(view, scrim.patchId);
   const rows = submitted.map((entry) => ({
     key: entry.id,
-    army: {
-      ...entry.army!,
-      listName: `${entry.name} · ${entry.army!.listName || entry.army!.factionName}`,
-    },
+    army: entry.army!,
   }));
   const allColumns = opponents.map((entry) => ({
     key: entry.id,
@@ -170,7 +167,7 @@ export default function ScrimMatrix({
             </button>
           </div>
           <AxisFilter
-            axis="Opponents (X)"
+            axis="Opponents (Y)"
             armies={allColumns}
             value={activeFilter}
             onChange={(filter) => {
@@ -207,7 +204,8 @@ export default function ScrimMatrix({
             }
             showAverages={false}
             averageAxes
-            opponentDetails
+            patchId={scrim.patchId}
+            revision={view}
             rows={rows}
             columns={columns}
             data={{ effective, manual, cells }}

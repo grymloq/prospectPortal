@@ -130,15 +130,15 @@
 }
 :global(.matrix-compact).compactMatrix :global(.matrix-list-label) span,
 :global(.matrix-compact).compactMatrix :global(.matrix-list-label) small {
-  overflow: visible !important;
-  text-overflow: clip !important;
-  white-space: normal !important;
-  max-width: none !important;
-  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  max-width: 100% !important;
 }
 :global(.matrix-compact).compactMatrix :global(.matrix-army-heading),
 :global(.matrix-compact).compactMatrix :global(.disposition-label) {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 :global(.matrix-compact).compactMatrix
   :global(.matchup-table .matrix-average-axis) {

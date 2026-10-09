@@ -9,6 +9,7 @@ export function ArmyListLink({
   className = "text-button",
   title,
   textOnly = false,
+  describedBy,
 }: {
   url: string;
   name?: string;
@@ -16,6 +17,7 @@ export function ArmyListLink({
   className?: string;
   title?: string;
   textOnly?: boolean;
+  describedBy?: string;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -24,6 +26,7 @@ export function ArmyListLink({
         type="button"
         className={`${className}${textOnly ? " army-list-text-trigger" : ""}`}
         title={title}
+        aria-describedby={describedBy}
         onClick={() => {
           if (url) setOpen(true);
         }}

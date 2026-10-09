@@ -29,10 +29,8 @@
     min-height: 44px;
   }
   .own {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: var(--space-2);
+    display: block;
+    min-width: 0;
     margin-bottom: var(--space-3);
   }
   .opponent {
@@ -53,7 +51,8 @@
   }
   .heading > div:first-child {
     min-width: 0;
-    overflow-wrap: anywhere;
+    flex: 1;
+    overflow: hidden;
   }
   .heading p {
     margin: 4px 0;

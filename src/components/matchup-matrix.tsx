@@ -149,7 +149,7 @@ export default function MatchupMatrix({
         className={`matrix-filters ${mobileFilters ? "mobile-filters-open" : ""}`}
       >
         <AxisFilter
-          axis="Rows (Y)"
+          axis="Our players / armies (X)"
           armies={data.armies}
           value={y}
           onChange={(v) => {
@@ -158,7 +158,7 @@ export default function MatchupMatrix({
           }}
         />
         <AxisFilter
-          axis="Columns (X)"
+          axis="Opponents (Y)"
           armies={data.armies}
           value={x}
           onChange={(v) => {
@@ -187,8 +187,8 @@ export default function MatchupMatrix({
         {(rows.length > size || columns.length > size) && (
           <div className="matrix-navigation">
             {[
-              ["Rows", yp, rows.length, setYPage],
-              ["Columns", xp, columns.length, setXPage],
+              ["Our columns", yp, rows.length, setYPage],
+              ["Opponent rows", xp, columns.length, setXPage],
             ].map(([label, page, count, setter]) => (
               <div key={String(label)}>
                 <span>
@@ -225,7 +225,8 @@ export default function MatchupMatrix({
           />
         ) : (
           <MatchupTable
-            opponentDetails
+            patchId={patch}
+            revision={view}
             averageAxes
             showAverages={false}
             rows={rows}

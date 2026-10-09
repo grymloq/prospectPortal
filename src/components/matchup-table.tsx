@@ -1,9 +1,9 @@
 "use client";
-import { DetachmentNames } from "./detachment-name";
 import { FactionName } from "./faction-avatar";
 import { useState, useId, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
+  armyKey,
   cellKey,
   layouts,
   type MatrixArmy,
@@ -12,7 +12,7 @@ import {
 import type { Layout } from "@/lib/types";
 import MatrixLayoutScore from "./matrix-layout-score";
 import { Disposition } from "./disposition";
-import { ArmyListLink } from "./army-list-drawer";
+import { MatrixArmyLabel, useMatrixArchetypes } from "./matrix-army-label";
 import MobileMatchups from "./mobile-matchups";
 import mobileStyles from "./mobile-matchups.module.css";
 function MatchupTooltip({
@@ -123,7 +123,8 @@ export default function MatchupTable({
   columnNames,
   showAverages = true,
   averageAxes = false,
-  opponentDetails = false,
+  patchId,
+  revision,
   preferredRow,
 }: {
   preferredRow?: string;
@@ -131,7 +132,9 @@ export default function MatchupTable({
   columnNames?: Record<string, string>;
   showAverages?: boolean;
   averageAxes?: boolean;
-  opponentDetails?: boolean;
+  patchId?: string;
+  revision?: object;
+  // Data and callbacks stay own-first; the table renders opponents as rows.
   rows: MatrixArmy[];
   columns: MatrixArmy[];
   visibleRows?: MatrixArmy[];
@@ -156,6 +159,7 @@ export default function MatchupTable({
     score: number | null,
   ) => Promise<void>;
 }) {
+  const archetypes = useMatrixArchetypes(patchId, revision);
   const [error, setError] = useState("");
   const [fullMobile, setFullMobile] = useState(false);
   return (
@@ -171,6 +175,7 @@ export default function MatchupTable({
         data={data}
         rowNames={rowNames}
         columnNames={columnNames}
+        archetypes={archetypes}
         preferredRow={preferredRow}
         full={fullMobile}
         onFull={setFullMobile}
@@ -187,85 +192,57 @@ export default function MatchupTable({
         >
           <table
             className="matchup-table"
+            style={{
+              minWidth: 190 + (averageAxes ? 40 : 0) + visibleRows.length * 140,
+            }}
             onMouseLeave={() => setHover({})}
             onBlur={(e) => {
               if (!e.currentTarget.contains(e.relatedTarget)) setHover({});
             }}
           >
             <caption className="sr-only">
-              Average scores for row army against column army on layouts A, B, C
+              Scores from our players’ perspective against opponents on layouts
+              A, B, C
             </caption>
+            <colgroup>
+              <col style={{ width: 190 }} />
+              {averageAxes && <col style={{ width: 40 }} />}
+              {visibleRows.map((own) => (
+                <col key={own.key} />
+              ))}
+            </colgroup>
             <thead>
               <tr>
-                <th scope="col">Row ↓ / Opponent →</th>
+                <th scope="col">Opponents ↓ / Our players →</th>
                 {averageAxes && (
                   <th scope="col" className="matrix-average-axis">
-                    <span className="sr-only">Player average</span>
+                    <span className="sr-only">Opponent average</span>
                   </th>
                 )}
-                {visibleColumns.map((a) => (
+                {visibleRows.map((a) => (
                   <th
                     scope="col"
                     key={a.key}
-                    className={`matrix-markable-heading ${highlight(undefined, a.key)}`}
-                    onMouseEnter={() => setHover({ column: a.key })}
-                    onFocus={() => setHover({ column: a.key })}
+                    className={`matrix-markable-heading ${highlight(a.key)}`}
+                    onMouseEnter={() => setHover({ row: a.key })}
+                    onFocus={() => setHover({ row: a.key })}
                   >
                     <button
                       type="button"
                       className="matrix-heading-highlight"
                       aria-label={`Highlight column ${description(a)}`}
-                      aria-pressed={markedColumns.includes(a.key)}
-                      onClick={() =>
-                        setMarkedColumns(toggle(markedColumns, a.key))
-                      }
+                      aria-pressed={markedRows.includes(a.key)}
+                      onClick={() => setMarkedRows(toggle(markedRows, a.key))}
                     />
-                    <ArmyListLink
-                      textOnly
-                      url={a.army.listUrl}
-                      name={description(a)}
-                      className="matrix-list-label"
-                      title={description(a)}
-                    >
-                      {opponentDetails ? (
-                        <>
-                          <FactionName name={a.army.factionName} />
-                          <span>
-                            <DetachmentNames
-                              names={a.army.detachmentNames}
-                              fallback="No detachments"
-                              focusable={false}
-                            />
-                          </span>
-                          <span className="matrix-army-heading">
-                            <Disposition name={a.army.dispositionName} />
-                          </span>
-                        </>
-                      ) : columnNames?.[a.key] ? (
-                        <>
-                          <span className="matrix-team-name">
-                            {columnNames[a.key]} -{" "}
-                            <FactionName name={a.army.factionName} />
-                          </span>
-                          <span className="matrix-army-heading">
-                            <Disposition name={a.army.dispositionName} />
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          {" "}
-                          <span className="matrix-army-heading">
-                            <FactionName name={a.army.factionName} /> -{" "}
-                            <Disposition name={a.army.dispositionName} />
-                          </span>
-                          <small>{a.army.listName || a.army.factionName}</small>
-                        </>
-                      )}
-                    </ArmyListLink>
+                    <MatrixArmyLabel
+                      item={a}
+                      name={rowNames?.[a.key]}
+                      side="own"
+                    />
                     {showAverages &&
                       averageBadge(
                         a.key,
-                        rows.map((r) => r.key),
+                        columns.map((r) => r.key),
                       )}
                     <div className="matrix-layout-labels">
                       <span>A</span>
@@ -278,14 +255,14 @@ export default function MatchupTable({
               {averageAxes && (
                 <tr className="matrix-average-row">
                   <th scope="row">
-                    <span className="sr-only">Opponent averages</span>
+                    <span className="sr-only">Player averages</span>
                   </th>
                   <td className="matrix-average-axis" />
-                  {visibleColumns.map((column) => (
-                    <td key={column.key}>
+                  {visibleRows.map((row) => (
+                    <td key={row.key}>
                       {averageBadge(
-                        column.key,
-                        rows.map((row) => row.key),
+                        row.key,
+                        columns.map((column) => column.key),
                       )}
                     </td>
                   ))}
@@ -293,70 +270,48 @@ export default function MatchupTable({
               )}
             </thead>
             <tbody>
-              {visibleRows.map((row) => (
-                <tr key={row.key}>
+              {visibleColumns.map((col) => (
+                <tr key={col.key}>
                   <th
                     scope="row"
-                    className={`matrix-markable-heading ${highlight(row.key)}`}
-                    onMouseEnter={() => setHover({ row: row.key })}
-                    onFocus={() => setHover({ row: row.key })}
+                    className={`matrix-markable-heading ${highlight(undefined, col.key)}`}
+                    onMouseEnter={() => setHover({ column: col.key })}
+                    onFocus={() => setHover({ column: col.key })}
                   >
                     <button
                       type="button"
                       className="matrix-heading-highlight"
-                      aria-label={`Highlight row ${description(row)}`}
-                      aria-pressed={markedRows.includes(row.key)}
-                      onClick={() => setMarkedRows(toggle(markedRows, row.key))}
+                      aria-label={`Highlight row ${description(col)}`}
+                      aria-pressed={markedColumns.includes(col.key)}
+                      onClick={() =>
+                        setMarkedColumns(toggle(markedColumns, col.key))
+                      }
                     />
-                    <ArmyListLink
-                      textOnly
-                      url={row.army.listUrl}
-                      name={description(row)}
-                      className="matrix-list-label"
-                      title={description(row)}
-                    >
-                      {rowNames?.[row.key] ? (
-                        <>
-                          <span className="matrix-team-name">
-                            {rowNames[row.key]} -{" "}
-                            <FactionName name={row.army.factionName} />
-                          </span>
-                          <span className="matrix-army-heading">
-                            <Disposition name={row.army.dispositionName} />
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          {" "}
-                          <span className="matrix-army-heading">
-                            <FactionName name={row.army.factionName} /> -{" "}
-                            <Disposition name={row.army.dispositionName} />
-                          </span>
-                          <small>
-                            {row.army.listName || row.army.factionName}
-                          </small>
-                        </>
-                      )}
-                    </ArmyListLink>
+                    <MatrixArmyLabel
+                      item={col}
+                      name={columnNames?.[col.key]}
+                      side="opponent"
+                      archetype={archetypes[armyKey(col.army)]}
+                    />
                     {showAverages &&
                       averageBadge(
-                        row.key,
-                        columns.map((a) => a.key),
+                        col.key,
+                        rows.map((a) => a.key),
                       )}
                   </th>
                   {averageAxes && (
                     <td className="matrix-average-axis">
                       {averageBadge(
-                        row.key,
-                        columns.map((column) => column.key),
+                        col.key,
+                        rows.map((row) => row.key),
                       )}
                     </td>
                   )}
-                  {visibleColumns.map((col) => {
+                  {visibleRows.map((row) => {
                     const cell = data.effective.get(cellKey(row.key, col.key));
                     return (
                       <td
-                        key={col.key}
+                        key={row.key}
                         className={highlight(row.key, col.key)}
                         onMouseEnter={() =>
                           setHover({ row: row.key, column: col.key })

@@ -1,16 +1,14 @@
 "use client";
-import { DetachmentNames } from "./detachment-name";
-import { FactionName } from "./faction-avatar";
 import { useId, useState } from "react";
 import {
+  armyKey,
   cellKey,
   layouts,
   type MatrixArmy,
   type Matchup,
 } from "@/lib/matchups";
 import type { Layout } from "@/lib/types";
-import { Disposition } from "./disposition";
-import { ArmyListLink } from "./army-list-drawer";
+import { MatrixArmyLabel } from "./matrix-army-label";
 import MatrixLayoutScore from "./matrix-layout-score";
 import styles from "./mobile-matchups.module.css";
 
@@ -20,6 +18,7 @@ export default function MobileMatchups({
   data,
   rowNames,
   columnNames,
+  archetypes,
   preferredRow,
   full,
   onFull,
@@ -36,6 +35,7 @@ export default function MobileMatchups({
   };
   rowNames?: Record<string, string>;
   columnNames?: Record<string, string>;
+  archetypes: Record<string, string>;
   preferredRow?: string;
   full: boolean;
   onFull: (full: boolean) => void;
@@ -106,14 +106,7 @@ export default function MobileMatchups({
             ))}
           </select>
           <div className={styles.own}>
-            <ArmyListLink
-              textOnly
-              url={row.army.listUrl}
-              name={name(row, rowNames)}
-            >
-              <FactionName name={row.army.factionName} />
-            </ArmyListLink>
-            <Disposition name={row.army.dispositionName} />
+            <MatrixArmyLabel item={row} name={rowNames?.[row.key]} side="own" />
           </div>
           <label htmlFor={`${id}-sort`}>Sort opponents</label>
           <select
@@ -137,19 +130,12 @@ export default function MobileMatchups({
                 >
                   <div className={styles.heading}>
                     <div>
-                      <ArmyListLink
-                        textOnly
-                        url={column.army.listUrl}
-                        name={name(column, columnNames)}
-                        className={styles.listHeading}
-                      >
-                        <strong>{name(column, columnNames)}</strong>
-                        <FactionName name={column.army.factionName} />
-                      </ArmyListLink>
-                      <Disposition name={column.army.dispositionName} />
-                      <p>
-                        <DetachmentNames names={column.army.detachmentNames} />
-                      </p>
+                      <MatrixArmyLabel
+                        item={column}
+                        name={columnNames?.[column.key]}
+                        side="opponent"
+                        archetype={archetypes[armyKey(column.army)]}
+                      />
                     </div>
                     <div className={styles.average}>
                       <strong>
