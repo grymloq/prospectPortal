@@ -445,6 +445,129 @@ test("pagination, filtering and stable sorting stay purpose-specific without cha
   assert.equal(JSON.stringify(state), before);
 });
 
+test("library facets cascade by faction and the complete selected detachment combination", () => {
+  const { state, a, b, admin } = fixture();
+  const configuration = (
+    faction: string,
+    detachments: string[],
+    disposition: string,
+  ): Army => ({
+    ...army("filter", faction),
+    detachments,
+    detachmentNames: detachments.map((id) => `Detachment ${id}`),
+    disposition,
+    dispositionName: `Disposition ${disposition}`,
+  });
+  addList(state, "first", a, configuration("f", ["x"], "p2"));
+  addList(state, "combination", b, configuration("f", ["d", "x"], "p3"));
+  addList(state, "foreign", b, configuration("g", ["foreign", "x"], "p4"));
+  addList(state, "next-patch", b, configuration("f", ["future"], "p5"), "p2");
+  const hidden = addList(
+    state,
+    "private",
+    b,
+    configuration("f", ["secret"], "private"),
+  );
+  hidden.published = false;
+  state.savedArmies!.find((list) => list.id === hidden.listId)!.shared = false;
+  const ids = (rows: { id: string }[]) => rows.map((row) => row.id).sort();
+  const before = JSON.stringify(state);
+  for (const tab of ["lists", "archetypes"] as const) {
+    for (const actor of [a, admin]) {
+      const base = queryArmyLibrary(state, actor, { tab, faction: "f" });
+      assert.deepEqual(ids(base.facets.factions), ["f", "g"]);
+      assert.deepEqual(ids(base.facets.detachments), ["d", "x"]);
+      assert.deepEqual(ids(base.facets.dispositions), ["p", "p2", "p3"]);
+      const one = queryArmyLibrary(state, actor, {
+        tab,
+        faction: "f",
+        detachments: ["x"],
+        disposition: "p2",
+        search: "no matching text",
+        pageSize: 1,
+      });
+      assert.equal(one.total, 0);
+      assert.deepEqual(ids(one.facets.detachments), ["d", "x"]);
+      assert.deepEqual(ids(one.facets.dispositions), ["p2", "p3"]);
+      const combination = queryArmyLibrary(state, actor, {
+        tab,
+        faction: "f",
+        detachments: ["d", "x"],
+      });
+      assert.deepEqual(ids(combination.facets.dispositions), ["p3"]);
+      assert.deepEqual(
+        queryArmyLibrary(state, actor, {
+          tab,
+          faction: "f",
+          detachments: ["foreign"],
+        }).facets.dispositions,
+        [],
+      );
+      assert.deepEqual(
+        ids(
+          queryArmyLibrary(state, actor, {
+            tab,
+            patchId: "all",
+            faction: "f",
+          }).facets.detachments,
+        ),
+        ["d", "future", "x"],
+      );
+    }
+  }
+  assert.equal(JSON.stringify(state), before);
+});
+
+test("published historical configurations remain available to dependent filters", () => {
+  const { state, a } = fixture();
+  const historical = state.armyVersions!.find(
+    (version) => version.listId === "list-a",
+  )!;
+  const current: ArmyListVersion = {
+    ...historical,
+    id: "list-a:v2",
+    number: 2,
+    army: {
+      ...army("new", "g"),
+      detachments: ["new"],
+      detachmentNames: ["New detachment"],
+      disposition: "new-disposition",
+      dispositionName: "New disposition",
+    },
+  };
+  state.armyVersions!.push(current);
+  state.libraryMemberships!.push(classifyLibraryVersion(current));
+  Object.assign(
+    state.savedArmies!.find((list) => list.id === "list-a")!,
+    {
+      army: current.army,
+      currentVersionId: current.id,
+      listRevision: 2,
+    },
+  );
+  const old = queryArmyLibrary(state, a, { faction: "f", detachments: ["d"] });
+  assert.deepEqual(
+    old.facets.detachments.map((row) => row.id),
+    ["d"],
+  );
+  assert.deepEqual(
+    old.facets.dispositions.map((row) => row.id),
+    ["p"],
+  );
+  const next = queryArmyLibrary(state, a, {
+    faction: "g",
+    detachments: ["new"],
+  });
+  assert.deepEqual(
+    next.facets.detachments.map((row) => row.id),
+    ["new"],
+  );
+  assert.deepEqual(
+    next.facets.dispositions.map((row) => row.id),
+    ["new-disposition"],
+  );
+});
+
 test("uncertainty groups dependent mirror appearances and accounts for unequal match weights", () => {
   const base = {
     contributorId: "a",

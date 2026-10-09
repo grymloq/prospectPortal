@@ -229,6 +229,27 @@ export default function ArmyLibraries({
       })
       .then((data) => {
         if (live) {
+          const detachments = query.detachments?.filter((id) =>
+            data.facets.detachments.some((d) => d.id === id),
+          );
+          const changedDetachments =
+            detachments?.length !== query.detachments?.length;
+          const invalidDisposition =
+            query.disposition &&
+            !data.facets.dispositions.some((d) => d.id === query.disposition);
+          if (changedDetachments || invalidDisposition) {
+            setLocation((current) => ({
+              ...current,
+              query: {
+                ...current.query,
+                detachments,
+                disposition: undefined,
+                page: 1,
+                relatedPage: 1,
+              },
+            }));
+            return;
+          }
           restoredTarget.current = undefined;
           setLibrary(data);
           setError("");
@@ -445,6 +466,8 @@ export default function ArmyLibraries({
               changeQuery({
                 patchId: e.target.value || undefined,
                 versionId: undefined,
+                detachments: undefined,
+                disposition: undefined,
               })
             }
           >
@@ -461,7 +484,11 @@ export default function ArmyLibraries({
           <select
             value={query.faction || ""}
             onChange={(e) =>
-              changeQuery({ faction: e.target.value, detachments: undefined })
+              changeQuery({
+                faction: e.target.value,
+                detachments: undefined,
+                disposition: undefined,
+              })
             }
           >
             <option value="">All factions</option>
@@ -475,6 +502,7 @@ export default function ArmyLibraries({
         <Field label="Detachment combination">
           <select
             multiple
+            disabled={loading}
             value={query.detachments || []}
             onChange={(e) =>
               changeQuery({
@@ -482,6 +510,7 @@ export default function ArmyLibraries({
                   e.target.selectedOptions,
                   (o) => o.value,
                 ),
+                disposition: undefined,
               })
             }
           >
@@ -495,6 +524,7 @@ export default function ArmyLibraries({
         <Field label="Disposition">
           <select
             value={query.disposition || ""}
+            disabled={loading}
             onChange={(e) => changeQuery({ disposition: e.target.value })}
           >
             <option value="">All dispositions</option>

@@ -805,9 +805,15 @@ export function queryArmyLibrary(
     ...publicMembers.map((member) => member.version.army),
   ]) {
     facets.factions.set(army.faction, army.factionName);
+    if (filters.faction && army.faction !== filters.faction) continue;
     army.detachments.forEach((id, i) =>
       facets.detachments.set(id, army.detachmentNames[i] || id),
     );
+    if (
+      filters.detachments?.length &&
+      !filters.detachments.every((id) => army.detachments.includes(id))
+    )
+      continue;
     facets.dispositions.set(army.disposition, army.dispositionName);
   }
   const facetRows = (map: Map<string, string>) =>
