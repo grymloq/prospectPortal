@@ -1,10 +1,11 @@
+import { timed, timingJson, withRequestTiming } from "@/server/request-timing";
 import { scrimScoreStateResponse } from "@/server/scrim-score-response";
 import { matrixScoreResponse } from "@/server/matrix-score-response";
 import type { MatrixScoreEdit } from "@/lib/matrix-score-queue";
 import type { ScrimLayoutEdit } from "@/lib/types";
 import { after } from "next/server";
 import { deliverNotifications } from "@/server/notification-worker";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { z } from "zod";
 import { localMode } from "@/server/config";
 import { authClient } from "@/server/supabase";
@@ -18,13 +19,12 @@ const headers = { "Cache-Control": "private, no-store" };
 async function handle(req: NextRequest, mutate: boolean) {
   try {
     if (mutate) sameOrigin(req);
-    const auth = await authClient();
     const {
       data: { user },
       error,
-    } = await auth.auth.getUser();
+    } = await timed("auth", async () => (await authClient()).auth.getUser());
     if (error || !user)
-      return NextResponse.json(
+      return timingJson(
         { error: "Sign in to continue." },
         { status: 401, headers },
       );
@@ -46,7 +46,7 @@ async function handle(req: NextRequest, mutate: boolean) {
             : matrixScoreResponse(state, actor, command as MatrixScoreEdit),
         command,
       );
-      return NextResponse.json(result, { headers });
+      return timingJson(result, { headers });
     }
     const view = await cloudView(
       user,
@@ -55,9 +55,9 @@ async function handle(req: NextRequest, mutate: boolean) {
       undefined,
       req.cookies.get(previewCookie)?.value,
     );
-    return NextResponse.json(view, { headers });
+    return timingJson(view, { headers });
   } catch (e) {
-    return NextResponse.json(
+    return timingJson(
       {
         error:
           e instanceof z.ZodError ? e.issues[0].message : (e as Error).message,
@@ -75,8 +75,11 @@ async function handle(req: NextRequest, mutate: boolean) {
   }
 }
 export async function GET(req: NextRequest) {
-  if (localMode()) return (await import("@/server/local/state-route")).GET(req);
-  return handle(req, false);
+  return withRequestTiming("state.read", async () => {
+    if (localMode())
+      return (await import("@/server/local/state-route")).GET(req);
+    return handle(req, false);
+  });
 }
 export async function POST(req: NextRequest) {
   after(async () => {
@@ -86,7 +89,14 @@ export async function POST(req: NextRequest) {
       console.error("Notification delivery deferred to scheduled retry.");
     }
   });
-  if (localMode())
-    return (await import("@/server/local/state-route")).POST(req);
-  return handle(req, true);
+  return withRequestTiming(
+    req.nextUrl.searchParams.get("response") === "matrix-score"
+      ? "matrix.score"
+      : "state.write",
+    async () => {
+      if (localMode())
+        return (await import("@/server/local/state-route")).POST(req);
+      return handle(req, true);
+    },
+  );
 }

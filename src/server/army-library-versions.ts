@@ -12,7 +12,10 @@ import type {
 import { armyKey } from "@/lib/matchups";
 import { canonicalRoster } from "./army-library-identity";
 import { rosterAttachmentSignature } from "@/lib/roster-display";
-import { maintainLibraryArmySummaries } from "./army-library-summary";
+import {
+  ensureLibraryArmySummaries,
+  summarizeLibraryArmy,
+} from "./army-library-summary";
 
 const label = z.string().trim().min(1).max(300);
 const selection: z.ZodType<RosterSelection> = z.lazy(() =>
@@ -111,6 +114,7 @@ export function ensureArmyLibrary(state: State): boolean {
       )
     )
       continue;
+    saved.army.summary = summarizeLibraryArmy(saved.army, saved.patchId, state);
     const version = state.armyVersions.find((v) => v.listId === saved.id) || {
       id: `${saved.id}:v1`,
       listId: saved.id,
@@ -126,7 +130,7 @@ export function ensureArmyLibrary(state: State): boolean {
     saved.listRevision ||= 1;
     changed = true;
   }
-  return maintainLibraryArmySummaries(state) || changed;
+  return ensureLibraryArmySummaries(state) || changed;
 }
 
 function versionContent(army: Army, patchId: string) {
@@ -169,6 +173,8 @@ export function updateArmyVersion(
   ensureArmyLibrary(state);
   if (expectedRevision !== undefined && expectedRevision !== saved.listRevision)
     throw new Error("This army list changed. Reload before saving.");
+  // Ignore submitted/stale derived metadata; versions retain their own summary.
+  army.summary = summarizeLibraryArmy(army, patchId, state);
   const previous = state.armyVersions!.find(
     (v) => v.id === saved.currentVersionId,
   )!;

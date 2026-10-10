@@ -998,6 +998,67 @@ try {
         deletedUser.accountDeletedAt,
       ),
   );
+  await request("/api/army-library?search=PRIVATE_TIMING_SEARCH");
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  check(
+    "request timings contain only measurements and preserve authenticated/error response behavior",
+    () => {
+      const records = logs.split(/\r?\n/).flatMap((line) => {
+        try {
+          const value = JSON.parse(line);
+          return value.event === "portal_timing" ? [value] : [];
+        } catch {
+          return [];
+        }
+      });
+      assert.ok(
+        records.some((r) => r.operation === "state.read" && r.status === 401),
+      );
+      assert.ok(
+        records.some(
+          (r) => r.operation === "library.lists" && r.status === 200,
+        ),
+      );
+      assert.ok(
+        records.some((r) => r.operation === "matrix.score" && r.status === 200),
+      );
+      assert.ok(
+        records.some(
+          (r) => r.operation === "notifications.read" && r.status === 200,
+        ),
+      );
+      const fields = [
+        "event",
+        "version",
+        "operation",
+        "status",
+        "elapsedMs",
+        "phasesMs",
+        "responseBytes",
+        "retries",
+        "firstRequestInProcess",
+      ].sort();
+      for (const record of records) {
+        assert.deepEqual(Object.keys(record).sort(), fields);
+        assert.equal(record.version, 1);
+        assert.ok(
+          record.elapsedMs >= 0 &&
+            record.responseBytes > 0 &&
+            record.retries >= 0,
+        );
+        assert.ok(
+          Object.values(record.phasesMs).every(
+            (value) => typeof value === "number" && value >= 0,
+          ),
+        );
+      }
+      assert.ok(
+        !/PRIVATE|@|team_session|password|token|search/i.test(
+          JSON.stringify(records),
+        ),
+      );
+    },
+  );
   console.log(`${passed} HTTP integration checks passed.`);
 } finally {
   child.kill();

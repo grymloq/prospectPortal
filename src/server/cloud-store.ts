@@ -13,6 +13,11 @@ import { accessError, ensureMembership } from "./membership";
 import { previewView } from "./access-preview";
 import { ensureArmyLibrary } from "./army-library-versions";
 import { maintainLibraryMemberships } from "./army-library-identity";
+import {
+  maintainLibraryArmySummaries,
+  snapshotArmyReferences,
+} from "./army-library-summary";
+import { timed, timedSync, timingRetry } from "./request-timing";
 
 export function ensureProfile(
   state: State,
@@ -79,32 +84,44 @@ export async function cloudResult<T>(
 ): Promise<T> {
   const db = databaseClient();
   for (let attempt = 0; attempt < 12; attempt++) {
-    const { data, error } = await db
-      .from("portal_state")
-      .select("revision,value")
-      .eq("id", 1)
-      .single();
+    const { data, error } = await timed("db.read", async () =>
+      db.from("portal_state").select("revision,value").eq("id", 1).single(),
+    );
     if (error) {
       console.error("Portal read failed:", error.code);
       throw new Error("The workspace is temporarily unavailable.");
     }
     const state = data.value as State;
-    const patchMigration = ensurePatches(state);
-    const memberMigration = ensureMembership(state);
-    const libraryMigration = ensureArmyLibrary(state);
-    if (libraryMigration) maintainLibraryMemberships(state);
-    const migrated = patchMigration || memberMigration || libraryMigration;
-    const { actor, changed } = ensureProfile(state, identity);
+    const { actor, changed, migrated } = timedSync("state.prepare", () => {
+      const patchMigration = ensurePatches(state);
+      const memberMigration = ensureMembership(state);
+      const libraryMigration = ensureArmyLibrary(state);
+      if (libraryMigration) maintainLibraryMemberships(state);
+      return {
+        ...ensureProfile(state, identity),
+        migrated: patchMigration || memberMigration || libraryMigration,
+      };
+    });
     const denied = accessError(actor);
     if (!denied) {
-      if (command !== undefined) execute(state, actor, command);
-      if (trustedUpdate) trustedUpdate(state, actor);
+      if (command !== undefined)
+        timedSync("state.command", () => execute(state, actor, command));
+      if (trustedUpdate) {
+        timedSync("state.command", () => {
+          const previousArmies = snapshotArmyReferences(state);
+          trustedUpdate(state, actor);
+          maintainLibraryArmySummaries(state, previousArmies);
+        });
+      }
     }
-    const notificationsBefore = JSON.stringify(state.notifications);
-    generateDeadlineNotifications(state);
-    const notificationChanged =
-      notificationsBefore !== JSON.stringify(state.notifications);
-    const resultValue = denied ? null : project(state, actor);
+    const notificationChanged = timedSync("state.notifications", () => {
+      const before = JSON.stringify(state.notifications);
+      generateDeadlineNotifications(state);
+      return before !== JSON.stringify(state.notifications);
+    });
+    const resultValue = denied
+      ? null
+      : timedSync("state.project", () => project(state, actor));
     if (
       !notificationChanged &&
       !changed &&
@@ -114,10 +131,12 @@ export async function cloudResult<T>(
       if (denied) throw new Error(denied);
       return resultValue!;
     }
-    const result = await db.rpc("portal_commit", {
-      expected_revision: data.revision,
-      next_value: state,
-    });
+    const result = await timed("db.commit", async () =>
+      db.rpc("portal_commit", {
+        expected_revision: data.revision,
+        next_value: state,
+      }),
+    );
     if (result.error) {
       console.error("Portal commit failed:", result.error.code);
       throw new Error("Could not save your changes.");
@@ -127,6 +146,7 @@ export async function cloudResult<T>(
       return resultValue!;
     }
     // Re-run validation against the winning transaction, preserving caps and evaluation conflicts.
+    timingRetry();
   }
   throw new Error("The workspace is busy. Please try again.");
 }

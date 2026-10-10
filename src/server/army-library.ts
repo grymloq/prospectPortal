@@ -707,16 +707,16 @@ export function queryArmyLibrary(
         ...(list ? [list.patchId] : archetype!.patchIds),
       ]),
     ].sort();
+    const detailArmy =
+      selected?.version.army ||
+      (list?.versionId
+        ? sources.versions.get(list.versionId)?.version.army
+        : members[0]?.version.army) ||
+      (list ? rosterArmy(list) : identity.army);
     detail = {
       target,
       name: identity.name,
-      army: publicArmy(
-        selected?.version.army ||
-          (list?.versionId
-            ? sources.versions.get(list.versionId)?.version.army
-            : members[0]?.version.army) ||
-          (list ? rosterArmy(list) : identity.army),
-      ),
+      army: publicArmy(detailArmy),
       ownerName: list?.ownerName,
       currentSourceUrl:
         list?.kind === "saved"
@@ -813,11 +813,19 @@ export function queryArmyLibrary(
         },
       ];
     if (list)
-      detail.army.summary = summarizeLibraryArmy(
-        detail.army,
-        selected?.version.patchId || list.patchId,
-        state,
-      );
+      detail.army.summary =
+        detailArmy.summary?.archetypeId ===
+        archetypeId(
+          detailArmy,
+          selected?.version.patchId || list.patchId,
+          state,
+        )
+          ? structuredClone(detailArmy.summary)
+          : summarizeLibraryArmy(
+              detail.army,
+              selected?.version.patchId || list.patchId,
+              state,
+            );
     detail.standards = segmentIds.flatMap((patchId) => {
       const standard = getNorms().standard(detail!.archetypeId, patchId);
       return standard ? [standard] : [];

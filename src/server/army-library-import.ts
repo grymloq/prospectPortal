@@ -16,6 +16,10 @@ import {
 import { updateArmyVersion } from "./army-library-versions";
 import { fetchNewRecruitArmy, newRecruitListUrl } from "./newrecruit-army";
 import { rosterAttachmentSignature } from "@/lib/roster-display";
+import {
+  maintainLibraryArmySummaries,
+  snapshotArmyReferences,
+} from "./army-library-summary";
 
 const hash = (value: unknown) =>
   createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -307,6 +311,7 @@ export function applyLibraryRosterImports(
   results: LibraryRosterImport[],
 ): LibraryRosterImportReport {
   requireAdmin(state, actor);
+  const previousArmies = snapshotArmyReferences(state);
   const current = new Map(
     inventoryLibraryRosterSources(state).map((row) => [row.sourceKey, row]),
   );
@@ -416,6 +421,7 @@ export function applyLibraryRosterImports(
     report.updated++;
     detail.updated = true;
   }
+  maintainLibraryArmySummaries(state, previousArmies);
   return report;
 }
 

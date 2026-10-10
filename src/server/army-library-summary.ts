@@ -8,6 +8,26 @@ import { decodeNewRecruitText } from "./newrecruit-text-decode";
 import { archetypeId, archetypeName } from "./army-library-identity";
 import { libraryUnitCounts } from "./army-library-norm";
 
+// Bump when the decoder, classifier or unit-counting semantics change. Only
+// patch IDs and system namespaces affect summaries; catalogue labels are
+// already recorded in the immutable army snapshots.
+const MAINTENANCE_VERSION = "army-summary-maintenance-v1";
+function summaryRevision(state: State): string {
+  return JSON.stringify([
+    MAINTENANCE_VERSION,
+    (state.patches || [])
+      .map((patch) => [patch.id, patch.catalogue?.systemId ?? null])
+      .sort(([a], [b]) => String(a).localeCompare(String(b))),
+  ]);
+}
+
+/** A persisted marker makes ordinary reads independent of roster size. */
+export function ensureLibraryArmySummaries(state: State): boolean {
+  return state.armySummaryRevision === summaryRevision(state)
+    ? false
+    : maintainLibraryArmySummaries(state);
+}
+
 /** Shared format decoders supply display evidence, never exact variations. */
 export function textRosterSummary(listText: string): RosterComposition {
   try {
@@ -45,24 +65,52 @@ export function summarizeLibraryArmy(
   };
 }
 
-/** Additive derived metadata across creation paths; no roster or history is rewritten. */
-export function snapshotArmyReferences(state: State): Set<Army> {
-  return new Set([
-    ...(state.games || []).flatMap((game) => [game.own, game.enemy]),
-    ...(state.matrixListHistory || []).map((row) => row.army),
-    ...(state.scrims || []).flatMap((scrim) =>
-      scrim.teams.flatMap((team) =>
-        team.entries.flatMap((entry) => (entry.army ? [entry.army] : [])),
-      ),
+function* armyReferences(
+  state: State,
+  includeHistory = true,
+): Generator<[Army | undefined, string | undefined]> {
+  for (const row of state.savedArmies || []) yield [row.army, row.patchId];
+  for (const row of state.armyVersions || []) yield [row.army, row.patchId];
+  for (const row of state.matrixLists || []) yield [row.army, row.patchId];
+  for (const row of state.libraryRosterImports || [])
+    yield [row.army, row.patchId];
+  if (!includeHistory) return;
+  yield* historicalArmyReferences(state);
+}
+
+function* historicalArmyReferences(
+  state: State,
+): Generator<[Army | undefined, string | undefined]> {
+  for (const row of state.matrixListHistory || [])
+    yield [row.army, row.patchId];
+  for (const game of state.games || []) {
+    yield [game.own, game.patchId];
+    yield [game.enemy, game.patchId];
+  }
+  for (const scrim of state.scrims || [])
+    for (const team of scrim.teams)
+      for (const entry of team.entries) yield [entry.army, scrim.patchId];
+}
+
+/** Commands replace changed army snapshots; retain references without visiting rosters. */
+export function snapshotArmyReferences(
+  state: State,
+): ReadonlyMap<Army, string | undefined> {
+  return new Map(
+    [...armyReferences(state)].filter(
+      (row): row is [Army, string | undefined] => !!row[0],
     ),
-  ]);
+  );
 }
 
 export function maintainLibraryArmySummaries(
   state: State,
-  previousSnapshots?: ReadonlySet<Army>,
+  previousSnapshots?: ReadonlyMap<Army, string | undefined>,
 ): boolean {
   let changed = false;
+  const revision = summaryRevision(state);
+  const refreshAll =
+    state.armySummaryRevision !== revision || !previousSnapshots;
   // PostgreSQL jsonb can reorder keys. Derived metadata must remain idempotent
   // after storage so ordinary cloud reads do not become migration writes.
   const signature = (summary: LibraryArmySummary | undefined) =>
@@ -81,32 +129,30 @@ export function maintainLibraryArmySummaries(
         unit.modelSizes?.map((size) => [size.models, size.quantity]),
       ]),
     ]);
-  const update = (army: Army | undefined, patchId: string | undefined) => {
+  const update = (
+    army: Army | undefined,
+    patchId: string | undefined,
+    historical = false,
+  ) => {
     if (!army || !patchId) return;
+    if ((!refreshAll || historical) && previousSnapshots?.get(army) === patchId)
+      return;
     const summary = summarizeLibraryArmy(army, patchId, state);
     if (signature(army.summary) !== signature(summary)) {
       army.summary = summary;
       changed = true;
     }
   };
-  for (const row of state.savedArmies || []) update(row.army, row.patchId);
-  for (const row of state.armyVersions || []) update(row.army, row.patchId);
-  for (const row of state.matrixLists || []) update(row.army, row.patchId);
-  for (const row of state.libraryRosterImports || [])
-    update(row.army, row.patchId);
-  if (previousSnapshots) {
-    const updateNew = (army: Army | undefined, patchId: string | undefined) => {
-      if (army && !previousSnapshots.has(army)) update(army, patchId);
-    };
-    for (const row of state.matrixListHistory || [])
-      updateNew(row.army, row.patchId);
-    for (const game of state.games || []) {
-      updateNew(game.own, game.patchId);
-      updateNew(game.enemy, game.patchId);
-    }
-    for (const scrim of state.scrims || [])
-      for (const team of scrim.teams)
-        for (const entry of team.entries) updateNew(entry.army, scrim.patchId);
+  for (const [army, patchId] of armyReferences(state, false))
+    update(army, patchId);
+  // Existing journal/scrim/history snapshots remain frozen. Only newly written
+  // snapshots receive derived metadata; a deployment does not enlarge history.
+  if (previousSnapshots)
+    for (const [army, patchId] of historicalArmyReferences(state))
+      update(army, patchId, true);
+  if (state.armySummaryRevision !== revision) {
+    state.armySummaryRevision = revision;
+    changed = true;
   }
   return changed;
 }

@@ -7,6 +7,7 @@ import { catalogue, armySnapshot } from "@/lib/catalogue";
 import { ensurePatches } from "@/lib/patches";
 import { ensureMembership } from "./membership";
 import { ensureArmyLibrary } from "./army-library-versions";
+import { timedSync } from "./request-timing";
 import { maintainLibraryMemberships } from "./army-library-identity";
 
 export function hashPassword(password: string) {
@@ -246,27 +247,33 @@ if (!db.prepare("SELECT id FROM app_state WHERE id=1").get())
     JSON.stringify(seed()),
   );
 export function readState(): State {
-  const state: State = JSON.parse(
-    (
-      db.prepare("SELECT value FROM app_state WHERE id=1").get() as {
-        value: string;
-      }
-    ).value,
+  const state: State = timedSync("local.read", () =>
+    JSON.parse(
+      (
+        db.prepare("SELECT value FROM app_state WHERE id=1").get() as {
+          value: string;
+        }
+      ).value,
+    ),
   );
-  ensurePatches(state);
-  ensureMembership(state);
-  if (ensureArmyLibrary(state)) maintainLibraryMemberships(state);
+  timedSync("state.prepare", () => {
+    ensurePatches(state);
+    ensureMembership(state);
+    if (ensureArmyLibrary(state)) maintainLibraryMemberships(state);
+  });
   return state;
 }
 export function transaction<T>(work: (s: State) => T): T {
   db.exec("BEGIN IMMEDIATE");
   try {
     const s = readState();
-    const result = work(s);
-    db.prepare("UPDATE app_state SET value=? WHERE id=1").run(
-      JSON.stringify(s),
-    );
-    db.exec("COMMIT");
+    const result = timedSync("local.work", () => work(s));
+    timedSync("local.commit", () => {
+      db.prepare("UPDATE app_state SET value=? WHERE id=1").run(
+        JSON.stringify(s),
+      );
+      db.exec("COMMIT");
+    });
     return result;
   } catch (e) {
     db.exec("ROLLBACK");

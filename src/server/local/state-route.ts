@@ -1,7 +1,8 @@
+import { timingJson } from "../request-timing";
 import { scrimScoreStateResponse } from "../scrim-score-response";
 import { matrixScoreResponse } from "../matrix-score-response";
 import { generateDeadlineNotifications } from "../notifications";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { z } from "zod";
 import { transaction } from "@/server/store";
 import { viewState, execute } from "@/server/service";
@@ -17,19 +18,16 @@ export async function GET(req: NextRequest) {
   });
   const user = s.users.find((u) => u.id === id);
   if (!user)
-    return NextResponse.json(
-      { error: "Sign in to continue." },
-      { status: 401 },
-    );
+    return timingJson({ error: "Sign in to continue." }, { status: 401 });
   try {
-    return NextResponse.json(
+    return timingJson(
       previewView(s, user, req.cookies.get(previewCookie)?.value),
       {
         headers: { "Cache-Control": "no-store" },
       },
     );
   } catch (error) {
-    return NextResponse.json(
+    return timingJson(
       { error: (error as Error).message },
       { status: 403, headers: { "Cache-Control": "no-store" } },
     );
@@ -40,10 +38,7 @@ export async function POST(req: NextRequest) {
     sameOrigin(req);
     const id = sessionUserId(req);
     if (!id)
-      return NextResponse.json(
-        { error: "Sign in to continue." },
-        { status: 401 },
-      );
+      return timingJson({ error: "Sign in to continue." }, { status: 401 });
     const body = await req.json();
     if (req.cookies.has(previewCookie))
       throw new Error(
@@ -62,11 +57,11 @@ export async function POST(req: NextRequest) {
         return matrixScoreResponse(s, actor, body);
       return viewState(s, actor);
     });
-    return NextResponse.json(view, {
+    return timingJson(view, {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (e) {
-    return NextResponse.json(
+    return timingJson(
       {
         error:
           e instanceof z.ZodError ? e.issues[0].message : (e as Error).message,

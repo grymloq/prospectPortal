@@ -34,6 +34,9 @@ state.libraryMemberships = [];
 state.matrixLists = [];
 state.manualEstimates = [];
 state.matrixChanges = [];
+// Synthetic fixtures bypass domain writes; force the same legacy backfill as
+// preexisting production data instead of retaining the seed's current marker.
+delete state.armySummaryRevision;
 const factions = catalogue.factions
   .filter((f) => f.detachments.length)
   .slice(0, 8);
@@ -146,8 +149,11 @@ const fingerprints = queries.map((query) =>
     .digest("hex"),
 );
 const prefix = `.local/performance-${lists}-${games}`;
-if (label === "after" && existsSync(`${prefix}-before.json`)) {
-  const before = JSON.parse(readFileSync(`${prefix}-before.json`, "utf8"));
+const baselineLabel = label.replace(/after$/, "before");
+if (label.endsWith("after") && existsSync(`${prefix}-${baselineLabel}.json`)) {
+  const before = JSON.parse(
+    readFileSync(`${prefix}-${baselineLabel}.json`, "utf8"),
+  );
   if (JSON.stringify(before.fingerprints) !== JSON.stringify(fingerprints))
     throw new Error(
       "Library DTO changed from baseline: inspect before measuring.",
@@ -266,6 +272,15 @@ try {
     measurements,
   };
   writeFileSync(`${prefix}-${label}.json`, JSON.stringify(output, null, 2));
+  // Retain only our allowlisted measurement events, never arbitrary runtime logs.
+  const timingLines = logs.split(/\r?\n/).filter((line) => {
+    try {
+      return JSON.parse(line).event === "portal_timing";
+    } catch {
+      return false;
+    }
+  });
+  writeFileSync(`${prefix}-${label}-timings.jsonl`, timingLines.join("\n"));
   console.log(JSON.stringify(output, null, 2));
 } finally {
   child.kill();

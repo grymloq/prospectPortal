@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { timed, timingJson, withRequestTiming } from "@/server/request-timing";
+import { NextRequest } from "next/server";
 import { z } from "zod";
 import type { LibraryQuery, State, User } from "@/lib/types";
 import { localMode } from "@/server/config";
@@ -40,7 +41,7 @@ const schema = z.object({
   listId: id.optional(),
 });
 
-export async function GET(req: NextRequest) {
+async function handle(req: NextRequest) {
   try {
     const params = Object.fromEntries(req.nextUrl.searchParams);
     const detachments = req.nextUrl.searchParams
@@ -101,7 +102,7 @@ export async function GET(req: NextRequest) {
       const { transaction } = await import("@/server/store");
       const actorId = sessionUserId(req);
       if (!actorId)
-        return NextResponse.json(
+        return timingJson(
           { error: "Sign in to continue." },
           { status: 401, headers },
         );
@@ -114,23 +115,38 @@ export async function GET(req: NextRequest) {
       const {
         data: { user },
         error,
-      } = await (await authClient()).auth.getUser();
+      } = await timed("auth", async () => (await authClient()).auth.getUser());
       if (error || !user)
-        return NextResponse.json(
+        return timingJson(
           { error: "Sign in to continue." },
           { status: 401, headers },
         );
       result = await cloudResult(user, inspect);
     }
-    return NextResponse.json(result, { headers });
+    return timingJson(result, { headers });
   } catch (error) {
     const message =
       error instanceof z.ZodError
         ? "Choose valid library filters."
         : (error as Error).message;
-    return NextResponse.json(
+    return timingJson(
       { error: message },
       { status: /unavailable/i.test(message) ? 404 : 400, headers },
     );
   }
+}
+
+export async function GET(req: NextRequest) {
+  const params = req.nextUrl.searchParams;
+  const operation =
+    params.get("action") === "ownVersions"
+      ? "library.versions"
+      : params.get("action") === "consolidationPreview"
+        ? "library.maintenance"
+        : params.has("targetId")
+          ? "library.detail"
+          : params.get("tab") === "archetypes"
+            ? "library.archetypes"
+            : "library.lists";
+  return withRequestTiming(operation, () => handle(req));
 }

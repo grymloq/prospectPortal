@@ -587,6 +587,7 @@ export type BrowserSubscription = {
   keys: { auth: string; p256dh: string };
 };
 export type State = {
+  armySummaryRevision?: string;
   libraryDefaults?: LibraryArchetypeDefault[];
   libraryRosterImports?: LibraryRosterImport[];
   armyVersions?: ArmyListVersion[];

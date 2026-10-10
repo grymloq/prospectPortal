@@ -5,7 +5,9 @@ import {
   summarizeLibraryArmy,
   textRosterSummary,
   maintainLibraryArmySummaries,
+  snapshotArmyReferences,
 } from "../src/server/army-library-summary";
+import { ensureArmyLibrary } from "../src/server/army-library-versions";
 import type { State } from "../src/lib/types";
 import {
   classifyLibraryVersion,
@@ -143,7 +145,7 @@ test("missing text roster remains unknown and export root multipliers count mode
 
 test("persisted summaries remain idempotent when cloud JSON object keys are reordered", () => {
   const data = {
-    ...state,
+    ...structuredClone(state),
     savedArmies: [
       { id: "l", patchId: "p", army: structuredClone(configuration) },
     ],
@@ -161,4 +163,89 @@ test("persisted summaries remain idempotent when cloud JSON object keys are reor
     restored.savedArmies![0].army.summary!.archetypeId,
     data.savedArmies![0].army.summary!.archetypeId,
   );
+});
+
+test("a versioned legacy backfill covers live armies once, preserves history and does not traverse rosters on reads", () => {
+  const army = () => structuredClone(configuration);
+  const data = {
+    ...structuredClone(state),
+    savedArmies: [
+      { id: "l", patchId: "p", army: army(), updatedAt: "2026-10-10" },
+    ],
+    matrixLists: [{ patchId: "p", army: army() }],
+    libraryRosterImports: [{ patchId: "p", army: army() }],
+    matrixListHistory: [{ patchId: "p", army: army() }],
+    games: [{ patchId: "p", own: army(), enemy: army() }],
+    scrims: [{ patchId: "p", teams: [{ entries: [{ army: army() }] }] }],
+  } as unknown as State;
+  assert.equal(ensureArmyLibrary(data), true);
+  const armies = snapshotArmyReferences(data);
+  assert.equal(armies.size, 8);
+  assert.ok(!data.games[0].own.summary && !data.games[0].enemy.summary);
+  assert.ok(
+    !data.matrixListHistory![0].army.summary &&
+      !data.scrims![0].teams[0].entries[0].army!.summary,
+  );
+  for (const snapshot of armies.keys()) {
+    if (snapshot.summary)
+      assert.deepEqual(
+        snapshot.summary,
+        summarizeLibraryArmy(snapshot, "p", data),
+      );
+    Object.defineProperty(snapshot, "composition", {
+      get() {
+        throw new Error("Read traversed an unchanged roster.");
+      },
+    });
+  }
+  assert.equal(ensureArmyLibrary(data), false);
+  assert.equal(maintainLibraryArmySummaries(data, armies), false);
+});
+
+test("write maintenance refreshes replaced snapshots and ruleset namespaces but preserves earlier roster history", () => {
+  const data = {
+    ...state,
+    savedArmies: [
+      {
+        id: "l",
+        patchId: "p",
+        army: structuredClone(configuration),
+        updatedAt: "2026-10-10",
+      },
+    ],
+  } as State;
+  ensureArmyLibrary(data);
+  const previous = snapshotArmyReferences(data);
+  const historical = structuredClone(data.armyVersions![0]);
+  const saved = data.savedArmies![0];
+  saved.army = {
+    ...saved.army,
+    listText: "BATTLELINE\nBoyz (80 Points)\nBoyz (80 Points)",
+  };
+  assert.equal(maintainLibraryArmySummaries(data, previous), true);
+  assert.equal(saved.army.summary!.units[0].quantity, 2);
+  assert.deepEqual(data.armyVersions![0], historical);
+  const beforeNamespace = saved.army.summary!.archetypeId;
+  saved.army = {
+    ...saved.army,
+    scope: { systemId: String(catalogue.systemId) },
+  };
+  maintainLibraryArmySummaries(
+    data,
+    snapshotArmyReferences({ ...data, savedArmies: [] }),
+  );
+  const marker = data.armySummaryRevision;
+  data.patches![0].catalogue = {
+    ...catalogue,
+    systemId: Number(catalogue.systemId) + 1,
+  };
+  assert.equal(ensureArmyLibrary(data), true);
+  assert.notEqual(data.armySummaryRevision, marker);
+  assert.notEqual(saved.army.summary!.archetypeId, beforeNamespace);
+  assert.equal(ensureArmyLibrary(data), false);
+  // Unknown maintenance versions trigger one new backfill without a new list version.
+  data.armySummaryRevision = "older-maintenance-version";
+  assert.equal(ensureArmyLibrary(data), true);
+  assert.equal(data.armyVersions!.length, 1);
+  assert.equal(ensureArmyLibrary(data), false);
 });
