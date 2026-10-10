@@ -1,11 +1,14 @@
 // Accept JSONL runtime events, or Vercel --json records containing a message.
 // Print aggregate numeric measurements only; never echo other log contents.
-// Usage: node scripts/summarize-request-timings.mjs [file.jsonl]
+// Usage: node scripts/summarize-request-timings.mjs [file.jsonl] [--legacy-scrim]
+// Before dedicated instrumentation, only scrim saves returned compact state.write
+// responses. This filter excludes full workspace mutations from that baseline.
 import { readFileSync } from "node:fs";
 const operations = new Set([
   "state.read",
   "state.write",
   "matrix.score",
+  "scrim.score",
   "library.lists",
   "library.archetypes",
   "library.detail",
@@ -54,11 +57,23 @@ function events(line) {
     return [];
   }
 }
-for (const entry of readFileSync(process.argv[2] || 0, "utf8")
+const legacyScrim = process.argv.includes("--legacy-scrim");
+const inputPath = process.argv.slice(2).find((arg) => !arg.startsWith("--"));
+for (const entry of readFileSync(inputPath || 0, "utf8")
   .split(/\r?\n/)
   .flatMap(events)) {
   try {
     const record = entry;
+    if (
+      legacyScrim &&
+      !(
+        record.operation === "state.write" &&
+        record.status === 200 &&
+        numeric(record.responseBytes) &&
+        record.responseBytes < 16384
+      )
+    )
+      continue;
     if (
       record.event !== "portal_timing" ||
       record.version !== 1 ||

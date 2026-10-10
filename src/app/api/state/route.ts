@@ -10,6 +10,7 @@ import { z } from "zod";
 import { localMode } from "@/server/config";
 import { authClient } from "@/server/supabase";
 import { cloudResult, cloudView } from "@/server/cloud-store";
+import { cloudScrimScore } from "@/server/cloud-scrim-score";
 import { sameOrigin } from "@/server/session";
 import { pendingMembership } from "@/server/membership";
 import { previewCookie } from "@/server/access-preview";
@@ -38,14 +39,26 @@ async function handle(req: NextRequest, mutate: boolean) {
         throw new Error(
           "Access preview is read-only. Exit preview to make changes.",
         );
-      const result = await cloudResult(
-        user,
-        (state, actor) =>
-          command.type === "scrimLayoutEstimate"
-            ? scrimScoreStateResponse(state, actor, command as ScrimLayoutEdit)
-            : matrixScoreResponse(state, actor, command as MatrixScoreEdit),
-        command,
-      );
+      const result =
+        command.type === "scrimLayoutEstimate" &&
+        process.env.SCRIM_SCORE_WRITE_MODE !== "legacy"
+          ? await cloudScrimScore(user, command as ScrimLayoutEdit)
+          : await cloudResult(
+              user,
+              (state, actor) =>
+                command.type === "scrimLayoutEstimate"
+                  ? scrimScoreStateResponse(
+                      state,
+                      actor,
+                      command as ScrimLayoutEdit,
+                    )
+                  : matrixScoreResponse(
+                      state,
+                      actor,
+                      command as MatrixScoreEdit,
+                    ),
+              command,
+            );
       return timingJson(result, { headers });
     }
     const view = await cloudView(
@@ -82,17 +95,28 @@ export async function GET(req: NextRequest) {
   });
 }
 export async function POST(req: NextRequest) {
-  after(async () => {
-    try {
-      await deliverNotifications();
-    } catch {
-      console.error("Notification delivery deferred to scheduled retry.");
-    }
-  });
+  // Planning scores create no notifications. Deadline delivery has a scheduler.
+  const scoreOnly =
+    (
+      await req
+        .clone()
+        .json()
+        .catch(() => null)
+    )?.type === "scrimLayoutEstimate";
+  if (!scoreOnly)
+    after(async () => {
+      try {
+        await deliverNotifications();
+      } catch {
+        console.error("Notification delivery deferred to scheduled retry.");
+      }
+    });
   return withRequestTiming(
-    req.nextUrl.searchParams.get("response") === "matrix-score"
-      ? "matrix.score"
-      : "state.write",
+    scoreOnly
+      ? "scrim.score"
+      : req.nextUrl.searchParams.get("response") === "matrix-score"
+        ? "matrix.score"
+        : "state.write",
     async () => {
       if (localMode())
         return (await import("@/server/local/state-route")).POST(req);

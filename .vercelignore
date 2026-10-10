@@ -1,0 +1,13 @@
+.git
+.local
+.cache
+.next
+.vercel
+.codex
+.agents
+.agenteam
+node_modules
+.env*
+*.tsbuildinfo
+supabase/.temp
+ARMY_LIBRARIES_CODEX_PLAN.md

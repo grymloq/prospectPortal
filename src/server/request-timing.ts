@@ -5,6 +5,7 @@ const operations = [
   "state.read",
   "state.write",
   "matrix.score",
+  "scrim.score",
   "library.lists",
   "library.archetypes",
   "library.detail",
