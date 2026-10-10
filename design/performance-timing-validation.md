@@ -22,7 +22,11 @@ There are no request URLs, query/filter values, IDs, names, email addresses, rol
 
 `elapsedMs` ends after the response is constructed, including serialization. It excludes browser/network download time, edge queueing and background notification delivery. `db.read` includes the Supabase HTTP round trip and JSON parsing, rather than isolated SQL execution. `firstRequestInProcess` identifies the first timed request, not a precise measure of Vercel cold-start time. Response bytes count the uncompressed JSON body, serialized once without cloning a response stream.
 
-Export JSONL runtime events and run `node scripts/summarize-request-timings.mjs path/to/events.jsonl` to get median/p95 measurements grouped by operation, status and process-first flag. The script also accepts Vercel JSONL records containing a JSON `message`. It ignores unrelated or malformed logs and outputs only aggregated measurements. Use successful authenticated samples separately from rejected requests; small sample counts cannot establish a production latency percentile.
+Export JSONL runtime events and run `node scripts/summarize-request-timings.mjs path/to/events.jsonl` to get median/p95 measurements grouped by operation, status and process-first flag. The script also accepts Vercel JSONL records containing a JSON `message`, including the current request envelope's nested `logs` array. It ignores unrelated or malformed logs and outputs only aggregated measurements. Use successful authenticated samples separately from rejected requests; small sample counts cannot establish a production latency percentile.
+
+Verified CLI export: `npx vercel logs --environment production --since 15m --json --limit 200 | node scripts/summarize-request-timings.mjs`. Avoid filtering by the timing message in the CLI query: the request envelope's top-level message describes the request, while console events are nested. Production smoke checks confirmed timing emission and private/no-store 401 responses from all three protected endpoints. These rejected requests do not measure authenticated production navigation or database latency.
+
+Vercel may repeat the same console event in its envelope message and nested logs. The report deduplicates within each request envelope, preserving separate requests even when their measurements match. After deployment, a natural authenticated notification read was also captured and the summary marker persisted atomically at revision 506, retaining 19 saved armies and 33 versions. That initial read took 2,268 ms, including 720 ms for cloud retrieval and 1,345 ms for a commit; it is an initial-maintenance observation, not a steady-state production latency estimate. More successful authenticated samples are needed for meaningful live median/p95 comparisons.
 
 ## Local before/after measurements
 
@@ -63,6 +67,7 @@ After timing records show warmed list-page state preparation at a median 0.03 ms
 - Tests cover concurrent timing isolation, failed phases, safe log fields, UTF-8 byte counts, telemetry sink failure, and aggregate report filtering. HTTP tests confirm records for authenticated and rejected requests contain no private request/response values.
 - Existing server privacy, preview ownership, removal/revocation, list publication and withdrawal, private version history, contributor consent, scrim reveal/team boundaries, stale revisions, paired journals and capacity tests pass unchanged.
 - Read-only production verification confirmed the `prospect-portal` Supabase target is healthy in `eu-west-1`, with RLS enabled on `portal_state` and no direct SELECT privilege for `anon` or `authenticated`. Before release the state had 19 saved armies, 33 versions and no summary marker at revision 505.
+- After release, read-only verification confirmed the summary marker at revision 506 with the saved-army and version counts unchanged. Successful authenticated and rejected requests both emitted the expected privacy-safe timing records.
 - This release changes server behavior only. No new visual acceptance claim or authenticated production latency claim is made.
 
 ## Reproduce

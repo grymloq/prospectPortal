@@ -29,10 +29,36 @@ const phases = new Set([
 const groups = new Map();
 const numeric = (value) =>
   typeof value === "number" && Number.isFinite(value) && value >= 0;
-for (const line of readFileSync(process.argv[2] || 0, "utf8").split(/\r?\n/)) {
+function events(line) {
   try {
-    let record = JSON.parse(line);
-    if (typeof record.message === "string") record = JSON.parse(record.message);
+    const envelope = JSON.parse(line);
+    const seen = new Set();
+    return [
+      envelope,
+      ...(Array.isArray(envelope.logs) ? envelope.logs : []),
+    ].flatMap((entry) => {
+      try {
+        const record =
+          typeof entry.message === "string" ? JSON.parse(entry.message) : entry;
+        const key = JSON.stringify(record);
+        // Vercel can repeat the same console event in the envelope message and
+        // nested logs. Deduplicate within this request, never across requests.
+        if (seen.has(key)) return [];
+        seen.add(key);
+        return [record];
+      } catch {
+        return [];
+      }
+    });
+  } catch {
+    return [];
+  }
+}
+for (const entry of readFileSync(process.argv[2] || 0, "utf8")
+  .split(/\r?\n/)
+  .flatMap(events)) {
+  try {
+    const record = entry;
     if (
       record.event !== "portal_timing" ||
       record.version !== 1 ||

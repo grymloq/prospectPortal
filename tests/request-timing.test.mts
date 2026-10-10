@@ -131,6 +131,20 @@ test("production timing reports aggregate only measurements, separating status a
     { ...sample, firstRequestInProcess: true },
     { ...sample, operation: "PRIVATE_URL" },
     { message: "PRIVATE_RUNTIME_ERROR" },
+    {
+      message: "GET PRIVATE_REQUEST_URL",
+      requestPath: "PRIVATE_QUERY",
+      logs: [
+        {
+          level: "info",
+          message: JSON.stringify({ ...sample, elapsedMs: 30 }),
+        },
+      ],
+    },
+    {
+      message: JSON.stringify({ ...sample, elapsedMs: 40 }),
+      logs: [{ message: JSON.stringify({ ...sample, elapsedMs: 40 }) }],
+    },
   ]
     .map((record) => JSON.stringify(record))
     .join("\n");
@@ -143,6 +157,6 @@ test("production timing reports aggregate only measurements, separating status a
   assert.ok(!result.stdout.includes("PRIVATE"));
   const groups = JSON.parse(result.stdout);
   assert.equal(groups.length, 3);
-  assert.equal(groups[0].samples, 2);
-  assert.deepEqual(groups[0].measurements.elapsedMs, { median: 10, p95: 20 });
+  assert.equal(groups[0].samples, 4);
+  assert.deepEqual(groups[0].measurements.elapsedMs, { median: 20, p95: 40 });
 });
