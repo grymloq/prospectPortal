@@ -5,6 +5,7 @@ import type { LibraryQuery, State, User } from "@/lib/types";
 import { localMode } from "@/server/config";
 import { authClient } from "@/server/supabase";
 import { cloudResult } from "@/server/cloud-store";
+import { libraryDatabaseResult } from "@/server/library-database";
 import { previewCookie, previewActor } from "@/server/access-preview";
 import { queryArmyLibrary } from "@/server/army-library";
 import { consolidationPreview } from "@/server/army-library-identity";
@@ -121,7 +122,10 @@ async function handle(req: NextRequest) {
           { error: "Sign in to continue." },
           { status: 401, headers },
         );
-      result = await cloudResult(user, inspect);
+      result = await (action ? cloudResult : libraryDatabaseResult)(
+        user,
+        inspect,
+      );
     }
     return timingJson(result, { headers });
   } catch (error) {
