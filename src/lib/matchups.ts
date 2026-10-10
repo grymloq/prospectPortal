@@ -89,11 +89,10 @@ export function buildMatchups(games: Game[], patchId?: string) {
   };
 }
 
-export function matrixWithManual(
+export function matrixBase(
   games: Game[],
   patchId: string,
   lists: MatrixList[],
-  estimates: ManualEstimate[],
 ) {
   const data = buildMatchups(games, patchId);
   const armies = new Map(data.armies.map((a) => [a.key, a]));
@@ -103,9 +102,23 @@ export function matrixWithManual(
         key: armyKey(list.army),
         army: list.army,
       });
-  const effective = new Map(
-    [...data.cells].map(([key, value]) => [key, structuredClone(value)]),
-  );
+  return {
+    ...data,
+    armies: [...armies.values()].sort(
+      (a, b) =>
+        a.army.factionName.localeCompare(b.army.factionName) ||
+        a.key.localeCompare(b.key),
+    ),
+  };
+}
+
+export function matrixWithEstimates(
+  data: ReturnType<typeof matrixBase>,
+  patchId: string,
+  estimates: ManualEstimate[],
+) {
+  // Copy only cells with manual edits; logged-game aggregates stay immutable.
+  const effective = new Map(data.cells);
   const manual = new Set<string>();
   for (const e of estimates) {
     if (!patchId || e.patchId !== patchId) continue;
@@ -114,20 +127,30 @@ export function matrixWithManual(
       [e.column, e.row, 20 - e.score],
     ] as const) {
       const key = cellKey(row, column),
-        cell = effective.get(key) || blank();
-      cell[e.layout] = { total: score, count: 1, average: score };
+        cell = {
+          ...(effective.get(key) || blank()),
+          [e.layout]: { total: score, count: 1, average: score },
+        };
       effective.set(key, cell);
       manual.add(key + e.layout);
     }
   }
   return {
     ...data,
-    armies: [...armies.values()].sort(
-      (a, b) =>
-        a.army.factionName.localeCompare(b.army.factionName) ||
-        a.key.localeCompare(b.key),
-    ),
     effective,
     manual,
   };
+}
+
+export function matrixWithManual(
+  games: Game[],
+  patchId: string,
+  lists: MatrixList[],
+  estimates: ManualEstimate[],
+) {
+  return matrixWithEstimates(
+    matrixBase(games, patchId, lists),
+    patchId,
+    estimates,
+  );
 }

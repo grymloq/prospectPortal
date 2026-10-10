@@ -82,6 +82,72 @@ try {
   });
   assert.equal(player.status, 200);
   const memberView = await request("/api/state", null, player.cookie);
+  const scoreCommand = {
+    type: "manualEstimate",
+    patchId: memberView.data.patches[0].id,
+    own: memberView.data.games[0].own,
+    enemy: memberView.data.games[0].enemy,
+    layout: "A",
+    score: 0,
+  };
+  const compactScore = await request(
+    "/api/state?response=matrix-score",
+    scoreCommand,
+    player.cookie,
+  );
+  const scoreView = await request("/api/state", null, player.cookie);
+  check(
+    "compact matrix scores contain only committed shared records and reject unauthorized writes",
+    () => {
+      assert.equal(compactScore.status, 200);
+      assert.deepEqual(Object.keys(compactScore.data).sort(), [
+        "change",
+        "estimate",
+        "kind",
+        "lists",
+        "viewerId",
+      ]);
+      assert.ok(
+        scoreView.data.manualEstimates.some(
+          (entry) =>
+            JSON.stringify(entry) ===
+            JSON.stringify(compactScore.data.estimate),
+        ),
+      );
+    },
+  );
+  assert.equal(
+    (await request("/api/state?response=matrix-score", scoreCommand)).status,
+    401,
+  );
+  assert.equal(
+    (
+      await request(
+        "/api/state?response=matrix-score",
+        { ...scoreCommand, score: 21 },
+        player.cookie,
+      )
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await request(
+        "/api/state?response=matrix-score",
+        scoreCommand,
+        player.cookie,
+        "POST",
+        { Origin: "https://other.invalid" },
+      )
+    ).status,
+    400,
+  );
+  const clearedScore = await request(
+    "/api/state?response=matrix-score",
+    { ...scoreCommand, score: null },
+    player.cookie,
+  );
+  assert.equal(clearedScore.data.estimate, null);
   const feedbackSubmission = await request(
     "/api/state",
     {
@@ -790,6 +856,24 @@ try {
   assert.equal(preview.status, 200);
   const previewSession = `${admin.cookie}; ${preview.cookie}`;
   const previewRead = await request("/api/state", null, previewSession);
+  const previewNotifications = await request(
+    "/api/notifications",
+    null,
+    previewSession,
+  );
+  check(
+    "light notification reads preserve effective viewer ownership and preview privacy",
+    () => {
+      assert.equal(previewNotifications.status, 200);
+      assert.deepEqual(
+        previewNotifications.data.notifications,
+        previewRead.data.notifications,
+      );
+      assert.deepEqual(Object.keys(previewNotifications.data), [
+        "notifications",
+      ]);
+    },
+  );
   check(
     "user preview applies server privacy filtering and retains the actual admin session",
     () => {
@@ -808,6 +892,7 @@ try {
   );
   for (const [route, method, body] of [
     ["/api/state", "POST", { type: "profile", name: "Preview write" }],
+    ["/api/state?response=matrix-score", "POST", scoreCommand],
     ["/api/admin/users", "DELETE", { userId: "p1" }],
     ["/api/password", "POST", {}],
     ["/api/army-import", "POST", {}],
@@ -828,6 +913,14 @@ try {
   );
   const wrongOwner = `${admin.cookie}; team_access_preview=${encodeURIComponent(JSON.stringify({ actorId: "p1", userId: "admin", role: "admin" }))}`;
   assert.equal((await request("/api/state", null, wrongOwner)).status, 403);
+  assert.equal(
+    (await request("/api/notifications", null, forgedPreviewCookie)).status,
+    403,
+  );
+  assert.equal(
+    (await request("/api/notifications", null, wrongOwner)).status,
+    403,
+  );
   const rolePreview = await request(
     "/api/admin/view-as",
     { userId: "admin", role: "member" },

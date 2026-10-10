@@ -180,6 +180,7 @@ export default function ArmyLibraries({
   );
   const { query, section } = location;
   const restoredTarget = useRef(query.target?.id);
+  const requestedSearch = useRef(query.search || "");
   const [library, setLibrary] = useState<ArmyLibraryDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -220,74 +221,92 @@ export default function ArmyLibraries({
       params.set("targetId", query.target.id);
     }
     let live = true;
-    fetch(`/api/army-library?${params}`, {
-      cache: "no-store",
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        const data = await response.json();
-        if (!response.ok)
-          throw new Error(data.error || "Could not load Army libraries.");
-        return data.library as ArmyLibraryDTO;
-      })
-      .then((data) => {
-        if (live) {
-          const detachments = query.detachments?.filter((id) =>
-            data.facets.detachments.some((d) => d.id === id),
-          );
-          const changedDetachments =
-            detachments?.length !== query.detachments?.length;
-          const invalidDisposition =
-            query.disposition &&
-            !data.facets.dispositions.some((d) => d.id === query.disposition);
-          if (changedDetachments || invalidDisposition) {
-            setLocation((current) => ({
-              ...current,
-              query: {
-                ...current.query,
-                detachments,
-                disposition: undefined,
-                page: 1,
-                relatedPage: 1,
-              },
-            }));
-            return;
-          }
-          restoredTarget.current = undefined;
-          setLibrary(data);
-          setError("");
-          setLoading(false);
-        }
-      })
-      .catch((e: Error) => {
-        if (live && e.name !== "AbortError") {
-          if (
-            restoredTarget.current &&
-            query.target?.id === restoredTarget.current &&
-            /unavailable/i.test(e.message)
-          ) {
-            restoredTarget.current = undefined;
-            setLocation((c) => ({
-              query: {
-                ...(c.returnQuery || c.query),
-                tab: "archetypes",
-                target: undefined,
-                versionId: undefined,
-              },
-              section: "Overview",
-            }));
-            return;
-          }
-          setLibrary(null);
-          setError(e.message);
-          setLoading(false);
-        }
-      });
+    const timer = window.setTimeout(
+      () => {
+        requestedSearch.current = query.search || "";
+        fetch(`/api/army-library?${params}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        })
+          .then(async (response) => {
+            const data = await response.json();
+            if (!response.ok)
+              throw new Error(data.error || "Could not load Army libraries.");
+            return data.library as ArmyLibraryDTO;
+          })
+          .then((data) => {
+            if (live) {
+              const detachments = query.detachments?.filter((id) =>
+                data.facets.detachments.some((d) => d.id === id),
+              );
+              const changedDetachments =
+                detachments?.length !== query.detachments?.length;
+              const invalidDisposition =
+                query.disposition &&
+                !data.facets.dispositions.some(
+                  (d) => d.id === query.disposition,
+                );
+              if (changedDetachments || invalidDisposition) {
+                setLocation((current) => ({
+                  ...current,
+                  query: {
+                    ...current.query,
+                    detachments,
+                    disposition: undefined,
+                    page: 1,
+                    relatedPage: 1,
+                  },
+                }));
+                return;
+              }
+              restoredTarget.current = undefined;
+              setLibrary(data);
+              setError("");
+              setLoading(false);
+            }
+          })
+          .catch((e: Error) => {
+            if (live && e.name !== "AbortError") {
+              if (
+                restoredTarget.current &&
+                query.target?.id === restoredTarget.current &&
+                /unavailable/i.test(e.message)
+              ) {
+                restoredTarget.current = undefined;
+                setLocation((c) => ({
+                  query: {
+                    ...(c.returnQuery || c.query),
+                    tab: "archetypes",
+                    target: undefined,
+                    versionId: undefined,
+                  },
+                  section: "Overview",
+                }));
+                return;
+              }
+              setLibrary(null);
+              setError(e.message);
+              setLoading(false);
+            }
+          });
+      },
+      requestedSearch.current !== (query.search || "") ? 250 : 0,
+    );
     return () => {
       live = false;
+      window.clearTimeout(timer);
       controller.abort();
     };
-  }, [query, refresh, view]);
+  }, [
+    query,
+    refresh,
+    view.games,
+    view.savedArmies,
+    view.matrixLists,
+    view.me.id,
+    view.me.role,
+    view.accessPreview?.active,
+  ]);
   function changeQuery(patch: Partial<LibraryQuery>) {
     setLoading(true);
     setError("");

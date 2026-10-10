@@ -5,7 +5,8 @@ import { useMemo, useState } from "react";
 import type { View } from "@/lib/types";
 import { cellKey, layouts, type MatrixArmy } from "@/lib/matchups";
 import { PageHeading, Empty, Modal } from "./ui";
-import { matchupDatabase } from "@/lib/matchup-database";
+import { matchupDatabaseBase } from "@/lib/matchup-database";
+import { matrixWithEstimates } from "@/lib/matchups";
 import MatchupTable, { MatrixAverageBadge } from "./matchup-table";
 import MatchupMissions from "./matchup-missions";
 import { Disposition } from "./disposition";
@@ -30,7 +31,29 @@ export default function MatchupMatrix({
   const [patch, setPatch] = useState(
     view.defaultPatchId || view.patches.find((p) => !p.removedAt)?.id || "",
   );
-  const data = useMemo(() => matchupDatabase(view, patch), [view, patch]);
+  const base = useMemo(
+    () =>
+      matchupDatabaseBase(
+        {
+          games: view.games,
+          matrixLists: view.matrixLists,
+          matrixListHistory: view.matrixListHistory,
+          savedArmies: view.savedArmies,
+        },
+        patch,
+      ),
+    [
+      view.games,
+      view.matrixLists,
+      view.matrixListHistory,
+      view.savedArmies,
+      patch,
+    ],
+  );
+  const data = useMemo(
+    () => matrixWithEstimates(base, patch, view.manualEstimates || []),
+    [base, patch, view.manualEstimates],
+  );
   const [y, setY] = useState<Filter>(emptyFilter),
     [x, setX] = useState<Filter>(emptyFilter);
   const [yPage, setYPage] = useState(0),

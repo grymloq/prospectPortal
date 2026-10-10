@@ -3,8 +3,8 @@ import { z } from "zod";
 import type { LibraryQuery, State, User } from "@/lib/types";
 import { localMode } from "@/server/config";
 import { authClient } from "@/server/supabase";
-import { cloudView } from "@/server/cloud-store";
-import { previewCookie, previewView } from "@/server/access-preview";
+import { cloudResult } from "@/server/cloud-store";
+import { previewCookie, previewActor } from "@/server/access-preview";
 import { queryArmyLibrary } from "@/server/army-library";
 import { consolidationPreview } from "@/server/army-library-identity";
 import { requireMember } from "@/server/membership";
@@ -64,11 +64,11 @@ export async function GET(req: NextRequest) {
     };
     let result: unknown;
     const inspect = (state: State, actor: User) => {
-      const viewer = previewView(
+      const viewer = previewActor(
         state,
         actor,
         req.cookies.get(previewCookie)?.value,
-      ).me;
+      );
       requireMember(viewer);
       if (action === "consolidationPreview") {
         if (req.cookies.has(previewCookie))
@@ -94,6 +94,7 @@ export async function GET(req: NextRequest) {
             })),
         };
       } else result = { library: queryArmyLibrary(state, viewer, query) };
+      return result;
     };
     if (localMode()) {
       const { sessionUserId } = await import("@/server/local/session");
@@ -119,13 +120,7 @@ export async function GET(req: NextRequest) {
           { error: "Sign in to continue." },
           { status: 401, headers },
         );
-      await cloudView(
-        user,
-        undefined,
-        undefined,
-        inspect,
-        req.cookies.get(previewCookie)?.value,
-      );
+      result = await cloudResult(user, inspect);
     }
     return NextResponse.json(result, { headers });
   } catch (error) {

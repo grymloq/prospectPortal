@@ -1,4 +1,6 @@
-import { scrimScoreResponse } from "@/server/scrim-score-response";
+import { scrimScoreStateResponse } from "@/server/scrim-score-response";
+import { matrixScoreResponse } from "@/server/matrix-score-response";
+import type { MatrixScoreEdit } from "@/lib/matrix-score-queue";
 import type { ScrimLayoutEdit } from "@/lib/types";
 import { after } from "next/server";
 import { deliverNotifications } from "@/server/notification-worker";
@@ -6,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { localMode } from "@/server/config";
 import { authClient } from "@/server/supabase";
-import { cloudView } from "@/server/cloud-store";
+import { cloudResult, cloudView } from "@/server/cloud-store";
 import { sameOrigin } from "@/server/session";
 import { pendingMembership } from "@/server/membership";
 import { previewCookie } from "@/server/access-preview";
@@ -27,6 +29,25 @@ async function handle(req: NextRequest, mutate: boolean) {
         { status: 401, headers },
       );
     const command = mutate ? await req.json() : undefined;
+    if (
+      command?.type === "scrimLayoutEstimate" ||
+      (command?.type === "manualEstimate" &&
+        req.nextUrl.searchParams.get("response") === "matrix-score")
+    ) {
+      if (req.cookies.has(previewCookie))
+        throw new Error(
+          "Access preview is read-only. Exit preview to make changes.",
+        );
+      const result = await cloudResult(
+        user,
+        (state, actor) =>
+          command.type === "scrimLayoutEstimate"
+            ? scrimScoreStateResponse(state, actor, command as ScrimLayoutEdit)
+            : matrixScoreResponse(state, actor, command as MatrixScoreEdit),
+        command,
+      );
+      return NextResponse.json(result, { headers });
+    }
     const view = await cloudView(
       user,
       command,
@@ -34,12 +55,7 @@ async function handle(req: NextRequest, mutate: boolean) {
       undefined,
       req.cookies.get(previewCookie)?.value,
     );
-    return NextResponse.json(
-      command?.type === "scrimLayoutEstimate"
-        ? scrimScoreResponse(view, command as ScrimLayoutEdit)
-        : view,
-      { headers },
-    );
+    return NextResponse.json(view, { headers });
   } catch (e) {
     return NextResponse.json(
       {

@@ -1,4 +1,5 @@
-import { scrimScoreResponse } from "../scrim-score-response";
+import { scrimScoreStateResponse } from "../scrim-score-response";
+import { matrixScoreResponse } from "../matrix-score-response";
 import { generateDeadlineNotifications } from "../notifications";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -44,20 +45,26 @@ export async function POST(req: NextRequest) {
         { status: 401 },
       );
     const body = await req.json();
+    if (req.cookies.has(previewCookie))
+      throw new Error(
+        "Access preview is read-only. Exit preview to make changes.",
+      );
     const view = transaction((s) => {
       const actor = s.users.find((u) => u.id === id);
       if (!actor) throw new Error("Account not found.");
       execute(s, actor, body);
+      if (body.type === "scrimLayoutEstimate")
+        return scrimScoreStateResponse(s, actor, body);
+      if (
+        body.type === "manualEstimate" &&
+        req.nextUrl.searchParams.get("response") === "matrix-score"
+      )
+        return matrixScoreResponse(s, actor, body);
       return viewState(s, actor);
     });
-    return NextResponse.json(
-      body.type === "scrimLayoutEstimate"
-        ? scrimScoreResponse(view, body)
-        : view,
-      {
-        headers: { "Cache-Control": "no-store" },
-      },
-    );
+    return NextResponse.json(view, {
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (e) {
     return NextResponse.json(
       {

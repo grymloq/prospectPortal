@@ -58,6 +58,25 @@ export async function cloudView(
   inspect?: (state: State, actor: User) => void,
   preview?: string,
 ): Promise<View> {
+  return cloudResult(
+    identity,
+    (state, actor) => {
+      const view = previewView(state, actor, preview);
+      inspect?.(state, actor);
+      return view;
+    },
+    command,
+    trustedUpdate,
+  );
+}
+
+/** Project an authorized result within the same revision-checked transaction. */
+export async function cloudResult<T>(
+  identity: AuthUser,
+  project: (state: State, actor: User) => T,
+  command?: unknown,
+  trustedUpdate?: (state: State, actor: User) => void,
+): Promise<T> {
   const db = databaseClient();
   for (let attempt = 0; attempt < 12; attempt++) {
     const { data, error } = await db
@@ -85,8 +104,7 @@ export async function cloudView(
     generateDeadlineNotifications(state);
     const notificationChanged =
       notificationsBefore !== JSON.stringify(state.notifications);
-    const view = denied ? null : previewView(state, actor, preview);
-    if (!denied && inspect) inspect(state, actor);
+    const resultValue = denied ? null : project(state, actor);
     if (
       !notificationChanged &&
       !changed &&
@@ -94,7 +112,7 @@ export async function cloudView(
       (denied || (command === undefined && !trustedUpdate))
     ) {
       if (denied) throw new Error(denied);
-      return view!;
+      return resultValue!;
     }
     const result = await db.rpc("portal_commit", {
       expected_revision: data.revision,
@@ -106,7 +124,7 @@ export async function cloudView(
     }
     if (result.data === true) {
       if (denied) throw new Error(denied);
-      return view!;
+      return resultValue!;
     }
     // Re-run validation against the winning transaction, preserving caps and evaluation conflicts.
   }

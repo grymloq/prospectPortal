@@ -9,6 +9,8 @@ import {
   armyKey,
   armyAverage,
   matrixWithManual,
+  matrixBase,
+  matrixWithEstimates,
   buildMatchups,
   cellKey,
   outcomeForScore,
@@ -29,6 +31,33 @@ const army = (
 });
 const a = army("Orks"),
   b = army("Aeldari");
+
+test("manual score overlays preserve logged aggregates and clearing restores the cached base", () => {
+  const base = matrixBase([{ ...game(12, "A"), patchId: "p" }], "p", []);
+  const forwardKey = cellKey(armyKey(a), armyKey(b)),
+    reverseKey = cellKey(armyKey(b), armyKey(a));
+  for (const cell of base.cells.values()) Object.freeze(cell);
+  const update = matrixWithEstimates(base, "p", [
+    {
+      userId: "member",
+      patchId: "p",
+      row: armyKey(a),
+      column: armyKey(b),
+      layout: "A",
+      score: 0,
+      authorName: "Member",
+      updatedAt: "",
+    },
+  ]);
+  assert.equal(update.effective.get(forwardKey)!.A.average, 0);
+  assert.equal(update.effective.get(reverseKey)!.A.average, 20);
+  assert.equal(base.cells.get(forwardKey)!.A.average, 12);
+  assert.equal(update.armies, base.armies);
+  assert.equal(update.cells, base.cells);
+  const clear = matrixWithEstimates(base, "p", []);
+  assert.equal(clear.effective.get(forwardKey), base.cells.get(forwardKey));
+  assert.equal(clear.effective.get(forwardKey)!.A.average, 12);
+});
 function game(score: number, layout: Game["layout"], own = a, enemy = b): Game {
   return {
     id: crypto.randomUUID(),

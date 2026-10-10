@@ -19,6 +19,8 @@ const { stockholmLocal } = await import("../src/lib/stockholm");
 const { validateGameVersion } =
   await import("../src/server/army-library-versions");
 const base = readState();
+const { scrimScoreResponse, scrimScoreStateResponse } =
+  await import("../src/server/scrim-score-response");
 after(() => {
   db.close();
   if (!scratch.startsWith(path.resolve(".local") + path.sep))
@@ -897,6 +899,25 @@ test("single-layout scrim edits clear only the targeted score and retain revisio
     assert.deepEqual(cell.scores, { A: null, B: 11, C: 0 });
     assert.equal(f.scrim.revision, revision + 1);
     assert.deepEqual(cell.history!.at(-1)!.scores, cell.scores);
+    const fullCommand = {
+      ...edit,
+      type: "scrimLayoutEstimate" as const,
+      layout: "A" as const,
+      scrimId: f.scrim.id,
+      revision: f.scrim.revision,
+    };
+    assert.deepEqual(
+      scrimScoreStateResponse(f.s, f.member(1), fullCommand),
+      scrimScoreResponse(viewState(f.s, f.member(1)), fullCommand),
+    );
+    assert.throws(
+      () => scrimScoreStateResponse(f.s, f.member(3), fullCommand),
+      /unavailable/,
+    );
+    assert.throws(
+      () => scrimScoreStateResponse(f.s, f.admin, fullCommand),
+      /unavailable/,
+    );
     assert.throws(
       () => f.run(f.member(1), { ...edit, revision }),
       /scrim changed/,

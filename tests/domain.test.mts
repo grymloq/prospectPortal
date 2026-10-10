@@ -11,6 +11,48 @@ const { armySnapshot, catalogue, dispositionsFor, defaultDisposition } =
   await import("../src/lib/catalogue");
 const baseline = readState();
 
+test("compact main matrix responses match committed shared data and omit every private collection", async () => {
+  const { matrixScoreResponse } =
+    await import("../src/server/matrix-score-response");
+  const { applyMatrixScoreUpdate } =
+    await import("../src/lib/matrix-score-queue");
+  const s = structuredClone(baseline),
+    actor = s.users[1];
+  const command = {
+    type: "manualEstimate" as const,
+    patchId: s.patches![0].id,
+    own: s.games[0].own,
+    enemy: s.games[0].enemy,
+    layout: "A" as const,
+    score: 0 as number | null,
+  };
+  let view = viewState(s, actor);
+  for (const score of [0, null, 20]) {
+    command.score = score;
+    execute(s, actor, command);
+    const update = matrixScoreResponse(s, actor, command);
+    assert.deepEqual(Object.keys(update).sort(), [
+      "change",
+      "estimate",
+      "kind",
+      "lists",
+      "viewerId",
+    ]);
+    const next = applyMatrixScoreUpdate(view, update),
+      full = viewState(s, actor);
+    assert.deepEqual(next.manualEstimates, full.manualEstimates);
+    assert.deepEqual(next.matrixChanges, full.matrixChanges);
+    assert.deepEqual(next.matrixLists, full.matrixLists);
+    assert.equal(next.games, view.games);
+    assert.equal(next.users, view.users);
+    view = next;
+  }
+  assert.throws(
+    () => matrixScoreResponse(s, { ...actor, confirmedMember: false }, command),
+    /confirmation/,
+  );
+});
+
 for (const format of ["GW", "Simple", "NR", "Short", "Tournament"])
   test(`My armies saves ${format} text with a private version, summary and archetype`, () => {
     const s = structuredClone(baseline);

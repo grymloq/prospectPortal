@@ -20,6 +20,11 @@ import {
   createScrimScoreQueue,
 } from "@/lib/scrim-score-queue";
 import type { ScrimLayoutEdit, View } from "@/lib/types";
+import {
+  applyMatrixScoreUpdate,
+  createMatrixScoreQueue,
+  type MatrixScoreEdit,
+} from "@/lib/matrix-score-queue";
 import Auth from "./auth";
 import Prospects from "./prospects";
 import Profile from "./profile";
@@ -55,6 +60,10 @@ export default function Workspace({
     [busy, setBusy] = useState(false),
     [journalKey, setJournalKey] = useState(0);
   const viewRef = useRef<View | null>(null);
+  const viewEpoch = useRef(0);
+  const matrixQueue = useRef<ReturnType<typeof createMatrixScoreQueue> | null>(
+    null,
+  );
   const scoreQueue = useRef<ReturnType<typeof createScrimScoreQueue> | null>(
     null,
   );
@@ -99,6 +108,7 @@ export default function Workspace({
     : "";
   const restoredOwner = useRef("");
   const acceptView = useCallback((view: View | null) => {
+    viewEpoch.current++;
     viewRef.current = view;
     setView(view);
     if (!view) {
@@ -275,6 +285,35 @@ export default function Workspace({
           await scoreQueue.current!(command as ScrimLayoutEdit);
           return true;
         } catch (error) {
+          onError?.((error as Error).message);
+          return false;
+        }
+      }
+      if ((command as { type?: string }).type === "manualEstimate") {
+        matrixQueue.current ||= createMatrixScoreQueue({
+          read: () => viewRef.current,
+          epoch: () => viewEpoch.current,
+          apply: (update) => {
+            const next = applyMatrixScoreUpdate(viewRef.current!, update);
+            viewRef.current = next;
+            setView(next);
+          },
+          request: async (edit) => {
+            const response = await fetch("/api/state?response=matrix-score", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(edit),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+            return data;
+          },
+        });
+        try {
+          await matrixQueue.current(command as MatrixScoreEdit);
+          return true;
+        } catch (error) {
+          setError((error as Error).message);
           onError?.((error as Error).message);
           return false;
         }

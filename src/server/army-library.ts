@@ -43,6 +43,20 @@ type PublicVersion = {
   archetypeId: string;
   variationId?: string;
 };
+function indexBy<T>(
+  values: Iterable<T>,
+  key: (value: T) => string | undefined,
+) {
+  const index = new Map<string, T[]>();
+  for (const value of values) {
+    const id = key(value);
+    if (id === undefined) continue;
+    const bucket = index.get(id);
+    if (bucket) bucket.push(value);
+    else index.set(id, [value]);
+  }
+  return index;
+}
 const active = (user: User | undefined): user is User =>
   !!user &&
   user.confirmedMember === true &&
@@ -167,18 +181,25 @@ function publicRows(
   sources: ReturnType<typeof publishedVersions>,
 ) {
   const rows: LibraryListRow[] = [];
+  const versionsByList = indexBy(
+    [...sources.versions.values()].filter((p) =>
+      withinPatch(p.version.patchId, filters),
+    ),
+    (p) => p.version.listId,
+  );
+  const sharedSources = new Set(
+    [...sources.shared.values()]
+      .filter((list) => list.army.listUrl)
+      .map((list) =>
+        JSON.stringify([list.userId, list.patchId, list.army.listUrl]),
+      ),
+  );
   for (const list of sources.shared.values()) {
-    const eligible = [...sources.versions.values()]
-      .filter(
-        (p) =>
-          p.version.listId === list.id &&
-          withinPatch(p.version.patchId, filters),
-      )
-      .sort(
-        (a, b) =>
-          b.version.number - a.version.number ||
-          b.version.id.localeCompare(a.version.id),
-      );
+    const eligible = (versionsByList.get(list.id) || []).sort(
+      (a, b) =>
+        b.version.number - a.version.number ||
+        b.version.id.localeCompare(a.version.id),
+    );
     const selected =
       eligible.find((p) => p.version.id === list.currentVersionId) ||
       eligible[0];
@@ -213,13 +234,10 @@ function publicRows(
     // Only an explicit source link establishes a duplicate; equal configurations do not.
     if (
       sources.shared.has(matrix.id) ||
-      [...sources.shared.values()].some(
-        (list) =>
-          list.userId === matrix.userId &&
-          list.patchId === matrix.patchId &&
-          !!matrix.army.listUrl &&
-          matrix.army.listUrl === list.army.listUrl,
-      )
+      (!!matrix.army.listUrl &&
+        sharedSources.has(
+          JSON.stringify([matrix.userId, matrix.patchId, matrix.army.listUrl]),
+        ))
     )
       continue;
     const source = matrix.army.listUrl
@@ -459,15 +477,18 @@ export function queryArmyLibrary(
   if (!active(state.users.find((user) => user.id === actor.id)))
     throw new Error("Confirmed membership required.");
   const sources = publishedVersions(state);
-  // Standards are computed before search, pagination and game-context filters.
-  const norms = createLibraryNorms(state, actor, sources.versions.values());
+  // Standards use all published sources, independent of search, paging and game filters.
+  let norms: ReturnType<typeof createLibraryNorms> | undefined;
+  const getNorms = () =>
+    (norms ||= createLibraryNorms(state, actor, sources.versions.values()));
+  const matrixRows = new Map(
+    (state.matrixLists || []).map((entry) => [`matrix:${entry.id}`, entry]),
+  );
   const rosterArmy = (row: LibraryListRow): Army => {
     const version = sources.versions.get(row.versionId || "");
     if (version) return version.version.army;
     if (row.kind === "matrix") {
-      const matrix = state.matrixLists?.find(
-        (entry) => `matrix:${entry.id}` === row.id,
-      );
+      const matrix = matrixRows.get(row.id);
       if (matrix) return importedMatrixArmy(state, matrix);
     }
     return row.army;
@@ -498,25 +519,30 @@ export function queryArmyLibrary(
   const observations = filterLibraryObservations(built.observations, filters);
   const conflicts = filterLibraryObservations(built.conflicts, filters);
   const segmented = filters.patchId === "all";
-  const listObservations = (id: string) =>
-    observations.filter((o) => o.listId === id);
-  const versionObservations = (id: string) =>
-    observations.filter((o) => o.versionId === id);
-  const archetypeObservations = (id: string) =>
-    observations.filter((o) => o.archetypeId === id);
-  const rows = visibleRows
+  const byList = indexBy(observations, (o) => o.listId);
+  const byVersion = indexBy(observations, (o) => o.versionId);
+  const byArchetype = indexBy(observations, (o) => o.archetypeId);
+  const byVariation = indexBy(observations, (o) => o.variationId);
+  const listObservations = (id: string) => byList.get(id) || [];
+  const versionObservations = (id: string) => byVersion.get(id) || [];
+  const archetypeObservations = (id: string) => byArchetype.get(id) || [];
+  const withNorm = (row: LibraryListRow): LibraryListRow => ({
+    ...row,
+    norm: getNorms().summary(
+      rosterArmy(row),
+      row.archetypeId,
+      row.patchId,
+      row.versionId,
+      row.kind === "saved",
+    ),
+  });
+  const rows: LibraryListRow[] = visibleRows
     .filter((row) =>
       matchesArmy(row.army, `${row.name} ${row.ownerName}`, filters),
     )
     .map((row) => ({
       ...row,
-      norm: norms.summary(
-        rosterArmy(row),
-        row.archetypeId,
-        row.patchId,
-        row.versionId,
-        row.kind === "saved",
-      ),
+      norm: undefined,
       metrics: libraryMetrics(
         row.kind === "saved" ? listObservations(row.id) : [],
         segmented,
@@ -529,6 +555,8 @@ export function queryArmyLibrary(
   const publicMembers = [...sources.versions.values()].filter((p) =>
     withinPatch(p.version.patchId, filters),
   );
+  const membersByArchetype = indexBy(publicMembers, (p) => p.archetypeId);
+  const visibleById = new Map(visibleRows.map((row) => [row.id, row]));
   const groupedRows = new Map<string, LibraryListRow[]>();
   // Public historical memberships stay discoverable even after configuration edits.
   for (const row of rows)
@@ -551,7 +579,7 @@ export function queryArmyLibrary(
         ?.some((row) => row.id === member.version.listId)
     )
       continue;
-    const row = visibleRows.find((row) => row.id === member.version.listId);
+    const row = visibleById.get(member.version.listId);
     if (row)
       groupedRows.set(member.archetypeId, [
         ...(groupedRows.get(member.archetypeId) || []),
@@ -564,26 +592,19 @@ export function queryArmyLibrary(
           versionId: member.version.id,
           compositionStatus:
             member.version.army.composition?.status || "unavailable",
-          norm: norms.summary(
-            member.version.army,
-            member.archetypeId,
-            member.version.patchId,
-            member.version.id,
-          ),
+          norm: undefined,
         },
       ]);
   }
   const archetypes: LibraryArchetypeRow[] = [...groupedRows].map(
     ([id, lists]) => {
-      const members = publicMembers.filter(
-        (member) =>
-          member.archetypeId === id &&
-          lists.some((row) => row.id === member.version.listId),
+      const listIds = new Set(lists.map((row) => row.id));
+      const members = (membersByArchetype.get(id) || []).filter((member) =>
+        listIds.has(member.version.listId),
       );
       const known = new Set(
         members.filter((m) => m.variationId).map((m) => m.version.listId),
       );
-      const listIds = new Set(lists.map((row) => row.id));
       return {
         id,
         name: archetypeName(lists[0].army),
@@ -648,7 +669,7 @@ export function queryArmyLibrary(
     ]
       .map((id) => {
         const matching = members.filter((m) => m.variationId === id);
-        const pooled = observations.filter((o) => o.variationId === id);
+        const pooled = byVariation.get(id) || [];
         return {
           id,
           listIds: [...new Set(matching.map((m) => m.version.listId))].sort(),
@@ -770,7 +791,7 @@ export function queryArmyLibrary(
       (list ? rosterArmy(list) : detail.army);
     const comparisonPatch = selected?.version.patchId || list?.patchId;
     if (list && comparisonPatch)
-      detail.norm = norms.compare(
+      detail.norm = getNorms().compare(
         selectedArmy,
         detail.archetypeId,
         comparisonPatch,
@@ -788,12 +809,7 @@ export function queryArmyLibrary(
           recentTrend: libraryRecentTrend(items, segmented),
           compositionStatus:
             selected.version.army.composition?.status || "unavailable",
-          norm: norms.summary(
-            selected.version.army,
-            selected.archetypeId,
-            selected.version.patchId,
-            selected.version.id,
-          ),
+          norm: undefined,
         },
       ];
     if (list)
@@ -803,7 +819,7 @@ export function queryArmyLibrary(
         state,
       );
     detail.standards = segmentIds.flatMap((patchId) => {
-      const standard = norms.standard(detail!.archetypeId, patchId);
+      const standard = getNorms().standard(detail!.archetypeId, patchId);
       return standard ? [standard] : [];
     });
     rank(detail.lists, query.sort);
@@ -836,10 +852,9 @@ export function queryArmyLibrary(
       ...relatedTotals,
       totalPages,
     };
-    detail.lists = detail.lists.slice(
-      relatedStart,
-      relatedStart + relatedPageSize,
-    );
+    detail.lists = detail.lists
+      .slice(relatedStart, relatedStart + relatedPageSize)
+      .map(withNorm);
     detail.versions = detail.versions.slice(
       relatedStart,
       relatedStart + relatedPageSize,
@@ -928,7 +943,8 @@ export function queryArmyLibrary(
     page,
     pageSize,
     total,
-    lists: tab === "lists" ? rows.slice(start, start + pageSize) : [],
+    lists:
+      tab === "lists" ? rows.slice(start, start + pageSize).map(withNorm) : [],
     archetypes:
       tab === "archetypes" ? archetypes.slice(start, start + pageSize) : [],
     factionGroups: [...factionGroups.values()]

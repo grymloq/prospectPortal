@@ -8,7 +8,7 @@ export const previewSchema = z.object({
   userId: z.string().min(1).max(100),
   role: z.enum(["actual", "member", "admin"]),
 });
-export function previewView(state: State, actor: User, raw?: string): View {
+export function previewActor(state: State, actor: User, raw?: string): User {
   requireMember(actor);
   if (raw && actor.role !== "admin")
     throw new Error("Only administrators can preview access.");
@@ -25,7 +25,10 @@ export function previewView(state: State, actor: User, raw?: string): View {
       role: parsed.role === "actual" ? user.role : parsed.role,
     };
   }
-  const view = viewState(state, target);
+  return target;
+}
+export function previewView(state: State, actor: User, raw?: string): View {
+  const view = viewState(state, previewActor(state, actor, raw));
   if (actor.role === "admin") {
     view.accessPreview = {
       active: !!raw,
